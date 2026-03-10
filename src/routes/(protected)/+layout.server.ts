@@ -7,5 +7,11 @@ export const load: LayoutServerLoad = async ({ locals }) => {
     redirect(303, '/auth/login');
   }
 
-  return { session: locals.session };
+  const { count } = await locals.supabase
+    .from('notifications')
+    .select('*', { count: 'exact', head: true })
+    .eq('user_id', locals.session.user.id)
+    .eq('is_read', false);
+
+  return { session: locals.session, unreadCount: count ?? 0 };
 };

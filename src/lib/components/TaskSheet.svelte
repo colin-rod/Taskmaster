@@ -29,6 +29,7 @@
   let deleting = $state(false);
   let newItemLabel = $state('');
   let addingItem = $state(false);
+  let editReminderAt = $state('');
   let editIsRecurring = $state(false);
   let editRecurrenceRule = $state<RecurrenceRule | null>(null);
 
@@ -39,6 +40,9 @@
       editPriority = task.priority;
       editDueAt = task.due_at ? task.due_at.split('T')[0] : '';
       editStatus = task.status;
+      editReminderAt = task.reminder_at
+        ? new Date(task.reminder_at).toISOString().slice(0, 16)
+        : '';
       editIsRecurring = task.is_recurring;
       editRecurrenceRule = task.recurrence_rule;
       newItemLabel = '';
@@ -54,6 +58,13 @@
   function formatDueValue(dateStr: string): string | null {
     if (!dateStr) return null;
     return new Date(dateStr + 'T12:00:00').toISOString();
+  }
+
+  function setReminderPreset(minutesBefore: number) {
+    if (!editDueAt) return;
+    const dueDate = new Date(editDueAt + 'T12:00:00');
+    dueDate.setMinutes(dueDate.getMinutes() - minutesBefore);
+    editReminderAt = dueDate.toISOString().slice(0, 16);
   }
 </script>
 
@@ -151,6 +162,44 @@
             bind:value={editDueAt}
             class="select-input mt-1"
           />
+        </div>
+
+        <!-- Reminder -->
+        <div>
+          <label for="edit-reminder" class="text-sm font-medium">Reminder</label>
+          <input
+            id="edit-reminder"
+            name="reminder_at"
+            type="datetime-local"
+            bind:value={editReminderAt}
+            class="select-input mt-1"
+          />
+          {#if editDueAt}
+            <div class="flex gap-2 mt-1.5 flex-wrap">
+              <button
+                type="button"
+                class="text-xs px-2 py-0.5 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground"
+                onclick={() => setReminderPreset(10)}
+              >10m before</button>
+              <button
+                type="button"
+                class="text-xs px-2 py-0.5 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground"
+                onclick={() => setReminderPreset(60)}
+              >1h before</button>
+              <button
+                type="button"
+                class="text-xs px-2 py-0.5 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground"
+                onclick={() => setReminderPreset(1440)}
+              >1 day before</button>
+            </div>
+          {/if}
+          {#if editReminderAt}
+            <button
+              type="button"
+              class="text-xs text-destructive mt-1"
+              onclick={() => { editReminderAt = ''; }}
+            >Clear reminder</button>
+          {/if}
         </div>
 
         <!-- Recurrence -->

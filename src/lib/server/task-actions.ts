@@ -131,6 +131,7 @@ async function rollForwardRecurringTask(
     completed_at: null,
     last_completed_at: new Date().toISOString(),
     due_at: nextDue.toISOString(),
+    reminder_at: null,
   }).eq('id', taskId);
 
   if (error) return { rolled: false };
@@ -196,6 +197,8 @@ export async function updateTask(formData: FormData, supabase: SupabaseClient) {
   const is_recurring = formData.get('is_recurring') === 'true';
   const recurrence_rule_raw = formData.get('recurrence_rule')?.toString();
   const recurrence_rule = is_recurring && recurrence_rule_raw ? JSON.parse(recurrence_rule_raw) : null;
+  const reminder_at_raw = formData.get('reminder_at')?.toString() || null;
+  const reminder_at = reminder_at_raw ? new Date(reminder_at_raw).toISOString() : null;
 
   if (!id || !title) return fail(400, { error: 'Task ID and title are required' });
 
@@ -211,7 +214,7 @@ export async function updateTask(formData: FormData, supabase: SupabaseClient) {
     }
   }
 
-  const updates: Record<string, unknown> = { title, notes, priority, due_at, status, is_recurring, recurrence_rule };
+  const updates: Record<string, unknown> = { title, notes, priority, due_at, status, is_recurring, recurrence_rule, reminder_at };
   updates.completed_at = status === 'done' ? new Date().toISOString() : null;
 
   const { error } = await supabase.from('tasks').update(updates).eq('id', id);
