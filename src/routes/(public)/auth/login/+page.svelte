@@ -19,7 +19,7 @@
 <div class="container max-w-lg mx-auto px-4 py-8 md:py-16">
   <div class="rounded-md border bg-card p-6">
     <div class="mb-6">
-      <h1 class="font-accent text-page-title">HomeBase</h1>
+      <h1 class="font-accent text-page-title">Taskmaster</h1>
       <p class="text-muted-foreground">Sign in to manage your household tasks</p>
     </div>
 

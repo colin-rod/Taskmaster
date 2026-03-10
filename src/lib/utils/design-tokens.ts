@@ -2,7 +2,7 @@
  * North Design System - Design Tokens & Utilities
  *
  * Shared design tokens for visual consistency with NorthStar.
- * HomeBase uses the same design system as NorthStar.
+ * Taskmaster uses the same design system as NorthStar.
  */
 
 /**

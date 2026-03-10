@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
   // Overdue: due before start of today, not done/canceled
   const { data: overdue } = await supabase
     .from('tasks')
-    .select('*')
+    .select('*, checklist_items(*)')
     .lt('due_at', startOfToday.toISOString())
     .not('status', 'in', '("done","canceled")')
     .order('due_at', { ascending: true });
@@ -19,7 +19,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
   // Due today: due within today, not done/canceled
   const { data: dueToday } = await supabase
     .from('tasks')
-    .select('*')
+    .select('*, checklist_items(*)')
     .gte('due_at', startOfToday.toISOString())
     .lte('due_at', endOfToday.toISOString())
     .not('status', 'in', '("done","canceled")')
@@ -40,5 +40,14 @@ export const actions: Actions = {
   },
   deleteTask: async ({ request, locals: { supabase } }) => {
     return taskActions.deleteTask(await request.formData(), supabase);
+  },
+  addChecklistItem: async ({ request, locals: { supabase } }) => {
+    return taskActions.addChecklistItem(await request.formData(), supabase);
+  },
+  toggleChecklistItem: async ({ request, locals: { supabase } }) => {
+    return taskActions.toggleChecklistItem(await request.formData(), supabase);
+  },
+  deleteChecklistItem: async ({ request, locals: { supabase } }) => {
+    return taskActions.deleteChecklistItem(await request.formData(), supabase);
   },
 };

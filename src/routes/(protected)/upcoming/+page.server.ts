@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 
   const { data: tasks } = await supabase
     .from('tasks')
-    .select('*')
+    .select('*, checklist_items(*)')
     .gt('due_at', endOfToday.toISOString())
     .lte('due_at', sevenDaysOut.toISOString())
     .not('status', 'in', '("done","canceled")')
@@ -30,5 +30,14 @@ export const actions: Actions = {
   },
   deleteTask: async ({ request, locals: { supabase } }) => {
     return taskActions.deleteTask(await request.formData(), supabase);
+  },
+  addChecklistItem: async ({ request, locals: { supabase } }) => {
+    return taskActions.addChecklistItem(await request.formData(), supabase);
+  },
+  toggleChecklistItem: async ({ request, locals: { supabase } }) => {
+    return taskActions.toggleChecklistItem(await request.formData(), supabase);
+  },
+  deleteChecklistItem: async ({ request, locals: { supabase } }) => {
+    return taskActions.deleteChecklistItem(await request.formData(), supabase);
   },
 };

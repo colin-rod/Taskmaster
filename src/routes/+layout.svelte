@@ -5,7 +5,7 @@
 </script>
 
 <svelte:head>
-  <title>HomeBase</title>
+  <title>Taskmaster</title>
 </svelte:head>
 
 {@render children()}

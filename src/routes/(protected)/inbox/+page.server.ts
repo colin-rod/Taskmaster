@@ -6,7 +6,7 @@ import * as taskActions from '$lib/server/task-actions.js';
 export const load: PageServerLoad = async ({ locals: { supabase, session } }) => {
   const { data: tasks } = await supabase
     .from('tasks')
-    .select('*')
+    .select('*, checklist_items(*)')
     .is('list_id', null)
     .not('status', 'in', '("done","canceled")')
     .order('created_at', { ascending: false });
@@ -43,5 +43,14 @@ export const actions: Actions = {
   },
   deleteTask: async ({ request, locals: { supabase } }) => {
     return taskActions.deleteTask(await request.formData(), supabase);
+  },
+  addChecklistItem: async ({ request, locals: { supabase } }) => {
+    return taskActions.addChecklistItem(await request.formData(), supabase);
+  },
+  toggleChecklistItem: async ({ request, locals: { supabase } }) => {
+    return taskActions.toggleChecklistItem(await request.formData(), supabase);
+  },
+  deleteChecklistItem: async ({ request, locals: { supabase } }) => {
+    return taskActions.deleteChecklistItem(await request.formData(), supabase);
   },
 };

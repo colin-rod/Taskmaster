@@ -14,6 +14,9 @@
 
   let toggling = $state(false);
 
+  let checklistTotal = $derived((task.checklist_items ?? []).length);
+  let checklistDone = $derived((task.checklist_items ?? []).filter((i) => i.is_completed).length);
+
   function formatDueDate(due_at: string | null): string | null {
     if (!due_at) return null;
     const date = new Date(due_at);
@@ -83,10 +86,20 @@
         </span>
       {/if}
     </div>
-    {#if task.due_at}
-      <span class="text-xs mt-0.5 block {isOverdue(task.due_at, task.status) ? 'text-destructive' : 'text-foreground-secondary'}">
-        {formatDueDate(task.due_at)}
-      </span>
-    {/if}
+    <div class="flex items-center gap-2 mt-0.5">
+      {#if task.due_at}
+        <span class="text-xs {isOverdue(task.due_at, task.status) ? 'text-destructive' : 'text-foreground-secondary'}">
+          {formatDueDate(task.due_at)}
+        </span>
+      {/if}
+      {#if checklistTotal > 0}
+        <span class="text-xs text-foreground-secondary flex items-center gap-1">
+          <svg class="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 8h10M3 4h10M3 12h10" />
+          </svg>
+          {checklistDone}/{checklistTotal}
+        </span>
+      {/if}
+    </div>
   </button>
 </div>

@@ -16,7 +16,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 
   const { data: tasks } = await supabase
     .from('tasks')
-    .select('*')
+    .select('*, checklist_items(*)')
     .eq('list_id', params.id)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false });
@@ -53,5 +53,14 @@ export const actions: Actions = {
   },
   deleteTask: async ({ request, locals: { supabase } }) => {
     return taskActions.deleteTask(await request.formData(), supabase);
+  },
+  addChecklistItem: async ({ request, locals: { supabase } }) => {
+    return taskActions.addChecklistItem(await request.formData(), supabase);
+  },
+  toggleChecklistItem: async ({ request, locals: { supabase } }) => {
+    return taskActions.toggleChecklistItem(await request.formData(), supabase);
+  },
+  deleteChecklistItem: async ({ request, locals: { supabase } }) => {
+    return taskActions.deleteChecklistItem(await request.formData(), supabase);
   },
 };
