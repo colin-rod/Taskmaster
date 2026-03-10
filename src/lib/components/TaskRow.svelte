@@ -3,6 +3,8 @@
   import { toast } from 'svelte-sonner';
   import type { Task } from '$lib/types/index.js';
   import { getPriorityLabel } from '$lib/utils/design-tokens.js';
+  import { describeRecurrence } from '$lib/utils/recurrence.js';
+  import { Repeat2 } from '@lucide/svelte';
 
   let {
     task,
@@ -48,7 +50,12 @@
       return async ({ result, update }) => {
         toggling = false;
         if (result.type === 'success') {
-          toast.success(task.status === 'done' ? 'Task reopened' : 'Task completed');
+          const data = result.data as Record<string, unknown> | undefined;
+          if (data?.rolled) {
+            toast.success('Recurring task rolled forward');
+          } else {
+            toast.success(task.status === 'done' ? 'Task reopened' : 'Task completed');
+          }
         }
         await update();
       };
@@ -90,6 +97,11 @@
       {#if task.due_at}
         <span class="text-xs {isOverdue(task.due_at, task.status) ? 'text-destructive' : 'text-foreground-secondary'}">
           {formatDueDate(task.due_at)}
+        </span>
+      {/if}
+      {#if task.is_recurring}
+        <span class="text-xs text-foreground-secondary flex items-center gap-0.5" title={task.recurrence_rule ? describeRecurrence(task.recurrence_rule) : 'Recurring'}>
+          <Repeat2 class="w-3 h-3" />
         </span>
       {/if}
       {#if checklistTotal > 0}
