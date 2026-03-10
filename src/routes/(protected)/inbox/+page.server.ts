@@ -1,47 +1,37 @@
-import { error, fail } from '@sveltejs/kit';
+import { fail } from '@sveltejs/kit';
 
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
 
-export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
-  const { data: list } = await supabase
-    .from('task_lists')
-    .select('*, members:task_list_members(user_id, role, profile:profiles(email, display_name))')
-    .eq('id', params.id)
-    .single();
-
-  if (!list) {
-    error(404, 'List not found');
-  }
-
+export const load: PageServerLoad = async ({ locals: { supabase, session } }) => {
   const { data: tasks } = await supabase
     .from('tasks')
     .select('*')
-    .eq('list_id', params.id)
-    .order('sort_order', { ascending: true })
+    .is('list_id', null)
+    .not('status', 'in', '("done","canceled")')
     .order('created_at', { ascending: false });
 
-  return { list, tasks: tasks ?? [] };
+  return { tasks: tasks ?? [] };
 };
 
 export const actions: Actions = {
-  createTask: async ({ request, params, locals: { supabase, session } }) => {
+  createTask: async ({ request, locals: { supabase, session } }) => {
     const formData = await request.formData();
     const title = formData.get('title')?.toString()?.trim();
     const due_at = formData.get('due_at')?.toString() || null;
 
     if (!title) return fail(400, { error: 'Task title is required' });
 
-    const { error: err } = await supabase.from('tasks').insert({
+    const { error } = await supabase.from('tasks').insert({
       title,
-      list_id: params.id,
+      list_id: null,
       owner_id: session!.user.id,
       due_at,
       status: 'todo',
       priority: 4,
     });
 
-    if (err) return fail(500, { error: err.message });
+    if (error) return fail(500, { error: error.message });
     return { success: true };
   },
 

@@ -12,6 +12,7 @@
       <nav class="flex gap-4 text-sm">
         <a href="/today" class="text-foreground-secondary hover:text-foreground">Today</a>
         <a href="/upcoming" class="text-foreground-secondary hover:text-foreground">Upcoming</a>
+        <a href="/inbox" class="text-foreground-secondary hover:text-foreground">Inbox</a>
         <a href="/lists" class="text-foreground-secondary hover:text-foreground">Lists</a>
       </nav>
     </div>
