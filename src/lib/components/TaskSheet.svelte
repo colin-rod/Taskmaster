@@ -8,8 +8,9 @@
     SheetTitle,
     SheetDescription,
   } from '$lib/components/ui/sheet/index.js';
-  import type { Task } from '$lib/types/index.js';
+  import type { Task, RecurrenceRule } from '$lib/types/index.js';
   import { getPriorityLabel, formatStatus } from '$lib/utils/design-tokens.js';
+  import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
 
   let {
     task = $bindable<Task | null>(null),
@@ -28,6 +29,8 @@
   let deleting = $state(false);
   let newItemLabel = $state('');
   let addingItem = $state(false);
+  let editIsRecurring = $state(false);
+  let editRecurrenceRule = $state<RecurrenceRule | null>(null);
 
   $effect(() => {
     if (task) {
@@ -36,6 +39,8 @@
       editPriority = task.priority;
       editDueAt = task.due_at ? task.due_at.split('T')[0] : '';
       editStatus = task.status;
+      editIsRecurring = task.is_recurring;
+      editRecurrenceRule = task.recurrence_rule;
       newItemLabel = '';
     }
   });
@@ -147,6 +152,11 @@
             class="select-input mt-1"
           />
         </div>
+
+        <!-- Recurrence -->
+        <RecurrenceEditor bind:isRecurring={editIsRecurring} bind:recurrenceRule={editRecurrenceRule} />
+        <input type="hidden" name="is_recurring" value={String(editIsRecurring)} />
+        <input type="hidden" name="recurrence_rule" value={editIsRecurring && editRecurrenceRule ? JSON.stringify(editRecurrenceRule) : ''} />
 
         <!-- Actions -->
         <div class="flex gap-2 pt-2">
