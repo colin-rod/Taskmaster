@@ -2,21 +2,13 @@ import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
 
 export const load: PageServerLoad = async ({ locals: { supabase, session } }) => {
-  const now = new Date();
-  const endOfToday = new Date(now);
-  endOfToday.setHours(23, 59, 59, 999);
-
-  const sevenDaysOut = new Date(now);
-  sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
-  sevenDaysOut.setHours(23, 59, 59, 999);
-
   const { data: tasks } = await supabase
     .from('tasks')
     .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
-    .gt('due_at', endOfToday.toISOString())
-    .lte('due_at', sevenDaysOut.toISOString())
+    .eq('assigned_to_user_id', session!.user.id)
     .not('status', 'in', '("done","canceled")')
-    .order('due_at', { ascending: true });
+    .order('due_at', { ascending: true, nullsFirst: false })
+    .order('created_at', { ascending: false });
 
   const roleMap = await taskActions.buildRoleMap(tasks ?? [], session!.user.id, supabase);
 

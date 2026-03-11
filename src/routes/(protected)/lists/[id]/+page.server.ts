@@ -2,6 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
+import * as memberActions from '$lib/server/member-actions.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
   const { data: list } = await supabase
@@ -16,7 +17,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 
   const { data: tasks } = await supabase
     .from('tasks')
-    .select('*, checklist_items(*)')
+    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
     .eq('list_id', params.id)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false });
@@ -62,5 +63,17 @@ export const actions: Actions = {
   },
   deleteChecklistItem: async ({ request, locals: { supabase } }) => {
     return taskActions.deleteChecklistItem(await request.formData(), supabase);
+  },
+  assignTask: async ({ request, locals: { supabase, session } }) => {
+    return taskActions.assignTask(await request.formData(), supabase, session!.user.id);
+  },
+  addMember: async ({ request, locals: { supabase, session } }) => {
+    return memberActions.addMember(await request.formData(), supabase, session!.user.id);
+  },
+  removeMember: async ({ request, locals: { supabase, session } }) => {
+    return memberActions.removeMember(await request.formData(), supabase, session!.user.id);
+  },
+  updateMemberRole: async ({ request, locals: { supabase, session } }) => {
+    return memberActions.updateMemberRole(await request.formData(), supabase, session!.user.id);
   },
 };

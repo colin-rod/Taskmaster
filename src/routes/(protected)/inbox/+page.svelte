@@ -30,10 +30,10 @@
   {:else}
     <div class="space-y-2">
       {#each data.tasks as task (task.id)}
-        <TaskRow {task} onselect={openTask} />
+        <TaskRow {task} onselect={openTask} userRole="owner" />
       {/each}
     </div>
   {/if}
 </div>
 
-<TaskSheet bind:task={selectedTask} bind:open={sheetOpen} />
+<TaskSheet bind:task={selectedTask} bind:open={sheetOpen} userRole="owner" />

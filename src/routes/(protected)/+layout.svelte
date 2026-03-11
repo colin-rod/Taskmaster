@@ -21,6 +21,7 @@
           <a href="/today" class="text-foreground-secondary hover:text-foreground">Today</a>
           <a href="/upcoming" class="text-foreground-secondary hover:text-foreground">Upcoming</a>
           <a href="/inbox" class="text-foreground-secondary hover:text-foreground">Inbox</a>
+          <a href="/assigned" class="text-foreground-secondary hover:text-foreground">Assigned</a>
           <a href="/lists" class="text-foreground-secondary hover:text-foreground">Lists</a>
         </nav>
         <NotificationBell bind:unreadCount />

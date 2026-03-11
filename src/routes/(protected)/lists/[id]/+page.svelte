@@ -1,14 +1,23 @@
 <script lang="ts">
   import type { PageData, ActionData } from './$types';
-  import type { Task } from '$lib/types/index.js';
+  import type { Task, ListRole, TaskListMember } from '$lib/types/index.js';
   import TaskRow from '$lib/components/TaskRow.svelte';
   import QuickAdd from '$lib/components/QuickAdd.svelte';
   import TaskSheet from '$lib/components/TaskSheet.svelte';
+  import MemberManager from '$lib/components/MemberManager.svelte';
+  import { Users } from '@lucide/svelte';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
   let selectedTask = $state<Task | null>(null);
   let sheetOpen = $state(false);
+  let membersOpen = $state(false);
+
+  // Derive current user's role on this list
+  let userRole = $derived<ListRole>(
+    data.list.members?.find((m: TaskListMember) => m.user_id === data.session.user.id)?.role ?? 'owner'
+  );
+  let isOwner = $derived(userRole === 'owner');
 
   function openTask(task: Task) {
     selectedTask = task;
@@ -30,10 +39,20 @@
     </a>
     <div class="flex items-center gap-2">
       {#if data.list.color}
-        <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: {data.list.color}"></div>
+        <div class="w-3 h-3 rounded-full shrink-0" style="background-color: {data.list.color}"></div>
       {/if}
       <h1 class="text-page-title font-accent">{data.list.name}</h1>
     </div>
+    {#if isOwner}
+      <button
+        type="button"
+        class="flex items-center gap-1.5 text-sm text-foreground-secondary hover:text-foreground transition-colors"
+        onclick={() => { membersOpen = true; }}
+      >
+        <Users class="w-4 h-4" />
+        <span>{(data.list.members ?? []).length}</span>
+      </button>
+    {/if}
   </div>
 
   {#if form?.error}
@@ -43,9 +62,11 @@
   {/if}
 
   <!-- Quick add -->
-  <div class="mb-4">
-    <QuickAdd />
-  </div>
+  {#if userRole !== 'viewer'}
+    <div class="mb-4">
+      <QuickAdd />
+    </div>
+  {/if}
 
   <!-- Active tasks -->
   {#if activeTasks.length === 0}
@@ -55,7 +76,7 @@
   {:else}
     <div class="space-y-2">
       {#each activeTasks as task (task.id)}
-        <TaskRow {task} onselect={openTask} />
+        <TaskRow {task} onselect={openTask} {userRole} />
       {/each}
     </div>
   {/if}
@@ -73,7 +94,7 @@
       {#if showCompleted}
         <div class="space-y-2 mt-2">
           {#each completedTasks as task (task.id)}
-            <TaskRow {task} onselect={openTask} />
+            <TaskRow {task} onselect={openTask} {userRole} />
           {/each}
         </div>
       {/if}
@@ -81,4 +102,7 @@
   {/if}
 </div>
 
-<TaskSheet bind:task={selectedTask} bind:open={sheetOpen} />
+<TaskSheet bind:task={selectedTask} bind:open={sheetOpen} {userRole} members={data.list.members ?? []} />
+{#if isOwner}
+  <MemberManager list={data.list} bind:open={membersOpen} />
+{/if}

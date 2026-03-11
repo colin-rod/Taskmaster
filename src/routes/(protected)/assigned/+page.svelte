@@ -23,33 +23,17 @@
 </script>
 
 <div>
-  <h1 class="text-page-title font-accent mb-6">Today</h1>
+  <h1 class="text-page-title font-accent mb-6">Assigned to Me</h1>
 
-  {#if data.overdue.length === 0 && data.dueToday.length === 0}
+  {#if data.tasks.length === 0}
     <div class="text-center py-12">
-      <p class="text-foreground-secondary">No tasks due today. You're all caught up!</p>
+      <p class="text-foreground-secondary">No tasks assigned to you.</p>
     </div>
-  {/if}
-
-  {#if data.overdue.length > 0}
-    <div class="mb-6">
-      <h2 class="text-section-header font-accent mb-3 text-destructive">Overdue</h2>
-      <div class="space-y-2">
-        {#each data.overdue as task (task.id)}
-          <TaskRow {task} onselect={openTask} userRole={taskRole(task)} />
-        {/each}
-      </div>
-    </div>
-  {/if}
-
-  {#if data.dueToday.length > 0}
-    <div>
-      <h2 class="text-section-header font-accent mb-3">Due Today</h2>
-      <div class="space-y-2">
-        {#each data.dueToday as task (task.id)}
-          <TaskRow {task} onselect={openTask} userRole={taskRole(task)} />
-        {/each}
-      </div>
+  {:else}
+    <div class="space-y-2">
+      {#each data.tasks as task (task.id)}
+        <TaskRow {task} onselect={openTask} userRole={taskRole(task)} />
+      {/each}
     </div>
   {/if}
 </div>

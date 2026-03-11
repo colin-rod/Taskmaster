@@ -4,6 +4,27 @@ import type { RecurrenceRule } from '$lib/types/index.js';
 import { computeNextDue } from '$lib/utils/recurrence.js';
 
 // =============================================================================
+// Role Map Helper
+// =============================================================================
+
+export async function buildRoleMap(
+  tasks: { list_id: string | null }[],
+  userId: string,
+  supabase: SupabaseClient
+): Promise<Record<string, string>> {
+  const listIds = [...new Set(tasks.map((t) => t.list_id).filter(Boolean))] as string[];
+  if (listIds.length === 0) return {};
+
+  const { data: memberships } = await supabase
+    .from('task_list_members')
+    .select('list_id, role')
+    .eq('user_id', userId)
+    .in('list_id', listIds);
+
+  return Object.fromEntries((memberships ?? []).map((m) => [m.list_id, m.role]));
+}
+
+// =============================================================================
 // Checklist Item Actions
 // =============================================================================
 
@@ -231,5 +252,35 @@ export async function deleteTask(formData: FormData, supabase: SupabaseClient) {
   const { error } = await supabase.from('tasks').delete().eq('id', id);
 
   if (error) return fail(500, { error: error.message });
+  return { success: true };
+}
+
+export async function assignTask(formData: FormData, supabase: SupabaseClient, sessionUserId: string) {
+  const id = formData.get('id')?.toString();
+  const assigned_to_user_id = formData.get('assigned_to_user_id')?.toString() || null;
+
+  if (!id) return fail(400, { error: 'Task ID is required' });
+
+  const { error } = await supabase
+    .from('tasks')
+    .update({ assigned_to_user_id })
+    .eq('id', id);
+
+  if (error) return fail(500, { error: error.message });
+
+  // Create notification for the assignee (skip self-assignment)
+  if (assigned_to_user_id && assigned_to_user_id !== sessionUserId) {
+    await supabase.from('notifications').upsert(
+      {
+        user_id: assigned_to_user_id,
+        task_id: id,
+        type: 'assigned',
+        delivered_at: new Date().toISOString(),
+        is_read: false,
+      },
+      { onConflict: 'task_id,type' }
+    );
+  }
+
   return { success: true };
 }

@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
 
-export const load: PageServerLoad = async ({ locals: { supabase } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase, session } }) => {
   const now = new Date();
   const startOfToday = new Date(now);
   startOfToday.setHours(0, 0, 0, 0);
@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
   // Overdue: due before start of today, not done/canceled
   const { data: overdue } = await supabase
     .from('tasks')
-    .select('*, checklist_items(*)')
+    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
     .lt('due_at', startOfToday.toISOString())
     .not('status', 'in', '("done","canceled")')
     .order('due_at', { ascending: true });
@@ -19,15 +19,19 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
   // Due today: due within today, not done/canceled
   const { data: dueToday } = await supabase
     .from('tasks')
-    .select('*, checklist_items(*)')
+    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
     .gte('due_at', startOfToday.toISOString())
     .lte('due_at', endOfToday.toISOString())
     .not('status', 'in', '("done","canceled")')
     .order('due_at', { ascending: true });
 
+  const allTasks = [...(overdue ?? []), ...(dueToday ?? [])];
+  const roleMap = await taskActions.buildRoleMap(allTasks, session!.user.id, supabase);
+
   return {
     overdue: overdue ?? [],
     dueToday: dueToday ?? [],
+    roleMap,
   };
 };
 
@@ -49,5 +53,8 @@ export const actions: Actions = {
   },
   deleteChecklistItem: async ({ request, locals: { supabase } }) => {
     return taskActions.deleteChecklistItem(await request.formData(), supabase);
+  },
+  assignTask: async ({ request, locals: { supabase, session } }) => {
+    return taskActions.assignTask(await request.formData(), supabase, session!.user.id);
   },
 };

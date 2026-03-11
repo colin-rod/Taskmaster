@@ -21,13 +21,20 @@ export const actions: Actions = {
       return fail(400, { error: 'List name is required' });
     }
 
-    const { error } = await supabase
+    const { data: newList, error } = await supabase
       .from('task_lists')
-      .insert({ name, color, owner_id: session!.user.id });
+      .insert({ name, color, owner_id: session!.user.id })
+      .select('id')
+      .single();
 
-    if (error) {
-      return fail(500, { error: error.message });
+    if (error || !newList) {
+      return fail(500, { error: error?.message ?? 'Failed to create list' });
     }
+
+    // Ensure owner has a membership row for uniform role resolution
+    await supabase
+      .from('task_list_members')
+      .insert({ list_id: newList.id, user_id: session!.user.id, role: 'owner' });
 
     return { success: true };
   },

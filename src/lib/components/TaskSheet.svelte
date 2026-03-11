@@ -8,17 +8,23 @@
     SheetTitle,
     SheetDescription,
   } from '$lib/components/ui/sheet/index.js';
-  import type { Task, RecurrenceRule } from '$lib/types/index.js';
+  import type { Task, RecurrenceRule, ListRole, TaskListMember } from '$lib/types/index.js';
   import { getPriorityLabel, formatStatus } from '$lib/utils/design-tokens.js';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
 
   let {
     task = $bindable<Task | null>(null),
     open = $bindable(false),
+    userRole = 'owner' as ListRole,
+    members = [] as TaskListMember[],
   }: {
     task: Task | null;
     open: boolean;
+    userRole?: ListRole;
+    members?: TaskListMember[];
   } = $props();
+
+  let isViewer = $derived(userRole === 'viewer');
 
   let editTitle = $state('');
   let editNotes = $state('');
@@ -71,11 +77,60 @@
 <Sheet bind:open>
   <SheetContent side="bottom" class="max-h-[85vh] overflow-y-auto rounded-t-xl">
     <SheetHeader>
-      <SheetTitle>Edit Task</SheetTitle>
-      <SheetDescription class="sr-only">Edit task details</SheetDescription>
+      <SheetTitle>{isViewer ? 'Task Details' : 'Edit Task'}</SheetTitle>
+      <SheetDescription class="sr-only">{isViewer ? 'View task details' : 'Edit task details'}</SheetDescription>
     </SheetHeader>
 
-    {#if task}
+    {#if task && isViewer}
+      <!-- View-only mode for viewers -->
+      <div class="space-y-4 mt-2">
+        <div>
+          <span class="text-sm font-medium text-foreground-secondary">Title</span>
+          <p class="mt-1">{task.title}</p>
+        </div>
+        {#if task.notes}
+          <div>
+            <span class="text-sm font-medium text-foreground-secondary">Notes</span>
+            <p class="mt-1 text-sm whitespace-pre-wrap">{task.notes}</p>
+          </div>
+        {/if}
+        <div class="flex gap-4">
+          <div>
+            <span class="text-sm font-medium text-foreground-secondary">Priority</span>
+            <p class="mt-1 text-sm">{getPriorityLabel(task.priority)}</p>
+          </div>
+          <div>
+            <span class="text-sm font-medium text-foreground-secondary">Status</span>
+            <p class="mt-1 text-sm">{formatStatus(task.status)}</p>
+          </div>
+        </div>
+        {#if task.due_at}
+          <div>
+            <span class="text-sm font-medium text-foreground-secondary">Due date</span>
+            <p class="mt-1 text-sm">{new Date(task.due_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+          </div>
+        {/if}
+        {#if (task.checklist_items ?? []).length > 0}
+          <div class="border-t pt-4">
+            <span class="text-sm font-medium">Checklist</span>
+            <div class="space-y-1 mt-2">
+              {#each (task.checklist_items ?? []).slice().sort((a, b) => a.position - b.position) as item (item.id)}
+                <div class="flex items-center gap-2 py-1">
+                  <div class="w-4 h-4 rounded border flex items-center justify-center shrink-0 {item.is_completed ? 'bg-primary border-primary' : 'border-foreground-muted'}">
+                    {#if item.is_completed}
+                      <svg class="w-2.5 h-2.5 text-primary-foreground" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M2 6l3 3 5-5" />
+                      </svg>
+                    {/if}
+                  </div>
+                  <span class="text-sm {item.is_completed ? 'line-through text-foreground-muted' : ''}">{item.label}</span>
+                </div>
+              {/each}
+            </div>
+          </div>
+        {/if}
+      </div>
+    {:else if task}
       <form
         method="POST"
         action="?/updateTask"
@@ -218,6 +273,41 @@
           </button>
         </div>
       </form>
+
+      <!-- Assign to (only for shared lists with >1 member, hidden for viewers) -->
+      {#if members.length > 1 && !isViewer}
+        <div class="mt-4 pt-4 border-t">
+          <form
+            method="POST"
+            action="?/assignTask"
+            use:enhance={() => {
+              return async ({ result, update }) => {
+                if (result.type === 'success') {
+                  toast.success('Assignment updated');
+                }
+                await update();
+              };
+            }}
+          >
+            <input type="hidden" name="id" value={task.id} />
+            <label for="assign-to" class="text-sm font-medium">Assign to</label>
+            <select
+              id="assign-to"
+              name="assigned_to_user_id"
+              class="select-input mt-1"
+              value={task.assigned_to_user_id ?? ''}
+              onchange={(e) => { e.currentTarget.form?.requestSubmit(); }}
+            >
+              <option value="">Unassigned</option>
+              {#each members as member (member.user_id)}
+                <option value={member.user_id}>
+                  {member.profile?.display_name ?? member.profile?.email ?? member.user_id}
+                </option>
+              {/each}
+            </select>
+          </form>
+        </div>
+      {/if}
 
       <!-- Checklist Section -->
       <div class="mt-4 pt-4 border-t">

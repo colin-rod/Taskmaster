@@ -11,7 +11,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, session } }) =>
     .not('status', 'in', '("done","canceled")')
     .order('created_at', { ascending: false });
 
-  return { tasks: tasks ?? [] };
+  return { tasks: tasks ?? [], roleMap: {} as Record<string, string> };
 };
 
 export const actions: Actions = {

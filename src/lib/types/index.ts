@@ -56,6 +56,7 @@ export interface Task {
   // Relations
   list?: TaskList;
   checklist_items?: ChecklistItem[];
+  assignee?: Profile;
 }
 
 export interface ChecklistItem {
