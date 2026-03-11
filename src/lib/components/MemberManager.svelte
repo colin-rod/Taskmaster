@@ -8,8 +8,8 @@
     DialogTitle,
     DialogDescription,
   } from '$lib/components/ui/dialog/index.js';
-  import type { TaskList, TaskListMember } from '$lib/types/index.js';
-  import { X, Users } from '@lucide/svelte';
+  import type { TaskList } from '$lib/types/index.js';
+  import { X } from '@lucide/svelte';
 
   let {
     list,

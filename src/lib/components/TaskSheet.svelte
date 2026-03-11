@@ -61,11 +61,6 @@
   let completedCount = $derived(checklistItems.filter((i) => i.is_completed).length);
   let totalCount = $derived(checklistItems.length);
 
-  function formatDueValue(dateStr: string): string | null {
-    if (!dateStr) return null;
-    return new Date(dateStr + 'T12:00:00').toISOString();
-  }
-
   function setReminderPreset(minutesBefore: number) {
     if (!editDueAt) return;
     const dueDate = new Date(editDueAt + 'T12:00:00');

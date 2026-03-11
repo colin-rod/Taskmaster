@@ -14,7 +14,7 @@
   let editColor = $state<string | null>(null);
   let creating = $state(false);
 
-  function startEdit(list: any) {
+  function startEdit(list: { id: string; name: string; color: string | null }) {
     editingListId = list.id;
     editName = list.name;
     editColor = list.color;

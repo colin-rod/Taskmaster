@@ -2,7 +2,7 @@ import { fail } from '@sveltejs/kit';
 
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { supabase, session } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase } }) => {
   const { data: lists } = await supabase
     .from('task_lists')
     .select('*, members:task_list_members(user_id, role, profile:profiles(email, display_name))')

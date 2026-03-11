@@ -49,7 +49,6 @@ export function computeNextDue(currentDue: Date, rule: RecurrenceRule): Date | n
  */
 function computeNextWeekday(currentDue: Date, byweekday: number[], interval: number): Date {
 	// Convert our 0=Mon..6=Sun to JS 0=Sun..6=Sat
-	const toJsDay = (d: number) => (d + 1) % 7;
 	const fromJsDay = (d: number) => (d + 6) % 7;
 
 	const currentJsDay = currentDue.getDay();
