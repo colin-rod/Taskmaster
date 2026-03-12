@@ -46,7 +46,7 @@ cp .env.example .env
 | `PUBLIC_VAPID_KEY` | VAPID public key for push notifications |
 | `VAPID_PRIVATE_KEY` | VAPID private key (server-side only) |
 | `VAPID_SUBJECT` | VAPID subject (e.g., `mailto:you@example.com`) |
-| `CRON_SECRET` | Bearer token for the Vercel cron endpoint |
+| `CRON_SECRET` | Bearer token for the reminder cron endpoint |
 
 ### 3. Set up the database
 
@@ -106,9 +106,11 @@ The recurrence rule is stored as JSONB in the `recurrence_rule` column:
 ## Push Notifications
 
 1. Generate VAPID keys and add them to your `.env` (see setup step 5)
-2. Set `CRON_SECRET` to a random string in both `.env` and Vercel environment settings
-3. The Vercel cron job (`/api/cron/notifications`) runs every 2 minutes and delivers pending reminders
-4. Users enable notifications in Settings → the browser will prompt for permission
+2. Set `CRON_SECRET` to a random string in `.env`, Vercel environment settings, and GitHub Actions secrets
+3. Set `REMINDER_CRON_URL` as a GitHub Actions secret pointing to your deployed endpoint (for example: `https://taskmaster-git-development-<scope>.vercel.app/api/cron/notifications`)
+4. The GitHub Actions scheduler (`.github/workflows/reminder-cron.yml`) runs every 5 minutes and calls `/api/cron/notifications`
+5. Users enable notifications in Settings → the browser will prompt for permission
+6. Reminder delivery latency is typically up to 5 minutes plus GitHub Actions scheduling jitter
 
 For local testing, you can trigger the cron manually:
 
@@ -132,7 +134,12 @@ curl -H "Authorization: Bearer <CRON_SECRET>" http://localhost:5174/api/cron/not
 
 Taskmaster is configured for [Vercel](https://vercel.com) deployment via `@sveltejs/adapter-vercel`. Push to your connected branch to deploy.
 
-Ensure all environment variables from `.env.example` are set in your Vercel project settings. The cron schedule is defined in `vercel.json`.
+Ensure all environment variables from `.env.example` are set in your Vercel project settings.
+
+For reminder scheduling on Vercel Hobby:
+- `vercel.json` does not define a Vercel cron.
+- GitHub Actions is used instead (see `.github/workflows/reminder-cron.yml`).
+- Keep your GitHub default branch set to `development` so scheduled workflows run from that branch.
 
 ## Project Structure
 
