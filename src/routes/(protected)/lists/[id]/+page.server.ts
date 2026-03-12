@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 };
 
 export const actions: Actions = {
-  createTask: async ({ request, params, locals: { supabase, session } }) => {
+  createTask: async ({ request, params, locals: { supabase, profileId } }) => {
     const formData = await request.formData();
     const title = formData.get('title')?.toString()?.trim();
     const due_at = formData.get('due_at')?.toString() || null;
@@ -36,7 +36,7 @@ export const actions: Actions = {
     const { error: err } = await supabase.from('tasks').insert({
       title,
       list_id: params.id,
-      owner_id: session!.user.id,
+      owner_id: profileId!,
       due_at,
       status: 'todo',
       priority: 4,
@@ -64,16 +64,16 @@ export const actions: Actions = {
   deleteChecklistItem: async ({ request, locals: { supabase } }) => {
     return taskActions.deleteChecklistItem(await request.formData(), supabase);
   },
-  assignTask: async ({ request, locals: { supabase, session } }) => {
-    return taskActions.assignTask(await request.formData(), supabase, session!.user.id);
+  assignTask: async ({ request, locals: { supabase, profileId } }) => {
+    return taskActions.assignTask(await request.formData(), supabase, profileId!);
   },
-  addMember: async ({ request, locals: { supabase, session } }) => {
-    return memberActions.addMember(await request.formData(), supabase, session!.user.id);
+  addMember: async ({ request, locals: { supabase, profileId } }) => {
+    return memberActions.addMember(await request.formData(), supabase, profileId!);
   },
-  removeMember: async ({ request, locals: { supabase, session } }) => {
-    return memberActions.removeMember(await request.formData(), supabase, session!.user.id);
+  removeMember: async ({ request, locals: { supabase, profileId } }) => {
+    return memberActions.removeMember(await request.formData(), supabase, profileId!);
   },
-  updateMemberRole: async ({ request, locals: { supabase, session } }) => {
-    return memberActions.updateMemberRole(await request.formData(), supabase, session!.user.id);
+  updateMemberRole: async ({ request, locals: { supabase, profileId } }) => {
+    return memberActions.updateMemberRole(await request.formData(), supabase, profileId!);
   },
 };

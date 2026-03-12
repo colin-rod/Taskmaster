@@ -1,7 +1,7 @@
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
 
-export const load: PageServerLoad = async ({ locals: { supabase, session } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase, profileId } }) => {
   const now = new Date();
   const startOfToday = new Date(now);
   startOfToday.setHours(0, 0, 0, 0);
@@ -26,7 +26,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, session } }) =>
   ]);
 
   const allTasks = [...(overdue ?? []), ...(dueToday ?? [])];
-  const roleMap = await taskActions.buildRoleMap(allTasks, session!.user.id, supabase);
+  const roleMap = await taskActions.buildRoleMap(allTasks, profileId!, supabase);
 
   return {
     overdue: overdue ?? [],
@@ -54,7 +54,7 @@ export const actions: Actions = {
   deleteChecklistItem: async ({ request, locals: { supabase } }) => {
     return taskActions.deleteChecklistItem(await request.formData(), supabase);
   },
-  assignTask: async ({ request, locals: { supabase, session } }) => {
-    return taskActions.assignTask(await request.formData(), supabase, session!.user.id);
+  assignTask: async ({ request, locals: { supabase, profileId } }) => {
+    return taskActions.assignTask(await request.formData(), supabase, profileId!);
   },
 };

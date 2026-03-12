@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-  if (!locals.session) {
+  if (!locals.profileId) {
     return json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -15,7 +15,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   await locals.supabase
     .from('push_subscriptions')
     .delete()
-    .eq('user_id', locals.session.user.id)
+    .eq('user_id', locals.profileId)
     .eq('endpoint', endpoint);
 
   return json({ ok: true });

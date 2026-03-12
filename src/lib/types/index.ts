@@ -11,6 +11,7 @@ export interface Profile {
   email: string;
   display_name: string | null;
   timezone: string;
+  avatar_color: string | null;
   updated_at: string;
 }
 

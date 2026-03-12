@@ -3,15 +3,15 @@ import { redirect } from '@sveltejs/kit';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
-  if (!locals.session) {
-    redirect(303, '/auth/login');
+  if (!locals.profileId) {
+    redirect(303, '/pick-profile');
   }
 
   const { count } = await locals.supabase
     .from('notifications')
     .select('*', { count: 'exact', head: true })
-    .eq('user_id', locals.session.user.id)
+    .eq('user_id', locals.profileId)
     .eq('is_read', false);
 
-  return { session: locals.session, unreadCount: count ?? 0 };
+  return { profileId: locals.profileId, unreadCount: count ?? 0 };
 };

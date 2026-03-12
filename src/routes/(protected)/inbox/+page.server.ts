@@ -15,7 +15,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 };
 
 export const actions: Actions = {
-  createTask: async ({ request, locals: { supabase, session } }) => {
+  createTask: async ({ request, locals: { supabase, profileId } }) => {
     const formData = await request.formData();
     const title = formData.get('title')?.toString()?.trim();
     const due_at = formData.get('due_at')?.toString() || null;
@@ -25,7 +25,7 @@ export const actions: Actions = {
     const { error } = await supabase.from('tasks').insert({
       title,
       list_id: null,
-      owner_id: session!.user.id,
+      owner_id: profileId!,
       due_at,
       status: 'todo',
       priority: 4,

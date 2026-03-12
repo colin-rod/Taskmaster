@@ -12,7 +12,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 };
 
 export const actions: Actions = {
-  createList: async ({ request, locals: { supabase, session } }) => {
+  createList: async ({ request, locals: { supabase, profileId } }) => {
     const formData = await request.formData();
     const name = formData.get('name')?.toString()?.trim();
     const color = formData.get('color')?.toString() || null;
@@ -23,7 +23,7 @@ export const actions: Actions = {
 
     const { data: newList, error } = await supabase
       .from('task_lists')
-      .insert({ name, color, owner_id: session!.user.id })
+      .insert({ name, color, owner_id: profileId! })
       .select('id')
       .single();
 
@@ -34,7 +34,7 @@ export const actions: Actions = {
     // Ensure owner has a membership row for uniform role resolution
     await supabase
       .from('task_list_members')
-      .insert({ list_id: newList.id, user_id: session!.user.id, role: 'owner' });
+      .insert({ list_id: newList.id, user_id: profileId!, role: 'owner' });
 
     return { success: true };
   },

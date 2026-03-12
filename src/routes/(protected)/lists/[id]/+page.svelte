@@ -15,7 +15,7 @@
 
   // Derive current user's role on this list
   let userRole = $derived<ListRole>(
-    data.list.members?.find((m: TaskListMember) => m.user_id === data.session.user.id)?.role ?? 'owner'
+    data.list.members?.find((m: TaskListMember) => m.user_id === data.profileId)?.role ?? 'owner'
   );
   let isOwner = $derived(userRole === 'owner');
 

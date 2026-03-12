@@ -1,16 +1,16 @@
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
 
-export const load: PageServerLoad = async ({ locals: { supabase, session } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase, profileId } }) => {
   const { data: tasks } = await supabase
     .from('tasks')
     .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
-    .eq('assigned_to_user_id', session!.user.id)
+    .eq('assigned_to_user_id', profileId!)
     .not('status', 'in', '("done","canceled")')
     .order('due_at', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
 
-  const roleMap = await taskActions.buildRoleMap(tasks ?? [], session!.user.id, supabase);
+  const roleMap = await taskActions.buildRoleMap(tasks ?? [], profileId!, supabase);
 
   return { tasks: tasks ?? [], roleMap };
 };
@@ -34,7 +34,7 @@ export const actions: Actions = {
   deleteChecklistItem: async ({ request, locals: { supabase } }) => {
     return taskActions.deleteChecklistItem(await request.formData(), supabase);
   },
-  assignTask: async ({ request, locals: { supabase, session } }) => {
-    return taskActions.assignTask(await request.formData(), supabase, session!.user.id);
+  assignTask: async ({ request, locals: { supabase, profileId } }) => {
+    return taskActions.assignTask(await request.formData(), supabase, profileId!);
   },
 };

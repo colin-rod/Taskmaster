@@ -2,7 +2,7 @@ import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
 export const POST: RequestHandler = async ({ request, locals }) => {
-  if (!locals.session) {
+  if (!locals.profileId) {
     return json({ error: 'Unauthorized' }, { status: 401 });
   }
 
@@ -12,14 +12,14 @@ export const POST: RequestHandler = async ({ request, locals }) => {
     await locals.supabase
       .from('notifications')
       .update({ is_read: true })
-      .eq('user_id', locals.session.user.id)
+      .eq('user_id', locals.profileId)
       .eq('is_read', false);
   } else if (body.id) {
     await locals.supabase
       .from('notifications')
       .update({ is_read: true })
       .eq('id', body.id)
-      .eq('user_id', locals.session.user.id);
+      .eq('user_id', locals.profileId);
   } else {
     return json({ error: 'Provide id or all: true' }, { status: 400 });
   }

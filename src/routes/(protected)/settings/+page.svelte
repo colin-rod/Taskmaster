@@ -53,6 +53,22 @@
   <h1 class="text-page-title font-accent mb-6">Settings</h1>
 
   <div class="space-y-6">
+    <!-- Switch Profile -->
+    <div class="rounded-lg border p-4">
+      <h2 class="text-sm font-medium mb-1">Profile</h2>
+      <p class="text-sm text-foreground-secondary mb-3">
+        Switch to a different household member.
+      </p>
+      <form method="POST" action="?/switchProfile">
+        <button
+          type="submit"
+          class="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
+        >
+          Switch Profile
+        </button>
+      </form>
+    </div>
+
     <!-- Push Notifications -->
     <div class="rounded-lg border p-4">
       <h2 class="text-sm font-medium mb-1">Push Notifications</h2>
