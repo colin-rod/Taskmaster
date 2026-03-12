@@ -1,49 +1,35 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
-  import type { Task, ListRole } from '$lib/types/index.js';
-  import { getPriorityLabel } from '$lib/utils/design-tokens.js';
+  import type { Task, ListRole, Profile } from '$lib/types/index.js';
   import { describeRecurrence } from '$lib/utils/recurrence.js';
-  import { Repeat2 } from '@lucide/svelte';
+  import { Repeat2, Ellipsis } from '@lucide/svelte';
+  import InlineEditTitle from '$lib/components/InlineEditTitle.svelte';
+  import PriorityPicker from '$lib/components/PriorityPicker.svelte';
+  import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
+  import AssigneePicker from '$lib/components/AssigneePicker.svelte';
 
   let {
     task,
     onselect,
     userRole = 'owner' as ListRole,
+    members = [],
   }: {
     task: Task;
     onselect: (task: Task) => void;
     userRole?: ListRole;
+    members?: { user_id: string; profile?: Profile }[];
   } = $props();
 
   let toggling = $state(false);
+  let canEdit = $derived(userRole !== 'viewer');
 
   let checklistTotal = $derived((task.checklist_items ?? []).length);
   let checklistDone = $derived((task.checklist_items ?? []).filter((i) => i.is_completed).length);
-
-  function formatDueDate(due_at: string | null): string | null {
-    if (!due_at) return null;
-    const date = new Date(due_at);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const dateOnly = new Date(date);
-    dateOnly.setHours(0, 0, 0, 0);
-
-    if (dateOnly.getTime() === today.getTime()) return 'Today';
-    if (dateOnly.getTime() === tomorrow.getTime()) return 'Tomorrow';
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
-
-  function isOverdue(due_at: string | null, status: string): boolean {
-    if (!due_at || status === 'done' || status === 'canceled') return false;
-    return new Date(due_at) < new Date();
-  }
 </script>
 
 <div class="flex items-center gap-3 rounded-md border bg-surface p-3 hover:bg-surface-subtle transition-colors group">
-  <!-- Toggle checkbox (hidden for viewers) -->
+  <!-- Toggle checkbox -->
   {#if userRole === 'viewer'}
     <div
       class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0
@@ -94,24 +80,26 @@
     </form>
   {/if}
 
-  <!-- Task content (clickable to open detail) -->
-  <button
-    type="button"
-    class="flex-1 text-left min-w-0"
-    onclick={() => onselect(task)}
-  >
+  <!-- Task content — inline editable fields -->
+  <div class="flex-1 min-w-0">
     <div class="flex items-center gap-2">
-      <span class="truncate {task.status === 'done' ? 'line-through text-foreground-muted' : ''}">{task.title}</span>
-      {#if task.priority < 4}
+      <span class="flex-1 min-w-0 {task.status === 'done' ? 'line-through text-foreground-muted' : ''}">
+        <InlineEditTitle taskId={task.id} value={task.title} disabled={!canEdit} />
+      </span>
+      {#if canEdit}
+        <PriorityPicker taskId={task.id} value={task.priority} />
+      {:else if task.priority < 4}
         <span class="text-xs font-medium px-1.5 py-0.5 rounded bg-surface-subtle text-foreground-secondary flex-shrink-0">
-          {getPriorityLabel(task.priority)}
+          P{task.priority}
         </span>
       {/if}
     </div>
     <div class="flex items-center gap-2 mt-0.5">
-      {#if task.due_at}
-        <span class="text-xs {isOverdue(task.due_at, task.status) ? 'text-destructive' : 'text-foreground-secondary'}">
-          {formatDueDate(task.due_at)}
+      {#if canEdit}
+        <DatePickerPopover taskId={task.id} value={task.due_at} />
+      {:else if task.due_at}
+        <span class="text-xs text-foreground-secondary">
+          {new Date(task.due_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
         </span>
       {/if}
       {#if task.is_recurring}
@@ -127,14 +115,23 @@
           {checklistDone}/{checklistTotal}
         </span>
       {/if}
-      {#if task.assignee}
-        <span class="text-xs text-foreground-secondary flex items-center gap-1">
-          <svg class="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <circle cx="8" cy="5" r="3" /><path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" />
-          </svg>
-          {task.assignee.display_name ?? task.assignee.email}
-        </span>
-      {/if}
+      <AssigneePicker
+        taskId={task.id}
+        assignee={task.assignee}
+        {members}
+        disabled={!canEdit}
+      />
     </div>
+  </div>
+
+  <!-- More menu (opens TaskSheet) -->
+  <button
+    type="button"
+    class="p-1 rounded text-foreground-muted hover:text-foreground hover:bg-surface-subtle transition-colors
+      md:opacity-0 md:group-hover:opacity-100"
+    onclick={() => onselect(task)}
+    aria-label="Task details"
+  >
+    <Ellipsis class="w-4 h-4" />
   </button>
 </div>

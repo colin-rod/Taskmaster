@@ -1,3 +1,5 @@
+import { fail } from '@sveltejs/kit';
+
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
 
@@ -24,6 +26,25 @@ export const load: PageServerLoad = async ({ locals: { supabase, profileId } }) 
 };
 
 export const actions: Actions = {
+  createTask: async ({ request, locals: { supabase, profileId } }) => {
+    const formData = await request.formData();
+    const title = formData.get('title')?.toString()?.trim();
+    const due_at = formData.get('due_at')?.toString() || null;
+
+    if (!title) return fail(400, { error: 'Task title is required' });
+
+    const { error } = await supabase.from('tasks').insert({
+      title,
+      list_id: null,
+      owner_id: profileId!,
+      due_at,
+      status: 'todo',
+      priority: 4,
+    });
+
+    if (error) return fail(500, { error: error.message });
+    return { success: true };
+  },
   toggleTask: async ({ request, locals: { supabase } }) => {
     return taskActions.toggleTask(await request.formData(), supabase);
   },

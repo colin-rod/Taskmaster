@@ -1,3 +1,5 @@
+import { fail } from '@sveltejs/kit';
+
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
 
@@ -7,9 +9,12 @@ export const load: PageServerLoad = async ({ locals: { supabase, profileId } }) 
   startOfToday.setHours(0, 0, 0, 0);
   const endOfToday = new Date(now);
   endOfToday.setHours(23, 59, 59, 999);
+  const sevenDaysOut = new Date(now);
+  sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
+  sevenDaysOut.setHours(23, 59, 59, 999);
 
-  // Fetch overdue and due-today in parallel
-  const [{ data: overdue }, { data: dueToday }] = await Promise.all([
+  // Fetch overdue, due-today, and upcoming in parallel
+  const [{ data: overdue }, { data: dueToday }, { data: upcoming }] = await Promise.all([
     supabase
       .from('tasks')
       .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
@@ -23,19 +28,46 @@ export const load: PageServerLoad = async ({ locals: { supabase, profileId } }) 
       .lte('due_at', endOfToday.toISOString())
       .not('status', 'in', '("done","canceled")')
       .order('due_at', { ascending: true }),
+    supabase
+      .from('tasks')
+      .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
+      .gt('due_at', endOfToday.toISOString())
+      .lte('due_at', sevenDaysOut.toISOString())
+      .not('status', 'in', '("done","canceled")')
+      .order('due_at', { ascending: true }),
   ]);
 
-  const allTasks = [...(overdue ?? []), ...(dueToday ?? [])];
+  const allTasks = [...(overdue ?? []), ...(dueToday ?? []), ...(upcoming ?? [])];
   const roleMap = await taskActions.buildRoleMap(allTasks, profileId!, supabase);
 
   return {
     overdue: overdue ?? [],
     dueToday: dueToday ?? [],
+    upcoming: upcoming ?? [],
     roleMap,
   };
 };
 
 export const actions: Actions = {
+  createTask: async ({ request, locals: { supabase, profileId } }) => {
+    const formData = await request.formData();
+    const title = formData.get('title')?.toString()?.trim();
+    const due_at = formData.get('due_at')?.toString() || null;
+
+    if (!title) return fail(400, { error: 'Task title is required' });
+
+    const { error } = await supabase.from('tasks').insert({
+      title,
+      list_id: null,
+      owner_id: profileId!,
+      due_at,
+      status: 'todo',
+      priority: 4,
+    });
+
+    if (error) return fail(500, { error: error.message });
+    return { success: true };
+  },
   toggleTask: async ({ request, locals: { supabase } }) => {
     return taskActions.toggleTask(await request.formData(), supabase);
   },
