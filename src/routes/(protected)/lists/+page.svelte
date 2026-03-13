@@ -204,13 +204,13 @@
             </div>
           </form>
         {:else}
+          {@const IconComponent = getListIcon(list.icon)}
           <!-- Display mode -->
           <a
             href="/lists/{list.id}"
             class="flex items-center justify-between rounded-md border bg-surface p-4 hover:bg-surface-subtle transition-colors group"
           >
             <div class="flex items-center gap-3">
-              {@const IconComponent = getListIcon(list.icon)}
               <div
                 class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
                 style="background-color: {list.color || 'hsl(var(--foreground-muted))'}"

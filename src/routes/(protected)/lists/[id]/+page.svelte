@@ -27,6 +27,7 @@
   let activeTasks = $derived(data.tasks.filter((t) => t.status !== 'done' && t.status !== 'canceled'));
   let completedTasks = $derived(data.tasks.filter((t) => t.status === 'done' || t.status === 'canceled'));
   let showCompleted = $state(false);
+  const ListIcon = $derived(getListIcon(data.list.icon));
 </script>
 
 <div>
@@ -38,7 +39,6 @@
       </svg>
     </a>
     <div class="flex items-center gap-2">
-      {@const ListIcon = getListIcon(data.list.icon)}
       <div
         class="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
         style="background-color: {data.list.color || 'hsl(var(--foreground-muted))'}"

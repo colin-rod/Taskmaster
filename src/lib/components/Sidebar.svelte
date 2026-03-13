@@ -132,6 +132,7 @@
     {/if}
     {#each lists as list (list.id)}
       {@const active = $page.url.pathname === `/lists/${list.id}`}
+      {@const ListIcon = getListIcon(list.icon)}
       <a
         href="/lists/{list.id}"
         class="flex items-center gap-3 px-2 py-1.5 rounded-md text-sm transition-colors
@@ -139,7 +140,6 @@
           {$sidebarCollapsed ? 'justify-center' : ''}"
         title={$sidebarCollapsed ? list.name : undefined}
       >
-        {@const ListIcon = getListIcon(list.icon)}
         <div
           class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
           style="background-color: {list.color || 'hsl(var(--foreground-muted))'}"

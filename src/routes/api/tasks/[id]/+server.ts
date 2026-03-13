@@ -1,6 +1,24 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
 
+export const GET: RequestHandler = async ({ params, locals }) => {
+  if (!locals.profileId) {
+    return json({ error: 'Unauthorized' }, { status: 401 });
+  }
+
+  const { data: task, error: err } = await locals.supabase
+    .from('tasks')
+    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name, avatar_color), list:task_lists(id, name, color, owner_id, sort_order, created_at, updated_at)')
+    .eq('id', params.id)
+    .single();
+
+  if (err || !task) {
+    return json({ error: 'Task not found' }, { status: 404 });
+  }
+
+  return json({ task });
+};
+
 const ALLOWED_FIELDS = new Set(['title', 'priority', 'due_at', 'assigned_to_user_id', 'status']);
 
 export const PATCH: RequestHandler = async ({ params, request, locals }) => {
