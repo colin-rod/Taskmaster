@@ -13,7 +13,7 @@
 <form
   method="POST"
   {action}
-  class="flex items-center gap-2"
+  class="flex items-center gap-2 rounded-xl border border-border bg-surface p-3 shadow-sm"
   use:enhance={() => {
     creating = true;
     return async ({ result, update }) => {

@@ -9,10 +9,8 @@
     PanelLeftClose,
     PanelLeftOpen,
     Plus,
-    Search,
   } from '@lucide/svelte';
   import { getListIcon } from '$lib/utils/icons.js';
-  import SearchBar from '$lib/components/SearchBar.svelte';
 
   let {
     filterCounts,
@@ -33,68 +31,32 @@
     { label: 'Assigned', href: '/assigned', icon: UserCheck, countKey: 'assigned' as const },
   ];
 
-  let searchOpen = $state(false);
-
   function isActive(href: string, pathname: string): boolean {
     if (href === '/') return pathname === '/';
     return pathname.startsWith(href);
   }
 
-  function openSearch() {
-    if ($sidebarCollapsed) {
-      sidebarCollapsed.set(false);
-    }
-    searchOpen = true;
-  }
 </script>
 
 <aside
   class="flex flex-col h-full border-r bg-surface transition-[width] duration-200 overflow-hidden
     {$sidebarCollapsed ? 'w-14' : 'w-60'}"
 >
-  <!-- Collapse toggle + Search -->
-  <div class="flex items-center {$sidebarCollapsed ? 'flex-col gap-1 justify-start pt-3 pb-1' : 'justify-between px-2 pt-3 pb-1'}">
-    {#if $sidebarCollapsed}
-      <button
-        type="button"
-        class="p-1.5 rounded-md text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
-        onclick={() => sidebarCollapsed.update((v) => !v)}
-        aria-label="Expand sidebar"
-      >
+  <!-- Collapse toggle -->
+  <div class="flex items-center justify-end px-2 pt-3 pb-1">
+    <button
+      type="button"
+      class="p-1.5 rounded-md text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
+      onclick={() => sidebarCollapsed.update((v) => !v)}
+      aria-label={$sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+    >
+      {#if $sidebarCollapsed}
         <PanelLeftOpen class="w-4 h-4" />
-      </button>
-      <button
-        type="button"
-        class="p-1.5 rounded-md text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
-        onclick={openSearch}
-        aria-label="Search tasks"
-      >
-        <Search class="w-4 h-4" />
-      </button>
-    {:else}
-      <button
-        type="button"
-        class="p-1.5 rounded-md text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
-        onclick={openSearch}
-        aria-label="Search tasks"
-      >
-        <Search class="w-4 h-4" />
-      </button>
-      <button
-        type="button"
-        class="p-1.5 rounded-md text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
-        onclick={() => sidebarCollapsed.update((v) => !v)}
-        aria-label="Collapse sidebar"
-      >
+      {:else}
         <PanelLeftClose class="w-4 h-4" />
-      </button>
-    {/if}
+      {/if}
+    </button>
   </div>
-
-  <!-- Search bar -->
-  {#if searchOpen && !$sidebarCollapsed}
-    <SearchBar {onSelectTask} onClose={() => { searchOpen = false; }} />
-  {/if}
 
   <!-- Smart Filters -->
   <nav class="px-2 space-y-0.5">

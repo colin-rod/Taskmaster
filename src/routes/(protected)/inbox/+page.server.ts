@@ -8,7 +8,7 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
     .from('tasks')
     .select('*, checklist_items(*)')
     .is('list_id', null)
-    .not('status', 'in', '("done","canceled")')
+    .not('status', 'in', '(done,canceled)')
     .order('created_at', { ascending: false });
 
   return { tasks: tasks ?? [], roleMap: {} as Record<string, string> };

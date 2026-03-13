@@ -19,21 +19,21 @@ export const load: PageServerLoad = async ({ locals: { supabase, profileId } }) 
       .from('tasks')
       .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
       .lt('due_at', startOfToday.toISOString())
-      .not('status', 'in', '("done","canceled")')
+      .not('status', 'in', '(done,canceled)')
       .order('due_at', { ascending: true }),
     supabase
       .from('tasks')
       .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
       .gte('due_at', startOfToday.toISOString())
       .lte('due_at', endOfToday.toISOString())
-      .not('status', 'in', '("done","canceled")')
+      .not('status', 'in', '(done,canceled)')
       .order('due_at', { ascending: true }),
     supabase
       .from('tasks')
       .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
       .gt('due_at', endOfToday.toISOString())
       .lte('due_at', sevenDaysOut.toISOString())
-      .not('status', 'in', '("done","canceled")')
+      .not('status', 'in', '(done,canceled)')
       .order('due_at', { ascending: true }),
   ]);
 

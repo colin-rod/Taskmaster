@@ -8,7 +8,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, profileId } }) 
     .from('tasks')
     .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
     .eq('assigned_to_user_id', profileId!)
-    .not('status', 'in', '("done","canceled")')
+    .not('status', 'in', '(done,canceled)')
     .order('due_at', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
 

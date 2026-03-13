@@ -44,14 +44,14 @@ export const load: LayoutServerLoad = async ({ locals }) => {
       .select('*', { count: 'exact', head: true })
       .gte('due_at', startOfToday.toISOString())
       .lte('due_at', endOfToday.toISOString())
-      .not('status', 'in', '("done","canceled")'),
+      .not('status', 'in', '(done,canceled)'),
 
     // Overdue count
     locals.supabase
       .from('tasks')
       .select('*', { count: 'exact', head: true })
       .lt('due_at', startOfToday.toISOString())
-      .not('status', 'in', '("done","canceled")'),
+      .not('status', 'in', '(done,canceled)'),
 
     // Upcoming count (next 7 days, excluding today)
     locals.supabase
@@ -59,27 +59,27 @@ export const load: LayoutServerLoad = async ({ locals }) => {
       .select('*', { count: 'exact', head: true })
       .gt('due_at', endOfToday.toISOString())
       .lte('due_at', endOfWeek.toISOString())
-      .not('status', 'in', '("done","canceled")'),
+      .not('status', 'in', '(done,canceled)'),
 
     // Inbox count (no list)
     locals.supabase
       .from('tasks')
       .select('*', { count: 'exact', head: true })
       .is('list_id', null)
-      .not('status', 'in', '("done","canceled")'),
+      .not('status', 'in', '(done,canceled)'),
 
     // Assigned to me count
     locals.supabase
       .from('tasks')
       .select('*', { count: 'exact', head: true })
       .eq('assigned_to_user_id', locals.profileId)
-      .not('status', 'in', '("done","canceled")'),
+      .not('status', 'in', '(done,canceled)'),
 
     // Task counts per list (active tasks only)
     locals.supabase
       .from('tasks')
       .select('list_id')
-      .not('status', 'in', '("done","canceled")')
+      .not('status', 'in', '(done,canceled)')
       .not('list_id', 'is', null),
   ]);
 

@@ -12,7 +12,7 @@ export const GET: RequestHandler = async ({ url, locals: { supabase } }) => {
     .from('tasks')
     .select('id, title, status, due_at, list:task_lists(name, color)')
     .ilike('title', `%${q}%`)
-    .not('status', 'in', '("done","canceled")')
+    .not('status', 'in', '(done,canceled)')
     .limit(10);
 
   return json({ tasks: tasks ?? [] });

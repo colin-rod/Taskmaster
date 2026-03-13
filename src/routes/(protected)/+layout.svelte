@@ -1,7 +1,8 @@
 <script lang="ts">
   import { Toaster } from 'svelte-sonner';
-  import { Settings } from '@lucide/svelte';
+  import { Settings, Search } from '@lucide/svelte';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
+  import SearchBar from '$lib/components/SearchBar.svelte';
   import Sidebar from '$lib/components/Sidebar.svelte';
   import BottomTabBar from '$lib/components/BottomTabBar.svelte';
   import CreateListDialog from '$lib/components/CreateListDialog.svelte';
@@ -17,6 +18,7 @@
   });
 
   let showCreateListDialog = $state(false);
+  let searchOpen = $state(false);
 
   let selectedTask = $state<Task | null>(null);
   let sheetOpen = $state(false);
@@ -36,6 +38,21 @@
     <div class="flex items-center justify-between">
       <h1 class="font-accent text-lg font-semibold">Taskmaster</h1>
       <div class="flex items-center gap-4">
+        <div class="relative">
+          <button
+            type="button"
+            class="p-1.5 rounded-md text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
+            onclick={() => { searchOpen = !searchOpen; }}
+            aria-label="Search tasks"
+          >
+            <Search class="w-4 h-4" />
+          </button>
+          {#if searchOpen}
+            <div class="absolute right-0 top-full mt-2 w-72 z-50">
+              <SearchBar {onSelectTask} onClose={() => { searchOpen = false; }} />
+            </div>
+          {/if}
+        </div>
         <NotificationBell bind:unreadCount />
         <a href="/settings" class="text-foreground-secondary hover:text-foreground" aria-label="Settings">
           <Settings class="w-4 h-4" />
