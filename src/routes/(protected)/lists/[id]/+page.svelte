@@ -2,10 +2,10 @@
   import type { PageData, ActionData } from './$types';
   import type { Task, ListRole, TaskListMember } from '$lib/types/index.js';
   import TaskRow from '$lib/components/TaskRow.svelte';
-  import QuickAdd from '$lib/components/QuickAdd.svelte';
   import TaskSheet from '$lib/components/TaskSheet.svelte';
   import MemberManager from '$lib/components/MemberManager.svelte';
   import { Users } from '@lucide/svelte';
+  import { getListIcon } from '$lib/utils/icons.js';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -38,9 +38,13 @@
       </svg>
     </a>
     <div class="flex items-center gap-2">
-      {#if data.list.color}
-        <div class="w-3 h-3 rounded-full shrink-0" style="background-color: {data.list.color}"></div>
-      {/if}
+      {@const ListIcon = getListIcon(data.list.icon)}
+      <div
+        class="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+        style="background-color: {data.list.color || 'hsl(var(--foreground-muted))'}"
+      >
+        <ListIcon class="w-3.5 h-3.5 text-white" />
+      </div>
       <h1 class="text-page-title font-accent">{data.list.name}</h1>
     </div>
     {#if isOwner}
@@ -58,13 +62,6 @@
   {#if form?.error}
     <div class="mb-4 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
       {form.error}
-    </div>
-  {/if}
-
-  <!-- Quick add -->
-  {#if userRole !== 'viewer'}
-    <div class="mb-4">
-      <QuickAdd />
     </div>
   {/if}
 

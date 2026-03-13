@@ -39,6 +39,15 @@
   let editIsRecurring = $state(false);
   let editRecurrenceRule = $state<RecurrenceRule | null>(null);
 
+  let isMd = $state(false);
+  $effect(() => {
+    const mq = window.matchMedia('(min-width: 768px)');
+    isMd = mq.matches;
+    const handler = (e: MediaQueryListEvent) => { isMd = e.matches; };
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  });
+
   $effect(() => {
     if (task) {
       editTitle = task.title;
@@ -70,7 +79,10 @@
 </script>
 
 <Sheet bind:open>
-  <SheetContent side="bottom" class="max-h-[85vh] overflow-y-auto rounded-t-xl">
+  <SheetContent
+    side={isMd ? 'right' : 'bottom'}
+    class={isMd ? 'h-full overflow-y-auto w-[420px]' : 'max-h-[85vh] overflow-y-auto rounded-t-xl'}
+  >
     <SheetHeader>
       <SheetTitle>{isViewer ? 'Task Details' : 'Edit Task'}</SheetTitle>
       <SheetDescription class="sr-only">{isViewer ? 'View task details' : 'Edit task details'}</SheetDescription>

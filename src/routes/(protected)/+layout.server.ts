@@ -35,7 +35,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
     // User's lists
     locals.supabase
       .from('task_lists')
-      .select('id, name, color, owner_id, sort_order')
+      .select('id, name, color, icon, owner_id, sort_order')
       .order('sort_order', { ascending: true }),
 
     // Today count (due today, not done/canceled)

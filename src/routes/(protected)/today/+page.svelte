@@ -3,7 +3,6 @@
   import type { Task, ListRole } from '$lib/types/index.js';
   import TaskRow from '$lib/components/TaskRow.svelte';
   import TaskSheet from '$lib/components/TaskSheet.svelte';
-  import QuickAdd from '$lib/components/QuickAdd.svelte';
 
   let { data }: { data: PageData } = $props();
 
@@ -81,11 +80,6 @@
       </div>
     </div>
   {/if}
-
-  <!-- Quick add -->
-  <div class="mb-6">
-    <QuickAdd />
-  </div>
 
   <!-- Upcoming section (combined Home view) -->
   {#if upcomingGroups.length > 0}

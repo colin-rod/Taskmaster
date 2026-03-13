@@ -5,6 +5,9 @@
   import Sidebar from '$lib/components/Sidebar.svelte';
   import BottomTabBar from '$lib/components/BottomTabBar.svelte';
   import CreateListDialog from '$lib/components/CreateListDialog.svelte';
+  import QuickAdd from '$lib/components/QuickAdd.svelte';
+  import TaskSheet from '$lib/components/TaskSheet.svelte';
+  import type { Task } from '$lib/types/index.js';
 
   const { children, data } = $props();
 
@@ -14,6 +17,17 @@
   });
 
   let showCreateListDialog = $state(false);
+
+  let selectedTask = $state<Task | null>(null);
+  let sheetOpen = $state(false);
+
+  async function onSelectTask(taskId: string) {
+    const res = await fetch(`/api/tasks/${taskId}`);
+    if (!res.ok) return;
+    const { task } = await res.json();
+    selectedTask = task;
+    sheetOpen = true;
+  }
 </script>
 
 <div class="min-h-screen flex flex-col">
@@ -38,12 +52,16 @@
         filterCounts={data.filterCounts}
         lists={data.lists}
         onCreateList={() => { showCreateListDialog = true; }}
+        {onSelectTask}
       />
     </div>
 
     <!-- Main content -->
     <main class="flex-1 overflow-y-auto px-4 py-6 pb-20 md:pb-6 md:px-8">
       <div class="max-w-4xl mx-auto">
+        <div class="mb-6">
+          <QuickAdd action="/api/tasks?/createTask" />
+        </div>
         {@render children()}
       </div>
     </main>
@@ -52,4 +70,5 @@
 
 <BottomTabBar />
 <CreateListDialog bind:open={showCreateListDialog} />
+<TaskSheet bind:task={selectedTask} bind:open={sheetOpen} />
 <Toaster position="bottom-center" />

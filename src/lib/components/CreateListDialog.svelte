@@ -2,6 +2,7 @@
   import { invalidateAll } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import { LIST_COLORS } from '$lib/types/index.js';
+  import { LIST_ICONS, getListIcon } from '$lib/utils/icons.js';
   import * as Dialog from '$lib/components/ui/dialog/index.js';
 
   let {
@@ -12,6 +13,7 @@
 
   let name = $state('');
   let color = $state<string | null>(null);
+  let icon = $state('list');
   let creating = $state(false);
 
   async function handleSubmit(e: SubmitEvent) {
@@ -23,6 +25,7 @@
       const formData = new FormData();
       formData.set('name', name.trim());
       formData.set('color', color || '');
+      formData.set('icon', icon);
 
       const res = await fetch('/lists?/createList', {
         method: 'POST',
@@ -33,6 +36,7 @@
         toast.success('List created');
         name = '';
         color = null;
+        icon = 'list';
         open = false;
         await invalidateAll();
       } else {
@@ -63,6 +67,25 @@
           placeholder="e.g. Household, Groceries..."
           class="select-input mt-1"
         />
+      </div>
+      <div>
+        <label class="text-sm font-medium">Icon</label>
+        <div class="grid grid-cols-10 gap-1 mt-1">
+          {#each LIST_ICONS as item}
+            {@const IconComponent = getListIcon(item.name)}
+            <button
+              type="button"
+              title={item.label}
+              class="w-7 h-7 rounded-md flex items-center justify-center transition-colors
+                {icon === item.name
+                  ? 'bg-primary text-primary-foreground'
+                  : 'text-foreground-secondary hover:bg-surface-subtle hover:text-foreground'}"
+              onclick={() => { icon = item.name; }}
+            >
+              <IconComponent class="w-4 h-4" />
+            </button>
+          {/each}
+        </div>
       </div>
       <div>
         <label class="text-sm font-medium">Color</label>

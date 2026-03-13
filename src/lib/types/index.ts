@@ -19,6 +19,7 @@ export interface TaskList {
   id: string;
   name: string;
   color: string | null;
+  icon: string;
   owner_id: string;
   sort_order: number;
   created_at: string;
@@ -90,6 +91,14 @@ export interface Notification {
   delivered_at: string | null;
   is_read: boolean;
   created_at: string;
+}
+
+export interface SearchResult {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  due_at: string | null;
+  list: { name: string; color: string | null } | null;
 }
 
 // List colors for the color picker

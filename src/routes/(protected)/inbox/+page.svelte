@@ -2,7 +2,6 @@
   import type { PageData } from './$types';
   import type { Task } from '$lib/types/index.js';
   import TaskRow from '$lib/components/TaskRow.svelte';
-  import QuickAdd from '$lib/components/QuickAdd.svelte';
   import TaskSheet from '$lib/components/TaskSheet.svelte';
 
   let { data }: { data: PageData } = $props();
@@ -18,10 +17,6 @@
 
 <div>
   <h1 class="text-page-title font-accent mb-6">Inbox</h1>
-
-  <div class="mb-4">
-    <QuickAdd />
-  </div>
 
   {#if data.tasks.length === 0}
     <div class="text-center py-8">

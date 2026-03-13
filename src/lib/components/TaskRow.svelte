@@ -99,7 +99,7 @@
         <DatePickerPopover taskId={task.id} value={task.due_at} />
       {:else if task.due_at}
         <span class="text-xs text-foreground-secondary">
-          {new Date(task.due_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+          {new Date(task.due_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}{task.due_at.endsWith('T12:00:00.000Z') ? '' : ', ' + new Date(task.due_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
         </span>
       {/if}
       {#if task.is_recurring}

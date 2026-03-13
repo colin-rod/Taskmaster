@@ -16,6 +16,7 @@ export const actions: Actions = {
     const formData = await request.formData();
     const name = formData.get('name')?.toString()?.trim();
     const color = formData.get('color')?.toString() || null;
+    const icon = formData.get('icon')?.toString() || 'list';
 
     if (!name) {
       return fail(400, { error: 'List name is required' });
@@ -23,7 +24,7 @@ export const actions: Actions = {
 
     const { data: newList, error } = await supabase
       .from('task_lists')
-      .insert({ name, color, owner_id: profileId! })
+      .insert({ name, color, icon, owner_id: profileId! })
       .select('id')
       .single();
 
@@ -44,6 +45,7 @@ export const actions: Actions = {
     const id = formData.get('id')?.toString();
     const name = formData.get('name')?.toString()?.trim();
     const color = formData.get('color')?.toString() || null;
+    const icon = formData.get('icon')?.toString() || 'list';
 
     if (!id || !name) {
       return fail(400, { error: 'List ID and name are required' });
@@ -51,7 +53,7 @@ export const actions: Actions = {
 
     const { error } = await supabase
       .from('task_lists')
-      .update({ name, color })
+      .update({ name, color, icon })
       .eq('id', id);
 
     if (error) {
