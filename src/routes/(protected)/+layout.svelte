@@ -69,7 +69,6 @@
         filterCounts={data.filterCounts}
         lists={data.lists}
         onCreateList={() => { showCreateListDialog = true; }}
-        {onSelectTask}
       />
     </div>
 

@@ -16,12 +16,10 @@
     filterCounts,
     lists,
     onCreateList,
-    onSelectTask,
   }: {
     filterCounts: { today: number; upcoming: number; inbox: number; assigned: number };
     lists: { id: string; name: string; color: string | null; icon: string; taskCount: number }[];
     onCreateList: () => void;
-    onSelectTask: (taskId: string) => void;
   } = $props();
 
   const smartFilters = [
