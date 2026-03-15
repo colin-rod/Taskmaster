@@ -182,6 +182,24 @@ describe('computeNextDue', () => {
 			const result = computeNextDue(d('2026-03-10'), rule);
 			expect(result).not.toBeNull();
 		});
+
+		it('after_n_occurrences: returns next date when occurrences_completed < count', () => {
+			const rule: RecurrenceRule = {
+				frequency: 'daily',
+				interval: 1,
+				ends: { type: 'after_n_occurrences', count: 5, occurrences_completed: 2 },
+			};
+			expect(computeNextDue(d('2026-03-10'), rule)).not.toBeNull();
+		});
+
+		it('after_n_occurrences: returns null when occurrences_completed === count', () => {
+			const rule: RecurrenceRule = {
+				frequency: 'daily',
+				interval: 1,
+				ends: { type: 'after_n_occurrences', count: 5, occurrences_completed: 5 },
+			};
+			expect(computeNextDue(d('2026-03-10'), rule)).toBeNull();
+		});
 	});
 
 	describe('DST boundaries (simulated)', () => {
@@ -253,6 +271,33 @@ describe('isRecurrenceExpired', () => {
 		};
 		expect(isRecurrenceExpired(rule, new Date('2026-03-11T00:00:00'))).toBe(false);
 	});
+
+	it('after_n_occurrences: returns false when occurrences_completed < count', () => {
+		const rule: RecurrenceRule = {
+			frequency: 'daily',
+			interval: 1,
+			ends: { type: 'after_n_occurrences', count: 5, occurrences_completed: 2 },
+		};
+		expect(isRecurrenceExpired(rule, new Date())).toBe(false);
+	});
+
+	it('after_n_occurrences: returns true when occurrences_completed === count', () => {
+		const rule: RecurrenceRule = {
+			frequency: 'daily',
+			interval: 1,
+			ends: { type: 'after_n_occurrences', count: 5, occurrences_completed: 5 },
+		};
+		expect(isRecurrenceExpired(rule, new Date())).toBe(true);
+	});
+
+	it('after_n_occurrences: returns true when occurrences_completed > count', () => {
+		const rule: RecurrenceRule = {
+			frequency: 'daily',
+			interval: 1,
+			ends: { type: 'after_n_occurrences', count: 5, occurrences_completed: 7 },
+		};
+		expect(isRecurrenceExpired(rule, new Date())).toBe(true);
+	});
 });
 
 describe('describeRecurrence', () => {
@@ -308,5 +353,47 @@ describe('describeRecurrence', () => {
 		expect(
 			describeRecurrence({ frequency: 'daily', interval: 1, ends: { type: 'never' } })
 		).toBe('Daily');
+	});
+
+	it('after_n_occurrences: shows remaining times (plural)', () => {
+		expect(
+			describeRecurrence({
+				frequency: 'daily',
+				interval: 1,
+				ends: { type: 'after_n_occurrences', count: 5, occurrences_completed: 0 },
+			})
+		).toBe('Daily for 5 more times');
+	});
+
+	it('after_n_occurrences: shows remaining times with some completed', () => {
+		expect(
+			describeRecurrence({
+				frequency: 'daily',
+				interval: 1,
+				ends: { type: 'after_n_occurrences', count: 5, occurrences_completed: 3 },
+			})
+		).toBe('Daily for 2 more times');
+	});
+
+	it('after_n_occurrences: uses singular "time" when 1 remaining', () => {
+		expect(
+			describeRecurrence({
+				frequency: 'daily',
+				interval: 1,
+				ends: { type: 'after_n_occurrences', count: 5, occurrences_completed: 4 },
+			})
+		).toBe('Daily for 1 more time');
+	});
+
+	it('after_n_occurrences: combined with days and time', () => {
+		expect(
+			describeRecurrence({
+				frequency: 'weekly',
+				interval: 1,
+				byweekday: [0, 4],
+				time_of_day: '09:00',
+				ends: { type: 'after_n_occurrences', count: 10, occurrences_completed: 7 },
+			})
+		).toBe('Weekly on Mon, Fri at 09:00 for 3 more times');
 	});
 });

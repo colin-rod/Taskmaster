@@ -9,6 +9,7 @@
   import PriorityPicker from '$lib/components/PriorityPicker.svelte';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
   import AssigneePicker from '$lib/components/AssigneePicker.svelte';
+  import { PRIORITY_OPTIONS } from '$lib/utils/design-tokens.js';
   import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 
@@ -143,8 +144,8 @@
             </span>
             {#if canEdit}
               <PriorityPicker taskId={task.id} value={task.priority} />
-            {:else if task.priority < 4}
-              <span class="text-xs font-medium px-1.5 py-0.5 rounded bg-surface-subtle text-foreground-secondary flex-shrink-0">
+            {:else}
+              <span class="text-xs font-medium px-1.5 py-0.5 rounded bg-surface-subtle shrink-0 {PRIORITY_OPTIONS.find(p => p.level === task.priority)?.color ?? 'text-foreground-muted'}">
                 P{task.priority}
               </span>
             {/if}

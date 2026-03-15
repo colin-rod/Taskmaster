@@ -16,8 +16,10 @@
 	let interval = $state(1);
 	let byweekday = $state<number[]>([]);
 	let timeOfDay = $state('');
-	let endsType = $state<'never' | 'on_date'>('never');
+	let scheduleType = $state<'due_date' | 'completion_date'>('due_date');
+	let endsType = $state<'never' | 'on_date' | 'after_n_occurrences'>('never');
 	let endsDate = $state('');
+	let endsCount = $state(5);
 
 	// Sync from prop → local state when recurrenceRule changes externally
 	let lastRuleJson = $state('');
@@ -30,13 +32,16 @@
 				interval = recurrenceRule.interval;
 				byweekday = recurrenceRule.byweekday ? [...recurrenceRule.byweekday] : [];
 				timeOfDay = recurrenceRule.time_of_day ?? '';
+				scheduleType = recurrenceRule.schedule_type ?? 'due_date';
 				endsType = recurrenceRule.ends?.type ?? 'never';
-				endsDate = recurrenceRule.ends?.date ?? '';
+				endsDate = recurrenceRule.ends?.type === 'on_date' ? recurrenceRule.ends.date : '';
+				endsCount = recurrenceRule.ends?.type === 'after_n_occurrences' ? recurrenceRule.ends.count : 5;
 			} else {
 				frequency = 'daily';
 				interval = 1;
 				byweekday = [];
 				timeOfDay = '';
+				scheduleType = 'due_date';
 				endsType = 'never';
 				endsDate = '';
 			}
@@ -63,8 +68,22 @@
 			rule.time_of_day = timeOfDay;
 		}
 
+		if (scheduleType === 'completion_date') {
+			rule.schedule_type = 'completion_date';
+		}
+
 		if (endsType === 'on_date' && endsDate) {
 			rule.ends = { type: 'on_date', date: endsDate };
+		} else if (endsType === 'after_n_occurrences') {
+			const existingCompleted =
+				recurrenceRule?.ends?.type === 'after_n_occurrences'
+					? recurrenceRule.ends.occurrences_completed
+					: 0;
+			rule.ends = {
+				type: 'after_n_occurrences',
+				count: Math.max(1, endsCount),
+				occurrences_completed: existingCompleted,
+			};
 		} else {
 			rule.ends = { type: 'never' };
 		}
@@ -83,12 +102,6 @@
 			byweekday = [...byweekday, day];
 		}
 	}
-
-	let unitLabel = $derived(
-		frequency === 'daily' ? (interval === 1 ? 'day' : 'days') :
-		frequency === 'weekly' ? (interval === 1 ? 'week' : 'weeks') :
-		interval === 1 ? 'month' : 'months'
-	);
 
 	let summary = $derived(recurrenceRule ? describeRecurrence(recurrenceRule) : '');
 </script>
@@ -119,10 +132,37 @@
 				class="select-input w-16 text-center"
 			/>
 			<select bind:value={frequency} class="select-input flex-1">
-				<option value="daily">{unitLabel}</option>
-				<option value="weekly">{unitLabel}</option>
-				<option value="monthly">{unitLabel}</option>
+				<option value="daily">{interval === 1 ? 'day' : 'days'}</option>
+				<option value="weekly">{interval === 1 ? 'week' : 'weeks'}</option>
+				<option value="monthly">{interval === 1 ? 'month' : 'months'}</option>
 			</select>
+		</div>
+
+		<!-- Schedule type -->
+		<div>
+			<span class="text-sm text-foreground-secondary mb-1.5 block">Schedule based on</span>
+			<div class="flex gap-1">
+				<button
+					type="button"
+					class="flex-1 h-8 rounded-md text-xs font-medium transition-colors
+						{scheduleType === 'due_date'
+							? 'bg-primary text-primary-foreground'
+							: 'bg-surface-subtle text-foreground-secondary hover:bg-surface-subtle/80'}"
+					onclick={() => (scheduleType = 'due_date')}
+				>
+					Due date
+				</button>
+				<button
+					type="button"
+					class="flex-1 h-8 rounded-md text-xs font-medium transition-colors
+						{scheduleType === 'completion_date'
+							? 'bg-primary text-primary-foreground'
+							: 'bg-surface-subtle text-foreground-secondary hover:bg-surface-subtle/80'}"
+					onclick={() => (scheduleType = 'completion_date')}
+				>
+					Completion date
+				</button>
+			</div>
 		</div>
 
 		<!-- Weekly: day picker -->
@@ -163,6 +203,7 @@
 			<select id="recurrence-ends" bind:value={endsType} class="select-input flex-1">
 				<option value="never">Never</option>
 				<option value="on_date">On date</option>
+				<option value="after_n_occurrences">After N times</option>
 			</select>
 		</div>
 
@@ -173,6 +214,19 @@
 					bind:value={endsDate}
 					class="select-input"
 				/>
+			</div>
+		{/if}
+
+		{#if endsType === 'after_n_occurrences'}
+			<div class="flex items-center gap-2">
+				<input
+					type="number"
+					min="1"
+					max="999"
+					bind:value={endsCount}
+					class="select-input w-20 text-center"
+				/>
+				<span class="text-sm text-foreground-secondary">times</span>
 			</div>
 		{/if}
 	{/if}

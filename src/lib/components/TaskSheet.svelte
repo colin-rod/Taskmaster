@@ -10,6 +10,7 @@
   } from '$lib/components/ui/sheet/index.js';
   import type { Task, RecurrenceRule, ListRole, TaskListMember } from '$lib/types/index.js';
   import { getPriorityLabel, formatStatus } from '$lib/utils/design-tokens.js';
+  import { hasTime, buildDueAt } from '$lib/utils/dates.js';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
   import { Plus } from '@lucide/svelte';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -32,6 +33,7 @@
   let editNotes = $state('');
   let editPriority = $state(4);
   let editDueAt = $state('');
+  let editDueTime = $state('');
   let editStatus = $state('todo');
   let saving = $state(false);
   let deleting = $state(false);
@@ -58,7 +60,16 @@
       editTitle = task.title;
       editNotes = task.notes || '';
       editPriority = task.priority;
-      editDueAt = task.due_at ? task.due_at.split('T')[0] : '';
+      if (task.due_at) {
+        const d = new Date(task.due_at);
+        editDueAt = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        editDueTime = hasTime(task.due_at)
+          ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
+          : '';
+      } else {
+        editDueAt = '';
+        editDueTime = '';
+      }
       editStatus = task.status;
       editReminderAt = task.reminder_at
         ? new Date(task.reminder_at).toISOString().slice(0, 16)
@@ -85,7 +96,9 @@
 
   function setReminderPreset(minutesBefore: number) {
     if (!editDueAt) return;
-    const dueDate = new Date(editDueAt + 'T12:00:00');
+    const dueIso = buildDueAt(editDueAt, editDueTime);
+    if (!dueIso) return;
+    const dueDate = new Date(dueIso);
     dueDate.setMinutes(dueDate.getMinutes() - minutesBefore);
     editReminderAt = dueDate.toISOString().slice(0, 16);
   }
@@ -238,8 +251,21 @@
             name="due_at"
             type="date"
             bind:value={editDueAt}
+            onchange={() => { if (!editDueAt) editDueTime = ''; }}
             class="select-input mt-1"
           />
+          {#if editDueAt}
+            <label for="edit-due-time" class="text-sm font-medium mt-3 block">
+              Time <span class="text-foreground-muted font-normal">(optional)</span>
+            </label>
+            <input
+              id="edit-due-time"
+              name="due_time"
+              type="time"
+              bind:value={editDueTime}
+              class="select-input mt-1"
+            />
+          {/if}
         </div>
 
         <!-- Reminder -->

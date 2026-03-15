@@ -4,13 +4,15 @@
   import { patchTask } from '$lib/utils/api.js';
 
   let {
-    taskId,
-    value,
+    taskId = undefined,
+    value = $bindable<string | null>(null),
     disabled = false,
+    mode = 'patch',
   }: {
-    taskId: string;
+    taskId?: string;
     value: string | null;
     disabled?: boolean;
+    mode?: 'patch' | 'controlled';
   } = $props();
 
   let open = $state(false);
@@ -42,7 +44,11 @@
 
   async function setDate(due_at: string | null) {
     open = false;
-    await patchTask(taskId, { due_at }, "Couldn't save date. Try again.");
+    if (mode === 'controlled') {
+      value = due_at;
+    } else {
+      await patchTask(taskId!, { due_at }, "Couldn't save date. Try again.");
+    }
   }
 
   function quickDate(offset: number): string {

@@ -2,6 +2,12 @@ export function hasTime(due_at: string): boolean {
   return !due_at.endsWith('T12:00:00.000Z');
 }
 
+export function buildDueAt(dateStr: string, timeStr: string): string | null {
+  if (!dateStr) return null;
+  if (!timeStr) return toDateString(new Date(dateStr + 'T12:00:00'));
+  return new Date(dateStr + 'T' + timeStr + ':00').toISOString();
+}
+
 export function toDateString(date: Date): string {
   return date.toISOString().split('T')[0] + 'T12:00:00.000Z';
 }

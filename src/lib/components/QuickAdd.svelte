@@ -2,8 +2,8 @@
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
   import * as Popover from '$lib/components/ui/popover/index.js';
-  import { hasTime, toDateString, formatDisplay } from '$lib/utils/dates.js';
   import { PRIORITY_OPTIONS } from '$lib/utils/design-tokens.js';
+  import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
 
   let { action = '?/createTask' }: { action?: string } = $props();
 
@@ -13,67 +13,9 @@
   let creating = $state(false);
   let justAdded = $state(false);
   let addedTimeout: ReturnType<typeof setTimeout>;
-  let datePopoverOpen = $state(false);
   let priorityPopoverOpen = $state(false);
 
   let currentPriority = $derived(PRIORITY_OPTIONS.find((p) => p.level === priority)!);
-  let dateLabel = $derived(dueAt ? formatDisplay(dueAt) : null);
-
-  function getCurrentDateValue(): string {
-    if (!dueAt) return '';
-    const d = new Date(dueAt);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-  }
-
-  function getCurrentTimeSuffix(): string | null {
-    if (!dueAt || !hasTime(dueAt)) return null;
-    const d = new Date(dueAt);
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
-    return `${hh}:${mm}`;
-  }
-
-  function quickDate(offset: number): string {
-    const d = new Date();
-    d.setDate(d.getDate() + offset);
-    if (dueAt && hasTime(dueAt)) {
-      const existing = new Date(dueAt);
-      d.setHours(existing.getHours(), existing.getMinutes(), 0, 0);
-      return d.toISOString();
-    }
-    return toDateString(d);
-  }
-
-  function handleCustomDate(e: Event) {
-    const input = e.target as HTMLInputElement;
-    if (input.value) {
-      const newDate = new Date(input.value + 'T12:00:00');
-      if (dueAt && hasTime(dueAt)) {
-        const existing = new Date(dueAt);
-        newDate.setHours(existing.getHours(), existing.getMinutes(), 0, 0);
-        dueAt = newDate.toISOString();
-      } else {
-        dueAt = toDateString(newDate);
-      }
-    }
-  }
-
-  function handleTimeChange(e: Event) {
-    const input = e.target as HTMLInputElement;
-    if (!input.value || !dueAt) return;
-    const [hh, mm] = input.value.split(':').map(Number);
-    const d = new Date(dueAt);
-    d.setHours(hh, mm, 0, 0);
-    dueAt = d.toISOString();
-  }
-
-  function clearTime() {
-    if (!dueAt) return;
-    dueAt = toDateString(new Date(dueAt));
-  }
 </script>
 
 <form
@@ -89,7 +31,6 @@
         title = '';
         dueAt = null;
         priority = 4;
-        datePopoverOpen = false;
         priorityPopoverOpen = false;
         toast.success('Task added');
         justAdded = true;
@@ -115,92 +56,7 @@
   <input type="hidden" name="priority" value={priority} />
 
   <!-- Date popover -->
-  <Popover.Root bind:open={datePopoverOpen}>
-    <Popover.Trigger disabled={creating}>
-      <span
-        class="flex items-center gap-1 rounded px-2 py-2 text-sm transition-colors
-          {dueAt
-          ? 'text-foreground hover:bg-surface-subtle'
-          : 'text-foreground-secondary hover:text-foreground hover:bg-surface-subtle'}"
-      >
-        {#if dateLabel}
-          <span>{dateLabel}</span>
-          <button
-            type="button"
-            class="ml-0.5 text-foreground-muted hover:text-foreground leading-none"
-            onclick={(e) => { e.stopPropagation(); dueAt = null; }}
-            aria-label="Clear date"
-          >✕</button>
-        {:else}
-          <svg class="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5">
-            <rect x="2" y="3" width="12" height="11" rx="1.5" />
-            <path d="M2 6h12M5 1v3M11 1v3" />
-          </svg>
-        {/if}
-      </span>
-    </Popover.Trigger>
-    <Popover.Content class="w-48 p-1" align="start">
-      <button
-        type="button"
-        class="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle transition-colors"
-        onclick={() => { dueAt = quickDate(0); datePopoverOpen = false; }}
-      >
-        Today
-      </button>
-      <button
-        type="button"
-        class="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle transition-colors"
-        onclick={() => { dueAt = quickDate(1); datePopoverOpen = false; }}
-      >
-        Tomorrow
-      </button>
-      <button
-        type="button"
-        class="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle transition-colors"
-        onclick={() => { dueAt = quickDate(7); datePopoverOpen = false; }}
-      >
-        Next week
-      </button>
-      {#if dueAt}
-        <button
-          type="button"
-          class="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle text-destructive transition-colors"
-          onclick={() => { dueAt = null; datePopoverOpen = false; }}
-        >
-          Remove date
-        </button>
-      {/if}
-      <div class="border-t border-border-divider mt-1 pt-1 space-y-1">
-        <input
-          type="date"
-          value={getCurrentDateValue()}
-          class="w-full px-2 py-1.5 text-sm rounded bg-transparent border-0 outline-none"
-          onchange={handleCustomDate}
-        />
-        {#if dueAt}
-          <div class="flex items-center gap-1">
-            <input
-              type="time"
-              value={getCurrentTimeSuffix() ?? ''}
-              placeholder="Add time"
-              class="flex-1 px-2 py-1.5 text-sm rounded bg-transparent border-0 outline-none"
-              onchange={handleTimeChange}
-            />
-            {#if dueAt && hasTime(dueAt)}
-              <button
-                type="button"
-                class="px-1.5 py-1 text-xs text-foreground-muted hover:text-foreground rounded hover:bg-surface-subtle transition-colors"
-                onclick={clearTime}
-                title="Clear time"
-              >
-                ✕
-              </button>
-            {/if}
-          </div>
-        {/if}
-      </div>
-    </Popover.Content>
-  </Popover.Root>
+  <DatePickerPopover bind:value={dueAt} mode="controlled" disabled={creating} />
 
   <!-- Priority popover -->
   <Popover.Root bind:open={priorityPopoverOpen}>
