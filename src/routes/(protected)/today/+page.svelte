@@ -46,35 +46,47 @@
     }));
   }
 
-  let upcomingGroups = $derived(groupByDay(data.upcoming));
-  let hasTodayTasks = $derived(data.overdue.length > 0 || data.dueToday.length > 0);
+  let activeOverdue = $derived(data.overdue.filter((t) => t.status !== 'done' && t.status !== 'canceled'));
+  let activeDueToday = $derived(data.dueToday.filter((t) => t.status !== 'done' && t.status !== 'canceled'));
+  let activeUpcoming = $derived(data.upcoming.filter((t) => t.status !== 'done' && t.status !== 'canceled'));
+
+  let completedTasks = $derived([
+    ...data.overdue.filter((t) => t.status === 'done' || t.status === 'canceled'),
+    ...data.dueToday.filter((t) => t.status === 'done' || t.status === 'canceled'),
+    ...data.upcoming.filter((t) => t.status === 'done' || t.status === 'canceled'),
+  ]);
+
+  let showCompleted = $state(false);
+
+  let upcomingGroups = $derived(groupByDay(activeUpcoming));
+  let hasTodayTasks = $derived(activeOverdue.length > 0 || activeDueToday.length > 0);
 </script>
 
 <div>
   <h1 class="text-page-title font-accent mb-6">Today</h1>
 
-  {#if !hasTodayTasks && upcomingGroups.length === 0}
+  {#if !hasTodayTasks && upcomingGroups.length === 0 && completedTasks.length === 0}
     <div class="text-center py-12">
       <p class="text-foreground-secondary">No tasks due today. You're all caught up!</p>
     </div>
   {/if}
 
-  {#if data.overdue.length > 0}
+  {#if activeOverdue.length > 0}
     <div class="mb-6">
       <h2 class="text-section-header font-accent mb-3 text-destructive">Overdue</h2>
       <div class="space-y-2">
-        {#each data.overdue as task (task.id)}
+        {#each activeOverdue as task (task.id)}
           <TaskRow {task} onselect={openTask} userRole={taskRole(task)} />
         {/each}
       </div>
     </div>
   {/if}
 
-  {#if data.dueToday.length > 0}
+  {#if activeDueToday.length > 0}
     <div class="mb-6">
       <h2 class="text-section-header font-accent mb-3">Due Today</h2>
       <div class="space-y-2">
-        {#each data.dueToday as task (task.id)}
+        {#each activeDueToday as task (task.id)}
           <TaskRow {task} onselect={openTask} userRole={taskRole(task)} />
         {/each}
       </div>
@@ -95,6 +107,25 @@
           </div>
         </div>
       {/each}
+    </div>
+  {/if}
+
+  {#if completedTasks.length > 0}
+    <div class="mt-6">
+      <button
+        type="button"
+        class="text-sm text-foreground-secondary hover:text-foreground"
+        onclick={() => { showCompleted = !showCompleted; }}
+      >
+        {showCompleted ? 'Hide' : 'Show'} completed ({completedTasks.length})
+      </button>
+      {#if showCompleted}
+        <div class="space-y-2 mt-2">
+          {#each completedTasks as task (task.id)}
+            <TaskRow {task} onselect={openTask} userRole={taskRole(task)} />
+          {/each}
+        </div>
+      {/if}
     </div>
   {/if}
 </div>

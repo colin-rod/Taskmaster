@@ -81,9 +81,9 @@
 <Sheet bind:open>
   <SheetContent
     side={isMd ? 'right' : 'bottom'}
-    class={isMd ? 'h-full overflow-y-auto w-[420px]' : 'max-h-[85vh] overflow-y-auto rounded-t-xl'}
+    class={isMd ? 'h-full overflow-y-auto w-[420px] px-5' : 'max-h-[85vh] overflow-y-auto rounded-t-xl px-5'}
   >
-    <SheetHeader>
+    <SheetHeader class="px-0">
       <SheetTitle>{isViewer ? 'Task Details' : 'Edit Task'}</SheetTitle>
       <SheetDescription class="sr-only">{isViewer ? 'View task details' : 'Edit task details'}</SheetDescription>
     </SheetHeader>
@@ -114,7 +114,7 @@
         {#if task.due_at}
           <div>
             <span class="text-sm font-medium text-foreground-secondary">Due date</span>
-            <p class="mt-1 text-sm">{new Date(task.due_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+            <p class="mt-1 text-sm">{new Date(task.due_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
           </div>
         {/if}
         {#if (task.checklist_items ?? []).length > 0}

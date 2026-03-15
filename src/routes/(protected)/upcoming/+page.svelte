@@ -46,13 +46,17 @@
     }));
   }
 
-  let dayGroups = $derived(groupByDay(data.tasks));
+  let activeTasks = $derived(data.tasks.filter((t) => t.status !== 'done' && t.status !== 'canceled'));
+  let completedTasks = $derived(data.tasks.filter((t) => t.status === 'done' || t.status === 'canceled'));
+  let showCompleted = $state(false);
+
+  let dayGroups = $derived(groupByDay(activeTasks));
 </script>
 
 <div>
   <h1 class="text-page-title font-accent mb-6">Upcoming</h1>
 
-  {#if dayGroups.length === 0}
+  {#if dayGroups.length === 0 && completedTasks.length === 0}
     <div class="text-center py-12">
       <p class="text-foreground-secondary">No tasks in the next 7 days.</p>
     </div>
@@ -67,6 +71,25 @@
         </div>
       </div>
     {/each}
+  {/if}
+
+  {#if completedTasks.length > 0}
+    <div class="mt-6">
+      <button
+        type="button"
+        class="text-sm text-foreground-secondary hover:text-foreground"
+        onclick={() => { showCompleted = !showCompleted; }}
+      >
+        {showCompleted ? 'Hide' : 'Show'} completed ({completedTasks.length})
+      </button>
+      {#if showCompleted}
+        <div class="space-y-2 mt-2">
+          {#each completedTasks as task (task.id)}
+            <TaskRow {task} onselect={openTask} userRole={taskRole(task)} />
+          {/each}
+        </div>
+      {/if}
+    </div>
   {/if}
 </div>
 

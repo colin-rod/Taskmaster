@@ -15,6 +15,10 @@
   let sortKey = $state<SortKey>('created_desc');
   let filterPriority = $state<number | null>(null);
   let filterDue = $state<DueFilter>(null);
+  let showCompleted = $state(false);
+
+  let activeTasks = $derived(data.tasks.filter((t) => t.status !== 'done' && t.status !== 'canceled'));
+  let completedTasks = $derived(data.tasks.filter((t) => t.status === 'done' || t.status === 'canceled'));
 
   function startOfToday(): Date {
     const d = new Date();
@@ -29,7 +33,7 @@
   }
 
   const displayedTasks = $derived.by(() => {
-    let tasks = [...data.tasks];
+    let tasks = [...activeTasks];
 
     if (filterPriority !== null)
       tasks = tasks.filter(t => t.priority === filterPriority);
@@ -146,7 +150,7 @@
     {/if}
   </div>
 
-  {#if data.tasks.length === 0}
+  {#if activeTasks.length === 0 && completedTasks.length === 0}
     <div class="text-center py-8">
       <p class="text-foreground-secondary">No tasks in your inbox.</p>
     </div>
@@ -162,6 +166,25 @@
       {#each displayedTasks as task (task.id)}
         <TaskRow {task} onselect={openTask} userRole="owner" />
       {/each}
+    </div>
+  {/if}
+
+  {#if completedTasks.length > 0}
+    <div class="mt-6">
+      <button
+        type="button"
+        class="text-sm text-foreground-secondary hover:text-foreground"
+        onclick={() => { showCompleted = !showCompleted; }}
+      >
+        {showCompleted ? 'Hide' : 'Show'} completed ({completedTasks.length})
+      </button>
+      {#if showCompleted}
+        <div class="space-y-2 mt-2">
+          {#each completedTasks as task (task.id)}
+            <TaskRow {task} onselect={openTask} userRole="owner" />
+          {/each}
+        </div>
+      {/if}
     </div>
   {/if}
 </div>

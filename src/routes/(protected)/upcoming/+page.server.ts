@@ -17,7 +17,6 @@ export const load: PageServerLoad = async ({ locals: { supabase, profileId } }) 
     .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
     .gt('due_at', endOfToday.toISOString())
     .lte('due_at', sevenDaysOut.toISOString())
-    .not('status', 'in', '(done,canceled)')
     .order('due_at', { ascending: true });
 
   const roleMap = await taskActions.buildRoleMap(tasks ?? [], profileId!, supabase);

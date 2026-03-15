@@ -37,7 +37,7 @@
 
     if (dateOnly.getTime() === today.getTime()) return 'Today' + timeStr;
     if (dateOnly.getTime() === tomorrow.getTime()) return 'Tomorrow' + timeStr;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + timeStr;
+    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + timeStr;
   }
 
   function isOverdue(due_at: string | null): boolean {
