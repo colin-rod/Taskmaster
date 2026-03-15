@@ -62,20 +62,18 @@
 
   <!-- Inbox -->
   <nav class="px-2 mt-1">
-    {@const inboxActive = isActive(inboxFilter.href, $page.url.pathname)}
-    {@const inboxCount = filterCounts[inboxFilter.countKey]}
     <a
       href={inboxFilter.href}
       class="flex items-center gap-3 px-2 py-2 rounded-md text-sm font-medium transition-colors
-        {inboxActive ? 'bg-primary-tint text-foreground' : 'text-foreground-secondary hover:text-foreground hover:bg-surface-subtle'}
+        {isActive(inboxFilter.href, $page.url.pathname) ? 'bg-primary-tint text-foreground' : 'text-foreground-secondary hover:text-foreground hover:bg-surface-subtle'}
         {$sidebarCollapsed ? 'justify-center' : ''}"
       title={$sidebarCollapsed ? inboxFilter.label : undefined}
     >
-      <inboxFilter.icon class="w-4 h-4 flex-shrink-0 {inboxActive ? 'text-primary' : ''}" />
+      <inboxFilter.icon class="w-4 h-4 flex-shrink-0 {isActive(inboxFilter.href, $page.url.pathname) ? 'text-primary' : ''}" />
       {#if !$sidebarCollapsed}
         <span class="flex-1 truncate">{inboxFilter.label}</span>
-        {#if inboxCount > 0}
-          <span class="text-xs text-foreground-muted tabular-nums">{inboxCount}</span>
+        {#if filterCounts[inboxFilter.countKey] > 0}
+          <span class="text-xs text-foreground-muted tabular-nums">{filterCounts[inboxFilter.countKey]}</span>
         {/if}
       {/if}
     </a>
