@@ -141,11 +141,13 @@
           method="POST"
           action="?/updateProfile"
           use:enhance={() => {
+            const savedName = nameValue;
             return async ({ result, update }) => {
               if (result.type === 'success') {
                 editingName = false;
+                nameValue = savedName;
               }
-              await update();
+              await update({ reset: false });
             };
           }}
           class="flex items-center gap-2"

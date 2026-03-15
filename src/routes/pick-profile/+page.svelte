@@ -28,7 +28,7 @@
 
   <div class="grid grid-cols-2 gap-4">
     {#each data.profiles as profile}
-      <form method="POST" use:enhance>
+      <form method="POST" action="?/select" use:enhance>
         <input type="hidden" name="profile_id" value={profile.id} />
         <button
           type="submit"
