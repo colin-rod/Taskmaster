@@ -1,5 +1,5 @@
 /* North Design System - Typography */
-@import '@fontsource-variable/inter';
+@import '@fontsource-variable/dm-sans';
 @import '@fontsource-variable/fraunces';
 
 @import "tailwindcss";
@@ -89,7 +89,7 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-family:
-      'Inter',
+      'DM Sans',
       -apple-system,
       BlinkMacSystemFont,
       'Segoe UI',
@@ -129,6 +129,38 @@
   }
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes checkbox-pop {
+    0%   { transform: scale(0.8); }
+    50%  { transform: scale(1.15); }
+    75%  { transform: scale(0.95); }
+    100% { transform: scale(1.0); }
+  }
+
+  @keyframes checkmark-draw {
+    from { stroke-dashoffset: 20; opacity: 0; }
+    to   { stroke-dashoffset: 0;  opacity: 1; }
+  }
+
+  @keyframes input-success-pulse {
+    0%   { box-shadow: 0 0 0 0 hsl(17 91% 40% / 0); }
+    40%  { box-shadow: 0 0 0 4px hsl(17 91% 40% / 0.2); }
+    100% { box-shadow: 0 0 0 0 hsl(17 91% 40% / 0); }
+  }
+
+  @keyframes progress-finish {
+    0%   { transform: scaleY(1); }
+    30%  { transform: scaleY(1.6); }
+    60%  { transform: scaleY(0.85); }
+    100% { transform: scaleY(1); }
+  }
+
+  @keyframes sun-pulse {
+    0%, 100% { transform: scale(1); opacity: 0.6; }
+    50%       { transform: scale(1.05); opacity: 0.9; }
+  }
+}
+
 @layer components {
   .select-input {
     @apply flex min-h-11 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 md:text-sm;
@@ -149,13 +181,27 @@
     transition: transform 0.08s ease-out;
   }
 
+  .is-completing {
+    animation: checkbox-pop 0.35s ease-out;
+  }
+  .is-completing path {
+    animation: checkmark-draw 0.25s ease-out 0.1s forwards;
+  }
+
+  .form-success {
+    animation: input-success-pulse 0.5s ease-out;
+  }
+
+  .progress-finish {
+    animation: progress-finish 0.5s ease-out;
+    transform-origin: center;
+  }
+
   .section-header {
     font-size: 0.75rem;
     font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
     color: hsl(var(--foreground-muted));
     margin-bottom: 0.75rem;
-    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 }

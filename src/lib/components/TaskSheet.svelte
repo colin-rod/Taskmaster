@@ -11,6 +11,8 @@
   import type { Task, RecurrenceRule, ListRole, TaskListMember } from '$lib/types/index.js';
   import { getPriorityLabel, formatStatus } from '$lib/utils/design-tokens.js';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
+  import { Plus } from '@lucide/svelte';
+  import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 
   let {
     task = $bindable<Task | null>(null),
@@ -33,11 +35,14 @@
   let editStatus = $state('todo');
   let saving = $state(false);
   let deleting = $state(false);
+  let deleteAlertOpen = $state(false);
   let newItemLabel = $state('');
   let addingItem = $state(false);
   let editReminderAt = $state('');
   let editIsRecurring = $state(false);
   let editRecurrenceRule = $state<RecurrenceRule | null>(null);
+  let prevCompleted = $state(0);
+  let checklistJustFinished = $state(false);
 
   let isMd = $state(false);
   $effect(() => {
@@ -67,6 +72,14 @@
   let checklistItems = $derived(
     (task?.checklist_items ?? []).slice().sort((a, b) => a.position - b.position)
   );
+
+  $effect(() => {
+    if (totalCount > 0 && completedCount === totalCount && prevCompleted < totalCount) {
+      checklistJustFinished = true;
+      setTimeout(() => { checklistJustFinished = false; }, 1200);
+    }
+    prevCompleted = completedCount;
+  });
   let completedCount = $derived(checklistItems.filter((i) => i.is_completed).length);
   let totalCount = $derived(checklistItems.length);
 
@@ -84,7 +97,7 @@
     class={isMd ? 'h-full overflow-y-auto w-[420px] px-5' : 'max-h-[85vh] overflow-y-auto rounded-t-xl px-5'}
   >
     <SheetHeader class="px-0">
-      <SheetTitle>{isViewer ? 'Task Details' : 'Edit Task'}</SheetTitle>
+      <SheetTitle>Task Details</SheetTitle>
       <SheetDescription class="sr-only">{isViewer ? 'View task details' : 'Edit task details'}</SheetDescription>
     </SheetHeader>
 
@@ -148,7 +161,7 @@
             saving = false;
             if (result.type === 'success') {
               open = false;
-              toast.success('Task updated');
+              toast.success('Changes saved.');
             }
             await update();
           };
@@ -177,7 +190,7 @@
             name="notes"
             bind:value={editNotes}
             rows="3"
-            placeholder="Add notes..."
+            placeholder="Add context, links, or extra detail..."
             class="select-input mt-1 resize-y"
           ></textarea>
         </div>
@@ -214,6 +227,9 @@
           </div>
         </div>
 
+        <!-- Metadata zone (due, reminder, recurrence) -->
+        <div class="border-t border-border-divider pt-4 mt-1 space-y-4">
+
         <!-- Due date -->
         <div>
           <label for="edit-due" class="text-sm font-medium">Due date</label>
@@ -240,25 +256,25 @@
             <div class="flex gap-2 mt-1.5 flex-wrap">
               <button
                 type="button"
-                class="text-xs px-2 py-0.5 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground"
+                class="text-xs px-3 py-2 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground min-h-11 flex items-center"
                 onclick={() => setReminderPreset(10)}
-              >10m before</button>
+              >10 min</button>
               <button
                 type="button"
-                class="text-xs px-2 py-0.5 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground"
+                class="text-xs px-3 py-2 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground min-h-11 flex items-center"
                 onclick={() => setReminderPreset(60)}
-              >1h before</button>
+              >1 hr</button>
               <button
                 type="button"
-                class="text-xs px-2 py-0.5 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground"
+                class="text-xs px-3 py-2 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground min-h-11 flex items-center"
                 onclick={() => setReminderPreset(1440)}
-              >1 day before</button>
+              >1 day</button>
             </div>
           {/if}
           {#if editReminderAt}
             <button
               type="button"
-              class="text-xs text-destructive mt-1"
+              class="text-xs text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
               onclick={() => { editReminderAt = ''; }}
             >Clear reminder</button>
           {/if}
@@ -269,6 +285,8 @@
         <input type="hidden" name="is_recurring" value={String(editIsRecurring)} />
         <input type="hidden" name="recurrence_rule" value={editIsRecurring && editRecurrenceRule ? JSON.stringify(editRecurrenceRule) : ''} />
 
+        </div><!-- end metadata zone -->
+
         <!-- Actions -->
         <div class="flex gap-2 pt-2">
           <button
@@ -276,7 +294,7 @@
             class="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
             disabled={saving || !editTitle.trim()}
           >
-            {saving ? 'Saving...' : 'Save'}
+            {saving ? 'Saving...' : 'Save changes'}
           </button>
         </div>
       </form>
@@ -321,15 +339,17 @@
         <div class="flex items-center justify-between mb-3">
           <span class="text-sm font-medium">Checklist</span>
           {#if totalCount > 0}
-            <span class="text-xs text-foreground-secondary">{completedCount}/{totalCount}</span>
+            <span class="text-xs {completedCount === totalCount && totalCount > 0 ? 'text-green-600 font-medium' : 'text-foreground-secondary'}">
+              {completedCount === totalCount && totalCount > 0 ? 'All done ✓' : `${completedCount}/${totalCount}`}
+            </span>
           {/if}
         </div>
 
         <!-- Progress bar -->
         {#if totalCount > 0}
-          <div class="h-1.5 rounded-full bg-surface-subtle mb-3 overflow-hidden">
+          <div class="h-1.5 rounded-full bg-surface-subtle mb-3 overflow-hidden" class:progress-finish={checklistJustFinished}>
             <div
-              class="h-full rounded-full transition-all duration-300 {completedCount === totalCount ? 'bg-[hsl(var(--status-done))]' : 'bg-primary'}"
+              class="h-full rounded-full transition-all duration-300 {completedCount === totalCount ? 'bg-status-done' : 'bg-primary'}"
               style="width: {(completedCount / totalCount) * 100}%"
             ></div>
           </div>
@@ -391,7 +411,7 @@
                   <input type="hidden" name="id" value={item.id} />
                   <button
                     type="submit"
-                    class="opacity-0 group-hover:opacity-100 p-0.5 text-foreground-muted hover:text-destructive transition-opacity"
+                    class="md:opacity-0 md:group-hover:opacity-100 p-1.5 min-w-11 min-h-11 flex items-center justify-center text-foreground-muted hover:text-destructive transition-opacity"
                     aria-label="Delete item"
                   >
                     <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
@@ -421,9 +441,7 @@
           }}
         >
           <input type="hidden" name="task_id" value={task.id} />
-          <svg class="w-4 h-4 text-foreground-muted flex-shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M8 3v10M3 8h10" />
-          </svg>
+          <Plus class="w-4 h-4 text-foreground-muted flex-shrink-0" />
           <input
             name="label"
             type="text"
@@ -445,33 +463,54 @@
       </div>
 
       <!-- Delete (separate form) -->
-      <form
-        method="POST"
-        action="?/deleteTask"
-        class="mt-3 pt-3 border-t"
-        use:enhance={() => {
-          deleting = true;
-          return async ({ result, update }) => {
-            deleting = false;
-            if (result.type === 'success') {
-              open = false;
-              task = null;
-              toast.success('Task deleted');
-            }
-            await update();
-          };
-        }}
-      >
-        <input type="hidden" name="id" value={task.id} />
-        <button
-          type="submit"
-          class="w-full rounded-md border border-destructive/30 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
-          disabled={deleting}
-          onclick={(e) => { if (!confirm('Delete this task?')) e.preventDefault(); }}
-        >
-          {deleting ? 'Deleting...' : 'Delete Task'}
-        </button>
-      </form>
+      <div class="mt-8 pt-6 border-t">
+        <AlertDialog.Root bind:open={deleteAlertOpen}>
+          <AlertDialog.Trigger>
+            <button
+              type="button"
+              class="w-full rounded-md border border-destructive/30 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+              disabled={deleting}
+            >
+              {deleting ? 'Removing...' : 'Delete task'}
+            </button>
+          </AlertDialog.Trigger>
+          <AlertDialog.Content>
+            <AlertDialog.Header>
+              <AlertDialog.Title>Delete task?</AlertDialog.Title>
+              <AlertDialog.Description>This action cannot be undone.</AlertDialog.Description>
+            </AlertDialog.Header>
+            <AlertDialog.Footer>
+              <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+              <form
+                method="POST"
+                action="?/deleteTask"
+                use:enhance={() => {
+                  deleting = true;
+                  deleteAlertOpen = false;
+                  return async ({ result, update }) => {
+                    deleting = false;
+                    if (result.type === 'success') {
+                      open = false;
+                      task = null;
+                      toast.success('Task deleted');
+                    }
+                    await update();
+                  };
+                }}
+              >
+                <input type="hidden" name="id" value={task.id} />
+                <button
+                  type="submit"
+                  class="inline-flex items-center justify-center rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive/90 disabled:opacity-50"
+                  disabled={deleting}
+                >
+                  Delete
+                </button>
+              </form>
+            </AlertDialog.Footer>
+          </AlertDialog.Content>
+        </AlertDialog.Root>
+      </div>
     {/if}
   </SheetContent>
 </Sheet>

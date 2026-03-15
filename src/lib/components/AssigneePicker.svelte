@@ -1,8 +1,7 @@
 <script lang="ts">
-  import { invalidateAll } from '$app/navigation';
-  import { toast } from 'svelte-sonner';
   import * as Popover from '$lib/components/ui/popover/index.js';
   import type { Profile } from '$lib/types/index.js';
+  import { patchTask } from '$lib/utils/api.js';
 
   let {
     taskId,
@@ -20,21 +19,7 @@
 
   async function assign(userId: string | null) {
     open = false;
-
-    try {
-      const res = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ assigned_to_user_id: userId }),
-      });
-      if (!res.ok) {
-        toast.error('Failed to update assignee');
-      } else {
-        await invalidateAll();
-      }
-    } catch {
-      toast.error('Failed to update assignee');
-    }
+    await patchTask(taskId, { assigned_to_user_id: userId }, 'Failed to update assignee');
   }
 
   function displayName(profile?: Profile): string {

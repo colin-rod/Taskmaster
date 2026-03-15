@@ -1,7 +1,7 @@
 <script lang="ts">
-  import { invalidateAll } from '$app/navigation';
-  import { toast } from 'svelte-sonner';
   import * as Popover from '$lib/components/ui/popover/index.js';
+  import { hasTime, toDateString, formatDisplay } from '$lib/utils/dates.js';
+  import { patchTask } from '$lib/utils/api.js';
 
   let {
     taskId,
@@ -15,38 +15,9 @@
 
   let open = $state(false);
 
-  function hasTime(due_at: string): boolean {
-    // T12:00:00.000Z is the date-only sentinel (noon UTC)
-    return !due_at.endsWith('T12:00:00.000Z');
-  }
-
-  function formatDisplay(due_at: string | null): string {
-    if (!due_at) return 'No date';
-    const date = new Date(due_at);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const dateOnly = new Date(date);
-    dateOnly.setHours(0, 0, 0, 0);
-
-    const showTime = hasTime(due_at);
-    const timeStr = showTime
-      ? ', ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-      : '';
-
-    if (dateOnly.getTime() === today.getTime()) return 'Today' + timeStr;
-    if (dateOnly.getTime() === tomorrow.getTime()) return 'Tomorrow' + timeStr;
-    return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + timeStr;
-  }
-
   function isOverdue(due_at: string | null): boolean {
     if (!due_at) return false;
     return new Date(due_at) < new Date();
-  }
-
-  function toDateString(date: Date): string {
-    return date.toISOString().split('T')[0] + 'T12:00:00.000Z';
   }
 
   // Get the current time portion from value (if a specific time is set), else null
@@ -71,21 +42,7 @@
 
   async function setDate(due_at: string | null) {
     open = false;
-
-    try {
-      const res = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ due_at }),
-      });
-      if (!res.ok) {
-        toast.error('Failed to update date');
-      } else {
-        await invalidateAll();
-      }
-    } catch {
-      toast.error('Failed to update date');
-    }
+    await patchTask(taskId, { due_at }, "Couldn't save date. Try again.");
   }
 
   function quickDate(offset: number): string {
@@ -190,7 +147,7 @@
           {#if value && hasTime(value)}
             <button
               type="button"
-              class="px-1.5 py-1 text-xs text-foreground-muted hover:text-foreground rounded hover:bg-surface-subtle transition-colors"
+              class="min-w-11 min-h-11 flex items-center justify-center text-xs text-foreground-muted hover:text-foreground rounded hover:bg-surface-subtle transition-colors"
               onclick={clearTime}
               title="Clear time"
             >

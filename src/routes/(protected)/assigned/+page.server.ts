@@ -3,7 +3,9 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
 
-export const load: PageServerLoad = async ({ locals: { supabase, profileId } }) => {
+export const load: PageServerLoad = async (event) => {
+  const { locals: { supabase, profileId } } = event;
+  event.depends('app:tasks');
   const { data: tasks } = await supabase
     .from('tasks')
     .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
@@ -11,9 +13,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, profileId } }) 
     .order('due_at', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
 
-  const roleMap = await taskActions.buildRoleMap(tasks ?? [], profileId!, supabase);
-
-  return { tasks: tasks ?? [], roleMap };
+  return { tasks: tasks ?? [] };
 };
 
 export const actions: Actions = {

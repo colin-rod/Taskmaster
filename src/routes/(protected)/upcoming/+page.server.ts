@@ -3,7 +3,9 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
 
-export const load: PageServerLoad = async ({ locals: { supabase, profileId } }) => {
+export const load: PageServerLoad = async (event) => {
+  const { locals: { supabase } } = event;
+  event.depends('app:tasks');
   const now = new Date();
   const endOfToday = new Date(now);
   endOfToday.setHours(23, 59, 59, 999);
@@ -19,9 +21,7 @@ export const load: PageServerLoad = async ({ locals: { supabase, profileId } }) 
     .lte('due_at', sevenDaysOut.toISOString())
     .order('due_at', { ascending: true });
 
-  const roleMap = await taskActions.buildRoleMap(tasks ?? [], profileId!, supabase);
-
-  return { tasks: tasks ?? [], roleMap };
+  return { tasks: tasks ?? [] };
 };
 
 export const actions: Actions = {

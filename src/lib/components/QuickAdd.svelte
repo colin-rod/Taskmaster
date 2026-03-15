@@ -2,6 +2,8 @@
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
   import * as Popover from '$lib/components/ui/popover/index.js';
+  import { hasTime, toDateString, formatDisplay } from '$lib/utils/dates.js';
+  import { PRIORITY_OPTIONS } from '$lib/utils/design-tokens.js';
 
   let { action = '?/createTask' }: { action?: string } = $props();
 
@@ -9,45 +11,13 @@
   let dueAt = $state<string | null>(null);
   let priority = $state(4);
   let creating = $state(false);
+  let justAdded = $state(false);
+  let addedTimeout: ReturnType<typeof setTimeout>;
   let datePopoverOpen = $state(false);
   let priorityPopoverOpen = $state(false);
 
-  const priorities = [
-    { level: 1, label: 'P1', desc: 'Urgent', color: 'text-destructive' },
-    { level: 2, label: 'P2', desc: 'High', color: 'text-orange-500' },
-    { level: 3, label: 'P3', desc: 'Medium', color: 'text-blue-500' },
-    { level: 4, label: 'P4', desc: 'Low', color: 'text-foreground-muted' },
-  ];
-
-  let currentPriority = $derived(priorities.find((p) => p.level === priority)!);
+  let currentPriority = $derived(PRIORITY_OPTIONS.find((p) => p.level === priority)!);
   let dateLabel = $derived(dueAt ? formatDisplay(dueAt) : null);
-
-  function toDateString(date: Date): string {
-    return date.toISOString().split('T')[0] + 'T12:00:00.000Z';
-  }
-
-  function hasTime(due_at: string): boolean {
-    return !due_at.endsWith('T12:00:00.000Z');
-  }
-
-  function formatDisplay(due_at: string): string {
-    const date = new Date(due_at);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    const dateOnly = new Date(date);
-    dateOnly.setHours(0, 0, 0, 0);
-
-    const showTime = hasTime(due_at);
-    const timeStr = showTime
-      ? ', ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
-      : '';
-
-    if (dateOnly.getTime() === today.getTime()) return 'Today' + timeStr;
-    if (dateOnly.getTime() === tomorrow.getTime()) return 'Tomorrow' + timeStr;
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) + timeStr;
-  }
 
   function getCurrentDateValue(): string {
     if (!dueAt) return '';
@@ -110,6 +80,7 @@
   method="POST"
   {action}
   class="flex items-center gap-2 rounded-xl border border-border bg-surface p-3 shadow-sm"
+  class:form-success={justAdded}
   use:enhance={() => {
     creating = true;
     return async ({ result, update }) => {
@@ -121,12 +92,16 @@
         datePopoverOpen = false;
         priorityPopoverOpen = false;
         toast.success('Task added');
+        justAdded = true;
+        clearTimeout(addedTimeout);
+        addedTimeout = setTimeout(() => { justAdded = false; }, 500);
       }
       await update();
     };
   }}
 >
   <input
+    id="quick-add-title"
     name="title"
     type="text"
     bind:value={title}
@@ -237,7 +212,7 @@
       </span>
     </Popover.Trigger>
     <Popover.Content class="w-36 p-1" align="start">
-      {#each priorities as p (p.level)}
+      {#each PRIORITY_OPTIONS as p (p.level)}
         <button
           type="button"
           class="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle transition-colors
@@ -256,6 +231,6 @@
     class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
     disabled={creating || !title.trim()}
   >
-    Add
+    {creating ? 'Adding...' : 'Add'}
   </button>
 </form>

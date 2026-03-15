@@ -1,0 +1,27 @@
+export function hasTime(due_at: string): boolean {
+  return !due_at.endsWith('T12:00:00.000Z');
+}
+
+export function toDateString(date: Date): string {
+  return date.toISOString().split('T')[0] + 'T12:00:00.000Z';
+}
+
+export function formatDisplay(due_at: string | null): string {
+  if (!due_at) return 'No date';
+  const date = new Date(due_at);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const dateOnly = new Date(date);
+  dateOnly.setHours(0, 0, 0, 0);
+
+  const showTime = hasTime(due_at);
+  const timeStr = showTime
+    ? ', ' + date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })
+    : '';
+
+  if (dateOnly.getTime() === today.getTime()) return 'Today' + timeStr;
+  if (dateOnly.getTime() === tomorrow.getTime()) return 'Tomorrow' + timeStr;
+  return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' }) + timeStr;
+}
