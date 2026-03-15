@@ -12,6 +12,7 @@ export interface Profile {
   display_name: string | null;
   timezone: string;
   avatar_color: string | null;
+  avatar_url: string | null;
   updated_at: string;
 }
 

@@ -24,6 +24,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
     { count: inboxCount },
     { count: assignedCount },
     { data: listTaskCounts },
+    { data: profileData },
   ] = await Promise.all([
     // Unread notifications
     locals.supabase
@@ -35,7 +36,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
     // User's lists
     locals.supabase
       .from('task_lists')
-      .select('id, name, color, icon, owner_id, sort_order')
+      .select('id, name, color, icon, owner_id, sort_order, task_list_members(count)')
       .order('sort_order', { ascending: true }),
 
     // Today count (due today, not done/canceled)
@@ -81,6 +82,13 @@ export const load: LayoutServerLoad = async ({ locals }) => {
       .select('list_id')
       .not('status', 'in', '(done,canceled)')
       .not('list_id', 'is', null),
+
+    // Current profile data
+    locals.supabase
+      .from('profiles')
+      .select('id, display_name, email, avatar_color, avatar_url')
+      .eq('id', locals.profileId)
+      .single(),
   ]);
 
   // Build list count map from raw task rows
@@ -93,8 +101,13 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
   return {
     profileId: locals.profileId,
+    profile: profileData ?? null,
     unreadCount: unreadCount ?? 0,
-    lists: (lists ?? []).map((l) => ({ ...l, taskCount: countMap[l.id] ?? 0 })),
+    lists: (lists ?? []).map((l) => ({
+      ...l,
+      taskCount: countMap[l.id] ?? 0,
+      isShared: ((l.task_list_members as { count: number }[] | null)?.[0]?.count ?? 1) > 1,
+    })),
     filterCounts: {
       today: (todayCount ?? 0) + (overdueCount ?? 0),
       upcoming: upcomingCount ?? 0,
