@@ -1,0 +1,73 @@
+import {
+  List,
+  Briefcase,
+  House,
+  ShoppingCart,
+  BookOpen,
+  Plane,
+  Dumbbell,
+  Heart,
+  Star,
+  Target,
+  Music,
+  Code,
+  Camera,
+  Car,
+  GraduationCap,
+  Utensils,
+  MapPin,
+  Gift,
+  Leaf,
+  Zap,
+} from '@lucide/svelte';
+import type { Component } from 'svelte';
+
+export const ICON_MAP: Record<string, Component> = {
+  list: List,
+  briefcase: Briefcase,
+  home: House,
+  'shopping-cart': ShoppingCart,
+  'book-open': BookOpen,
+  plane: Plane,
+  dumbbell: Dumbbell,
+  heart: Heart,
+  star: Star,
+  target: Target,
+  music: Music,
+  code: Code,
+  camera: Camera,
+  car: Car,
+  'graduation-cap': GraduationCap,
+  utensils: Utensils,
+  'map-pin': MapPin,
+  gift: Gift,
+  leaf: Leaf,
+  zap: Zap,
+};
+
+export const LIST_ICONS: { name: string; label: string }[] = [
+  { name: 'list', label: 'List' },
+  { name: 'briefcase', label: 'Work' },
+  { name: 'home', label: 'Home' },
+  { name: 'shopping-cart', label: 'Shopping' },
+  { name: 'book-open', label: 'Reading' },
+  { name: 'plane', label: 'Travel' },
+  { name: 'dumbbell', label: 'Fitness' },
+  { name: 'heart', label: 'Health' },
+  { name: 'star', label: 'Favorites' },
+  { name: 'target', label: 'Goals' },
+  { name: 'music', label: 'Music' },
+  { name: 'code', label: 'Dev' },
+  { name: 'camera', label: 'Photos' },
+  { name: 'car', label: 'Auto' },
+  { name: 'graduation-cap', label: 'School' },
+  { name: 'utensils', label: 'Food' },
+  { name: 'map-pin', label: 'Places' },
+  { name: 'gift', label: 'Gifts' },
+  { name: 'leaf', label: 'Garden' },
+  { name: 'zap', label: 'Quick' },
+];
+
+export function getListIcon(iconName: string): Component {
+  return ICON_MAP[iconName] ?? ICON_MAP['list'];
+}

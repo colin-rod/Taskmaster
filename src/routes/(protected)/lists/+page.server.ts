@@ -2,7 +2,7 @@ import { fail } from '@sveltejs/kit';
 
 import type { Actions, PageServerLoad } from './$types';
 
-export const load: PageServerLoad = async ({ locals: { supabase, session } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase } }) => {
   const { data: lists } = await supabase
     .from('task_lists')
     .select('*, members:task_list_members(user_id, role, profile:profiles(email, display_name))')
@@ -12,22 +12,30 @@ export const load: PageServerLoad = async ({ locals: { supabase, session } }) =>
 };
 
 export const actions: Actions = {
-  createList: async ({ request, locals: { supabase, session } }) => {
+  createList: async ({ request, locals: { supabase, profileId } }) => {
     const formData = await request.formData();
     const name = formData.get('name')?.toString()?.trim();
     const color = formData.get('color')?.toString() || null;
+    const icon = formData.get('icon')?.toString() || 'list';
 
     if (!name) {
       return fail(400, { error: 'List name is required' });
     }
 
-    const { error } = await supabase
+    const { data: newList, error } = await supabase
       .from('task_lists')
-      .insert({ name, color, owner_id: session!.user.id });
+      .insert({ name, color, icon, owner_id: profileId! })
+      .select('id')
+      .single();
 
-    if (error) {
-      return fail(500, { error: error.message });
+    if (error || !newList) {
+      return fail(500, { error: error?.message ?? 'Failed to create list' });
     }
+
+    // Ensure owner has a membership row for uniform role resolution
+    await supabase
+      .from('task_list_members')
+      .insert({ list_id: newList.id, user_id: profileId!, role: 'owner' });
 
     return { success: true };
   },
@@ -37,6 +45,7 @@ export const actions: Actions = {
     const id = formData.get('id')?.toString();
     const name = formData.get('name')?.toString()?.trim();
     const color = formData.get('color')?.toString() || null;
+    const icon = formData.get('icon')?.toString() || 'list';
 
     if (!id || !name) {
       return fail(400, { error: 'List ID and name are required' });
@@ -44,7 +53,7 @@ export const actions: Actions = {
 
     const { error } = await supabase
       .from('task_lists')
-      .update({ name, color })
+      .update({ name, color, icon })
       .eq('id', id);
 
     if (error) {

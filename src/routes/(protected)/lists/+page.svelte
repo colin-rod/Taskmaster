@@ -3,6 +3,7 @@
   import { toast } from 'svelte-sonner';
   import type { PageData, ActionData } from './$types';
   import { LIST_COLORS } from '$lib/types/index.js';
+  import { LIST_ICONS, getListIcon } from '$lib/utils/icons.js';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -10,14 +11,17 @@
   let editingListId = $state<string | null>(null);
   let newListName = $state('');
   let newListColor = $state<string | null>(null);
+  let newListIcon = $state('list');
   let editName = $state('');
   let editColor = $state<string | null>(null);
+  let editIcon = $state('list');
   let creating = $state(false);
 
-  function startEdit(list: any) {
+  function startEdit(list: { id: string; name: string; color: string | null; icon: string }) {
     editingListId = list.id;
     editName = list.name;
     editColor = list.color;
+    editIcon = list.icon;
   }
 
   function cancelEdit() {
@@ -48,6 +52,7 @@
           if (result.type === 'success') {
             newListName = '';
             newListColor = null;
+            newListIcon = 'list';
             showCreateForm = false;
             toast.success('List created');
           }
@@ -69,12 +74,33 @@
           />
         </div>
         <div>
-          <label class="text-sm font-medium">Color</label>
+          <p class="text-sm font-medium">Icon</p>
+          <input type="hidden" name="icon" value={newListIcon} />
+          <div class="grid grid-cols-10 gap-1 mt-1">
+            {#each LIST_ICONS as item}
+              {@const IconComponent = getListIcon(item.name)}
+              <button
+                type="button"
+                title={item.label}
+                class="w-7 h-7 rounded-md flex items-center justify-center transition-colors
+                  {newListIcon === item.name
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-foreground-secondary hover:bg-surface-subtle hover:text-foreground'}"
+                onclick={() => { newListIcon = item.name; }}
+              >
+                <IconComponent class="w-4 h-4" />
+              </button>
+            {/each}
+          </div>
+        </div>
+        <div>
+          <p class="text-sm font-medium">Color</p>
           <input type="hidden" name="color" value={newListColor || ''} />
           <div class="flex gap-2 mt-1">
             {#each LIST_COLORS as color}
               <button
                 type="button"
+                aria-label={color}
                 class="w-7 h-7 rounded-full border-2 transition-transform {newListColor === color ? 'border-foreground scale-110' : 'border-transparent'}"
                 style="background-color: {color}"
                 onclick={() => { newListColor = newListColor === color ? null : color; }}
@@ -137,11 +163,32 @@
                 required
                 class="select-input"
               />
+              <div>
+                <p class="text-sm font-medium">Icon</p>
+                <input type="hidden" name="icon" value={editIcon} />
+                <div class="grid grid-cols-10 gap-1 mt-1">
+                  {#each LIST_ICONS as item}
+                    {@const IconComponent = getListIcon(item.name)}
+                    <button
+                      type="button"
+                      title={item.label}
+                      class="w-7 h-7 rounded-md flex items-center justify-center transition-colors
+                        {editIcon === item.name
+                          ? 'bg-primary text-primary-foreground'
+                          : 'text-foreground-secondary hover:bg-surface-subtle hover:text-foreground'}"
+                      onclick={() => { editIcon = item.name; }}
+                    >
+                      <IconComponent class="w-4 h-4" />
+                    </button>
+                  {/each}
+                </div>
+              </div>
               <input type="hidden" name="color" value={editColor || ''} />
               <div class="flex gap-2">
                 {#each LIST_COLORS as color}
                   <button
                     type="button"
+                    aria-label={color}
                     class="w-6 h-6 rounded-full border-2 {editColor === color ? 'border-foreground scale-110' : 'border-transparent'}"
                     style="background-color: {color}"
                     onclick={() => { editColor = editColor === color ? null : color; }}
@@ -159,17 +206,19 @@
             </div>
           </form>
         {:else}
+          {@const IconComponent = getListIcon(list.icon)}
           <!-- Display mode -->
           <a
             href="/lists/{list.id}"
             class="flex items-center justify-between rounded-md border bg-surface p-4 hover:bg-surface-subtle transition-colors group"
           >
             <div class="flex items-center gap-3">
-              {#if list.color}
-                <div class="w-3 h-3 rounded-full flex-shrink-0" style="background-color: {list.color}"></div>
-              {:else}
-                <div class="w-3 h-3 rounded-full flex-shrink-0 bg-foreground-muted"></div>
-              {/if}
+              <div
+                class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+                style="background-color: {list.color || 'hsl(var(--foreground-muted))'}"
+              >
+                <IconComponent class="w-3.5 h-3.5 text-white" />
+              </div>
               <span class="font-medium">{list.name}</span>
               {#if list.members && list.members.length > 0}
                 <span class="text-metadata">{list.members.length} member{list.members.length !== 1 ? 's' : ''}</span>

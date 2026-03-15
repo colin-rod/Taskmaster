@@ -11,6 +11,8 @@ export interface Profile {
   email: string;
   display_name: string | null;
   timezone: string;
+  avatar_color: string | null;
+  avatar_url: string | null;
   updated_at: string;
 }
 
@@ -18,6 +20,7 @@ export interface TaskList {
   id: string;
   name: string;
   color: string | null;
+  icon: string;
   owner_id: string;
   sort_order: number;
   created_at: string;
@@ -56,6 +59,7 @@ export interface Task {
   // Relations
   list?: TaskList;
   checklist_items?: ChecklistItem[];
+  assignee?: Profile;
 }
 
 export interface ChecklistItem {
@@ -88,6 +92,14 @@ export interface Notification {
   delivered_at: string | null;
   is_read: boolean;
   created_at: string;
+}
+
+export interface SearchResult {
+  id: string;
+  title: string;
+  status: TaskStatus;
+  due_at: string | null;
+  list: { name: string; color: string | null } | null;
 }
 
 // List colors for the color picker

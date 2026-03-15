@@ -1,7 +1,9 @@
+import { fail } from '@sveltejs/kit';
+
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
 
-export const load: PageServerLoad = async ({ locals: { supabase } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase, profileId } }) => {
   const now = new Date();
   const endOfToday = new Date(now);
   endOfToday.setHours(23, 59, 59, 999);
@@ -12,16 +14,38 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
 
   const { data: tasks } = await supabase
     .from('tasks')
-    .select('*, checklist_items(*)')
+    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
     .gt('due_at', endOfToday.toISOString())
     .lte('due_at', sevenDaysOut.toISOString())
-    .not('status', 'in', '("done","canceled")')
     .order('due_at', { ascending: true });
 
-  return { tasks: tasks ?? [] };
+  const roleMap = await taskActions.buildRoleMap(tasks ?? [], profileId!, supabase);
+
+  return { tasks: tasks ?? [], roleMap };
 };
 
 export const actions: Actions = {
+  createTask: async ({ request, locals: { supabase, profileId } }) => {
+    const formData = await request.formData();
+    const title = formData.get('title')?.toString()?.trim();
+    const due_at = formData.get('due_at')?.toString() || null;
+    const priorityRaw = parseInt(formData.get('priority')?.toString() ?? '4', 10);
+    const priority = [1, 2, 3, 4].includes(priorityRaw) ? priorityRaw : 4;
+
+    if (!title) return fail(400, { error: 'Task title is required' });
+
+    const { error } = await supabase.from('tasks').insert({
+      title,
+      list_id: null,
+      owner_id: profileId!,
+      due_at,
+      status: 'todo',
+      priority,
+    });
+
+    if (error) return fail(500, { error: error.message });
+    return { success: true };
+  },
   toggleTask: async ({ request, locals: { supabase } }) => {
     return taskActions.toggleTask(await request.formData(), supabase);
   },
@@ -39,5 +63,8 @@ export const actions: Actions = {
   },
   deleteChecklistItem: async ({ request, locals: { supabase } }) => {
     return taskActions.deleteChecklistItem(await request.formData(), supabase);
+  },
+  assignTask: async ({ request, locals: { supabase, profileId } }) => {
+    return taskActions.assignTask(await request.formData(), supabase, profileId!);
   },
 };
