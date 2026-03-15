@@ -15,6 +15,7 @@
   let color = $state<string | null>(null);
   let icon = $state('list');
   let creating = $state(false);
+  let PreviewIcon = $derived(getListIcon(icon));
 
   async function handleSubmit(e: SubmitEvent) {
     e.preventDefault();
@@ -57,6 +58,14 @@
       <Dialog.Description>Create a new task list to organize your tasks.</Dialog.Description>
     </Dialog.Header>
     <form onsubmit={handleSubmit} class="space-y-4 mt-2">
+      <div class="flex justify-center">
+        <div
+          class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+          style="background-color: {color || 'hsl(var(--foreground-muted))'}"
+        >
+          <PreviewIcon class="w-5 h-5 text-white" />
+        </div>
+      </div>
       <div>
         <label for="create-list-name" class="text-sm font-medium">Name</label>
         <input
