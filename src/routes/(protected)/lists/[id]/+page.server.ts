@@ -30,6 +30,8 @@ export const actions: Actions = {
     const formData = await request.formData();
     const title = formData.get('title')?.toString()?.trim();
     const due_at = formData.get('due_at')?.toString() || null;
+    const priorityRaw = parseInt(formData.get('priority')?.toString() ?? '4', 10);
+    const priority = [1, 2, 3, 4].includes(priorityRaw) ? priorityRaw : 4;
 
     if (!title) return fail(400, { error: 'Task title is required' });
 
@@ -39,7 +41,7 @@ export const actions: Actions = {
       owner_id: profileId!,
       due_at,
       status: 'todo',
-      priority: 4,
+      priority,
     });
 
     if (err) return fail(500, { error: err.message });
@@ -75,5 +77,32 @@ export const actions: Actions = {
   },
   updateMemberRole: async ({ request, locals: { supabase, profileId } }) => {
     return memberActions.updateMemberRole(await request.formData(), supabase, profileId!);
+  },
+
+  updateListAppearance: async ({ request, params, locals: { supabase, profileId } }) => {
+    const formData = await request.formData();
+    const icon = formData.get('icon')?.toString();
+    const color = formData.get('color')?.toString() || null;
+
+    if (!icon) return fail(400, { error: 'Icon is required' });
+
+    const { data: membership } = await supabase
+      .from('task_list_members')
+      .select('role')
+      .eq('list_id', params.id)
+      .eq('user_id', profileId!)
+      .single();
+
+    if (membership?.role !== 'owner') {
+      return fail(403, { error: 'Only the list owner can change the appearance' });
+    }
+
+    const { error: err } = await supabase
+      .from('task_lists')
+      .update({ icon, color })
+      .eq('id', params.id);
+
+    if (err) return fail(500, { error: err.message });
+    return { success: true };
   },
 };

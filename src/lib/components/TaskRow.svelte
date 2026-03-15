@@ -28,7 +28,7 @@
   let checklistDone = $derived((task.checklist_items ?? []).filter((i) => i.is_completed).length);
 </script>
 
-<div class="flex items-center gap-3 rounded-md border bg-surface p-3 hover:bg-surface-subtle transition-colors group">
+<div class="flex items-center gap-3 rounded-md border bg-surface p-3 hover:bg-surface-subtle transition-colors group" ondblclick={() => onselect(task)}>
   <!-- Toggle checkbox -->
   {#if userRole === 'viewer'}
     <div

@@ -38,19 +38,20 @@
     <div class="flex items-center justify-between">
       <h1 class="font-accent text-lg font-semibold">Taskmaster</h1>
       <div class="flex items-center gap-4">
-        <div class="relative">
-          <button
-            type="button"
-            class="p-1.5 rounded-md text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
-            onclick={() => { searchOpen = !searchOpen; }}
-            aria-label="Search tasks"
-          >
-            <Search class="w-4 h-4" />
-          </button>
+        <div class="flex items-center">
           {#if searchOpen}
-            <div class="absolute right-0 top-full mt-2 w-72 z-50">
+            <div class="w-56">
               <SearchBar {onSelectTask} onClose={() => { searchOpen = false; }} />
             </div>
+          {:else}
+            <button
+              type="button"
+              class="p-1.5 rounded-md text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
+              onclick={() => { searchOpen = true; }}
+              aria-label="Search tasks"
+            >
+              <Search class="w-4 h-4" />
+            </button>
           {/if}
         </div>
         <NotificationBell bind:unreadCount />

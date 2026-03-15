@@ -5,7 +5,11 @@
   import TaskSheet from '$lib/components/TaskSheet.svelte';
   import MemberManager from '$lib/components/MemberManager.svelte';
   import { Users } from '@lucide/svelte';
-  import { getListIcon } from '$lib/utils/icons.js';
+  import { getListIcon, LIST_ICONS } from '$lib/utils/icons.js';
+  import { LIST_COLORS } from '$lib/types/index.js';
+  import * as Popover from '$lib/components/ui/popover/index.js';
+  import { enhance } from '$app/forms';
+  import { toast } from 'svelte-sonner';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -28,6 +32,15 @@
   let completedTasks = $derived(data.tasks.filter((t) => t.status === 'done' || t.status === 'canceled'));
   let showCompleted = $state(false);
   const ListIcon = $derived(getListIcon(data.list.icon));
+
+  let localIcon = $state(data.list.icon);
+  let localColor = $state<string | null>(data.list.color);
+  const LocalListIcon = $derived(getListIcon(localIcon));
+
+  $effect(() => {
+    localIcon = data.list.icon;
+    localColor = data.list.color;
+  });
 </script>
 
 <div>
@@ -39,12 +52,77 @@
       </svg>
     </a>
     <div class="flex items-center gap-2">
-      <div
-        class="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
-        style="background-color: {data.list.color || 'hsl(var(--foreground-muted))'}"
-      >
-        <ListIcon class="w-3.5 h-3.5 text-white" />
-      </div>
+      {#if isOwner}
+        <Popover.Root>
+          <Popover.Trigger>
+            <button
+              type="button"
+              title="Change icon and color"
+              class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 hover:ring-2 hover:ring-offset-1 hover:ring-foreground-muted transition-all"
+              style="background-color: {localColor || 'hsl(var(--foreground-muted))'}"
+            >
+              <LocalListIcon class="w-3.5 h-3.5 text-white" />
+            </button>
+          </Popover.Trigger>
+          <Popover.Content class="w-72 p-3" align="start">
+            <form
+              id="appearance-form"
+              method="POST"
+              action="?/updateListAppearance"
+              use:enhance={() => {
+                return async ({ result, update }) => {
+                  if (result.type === 'failure') {
+                    localIcon = data.list.icon;
+                    localColor = data.list.color;
+                    toast.error((result.data as Record<string, string>)?.error ?? 'Failed to update');
+                  }
+                  await update({ reset: false });
+                };
+              }}
+            >
+              <input type="hidden" name="icon" bind:value={localIcon} />
+              <input type="hidden" name="color" value={localColor ?? ''} />
+            </form>
+
+            <p class="text-xs font-medium text-foreground-secondary mb-2">Icon</p>
+            <div class="grid grid-cols-10 gap-1 mb-3">
+              {#each LIST_ICONS as item}
+                {@const IconComp = getListIcon(item.name)}
+                <button
+                  type="button"
+                  title={item.label}
+                  class="w-7 h-7 rounded-md flex items-center justify-center transition-colors
+                    {localIcon === item.name
+                      ? 'bg-primary text-primary-foreground'
+                      : 'text-foreground-secondary hover:bg-surface-subtle hover:text-foreground'}"
+                  onclick={() => { localIcon = item.name; document.getElementById('appearance-form')?.requestSubmit(); }}
+                >
+                  <IconComp class="w-4 h-4" />
+                </button>
+              {/each}
+            </div>
+
+            <p class="text-xs font-medium text-foreground-secondary mb-2">Color</p>
+            <div class="flex gap-2">
+              {#each LIST_COLORS as c}
+                <button
+                  type="button"
+                  class="w-7 h-7 rounded-full border-2 transition-transform {localColor === c ? 'border-foreground scale-110' : 'border-transparent'}"
+                  style="background-color: {c}"
+                  onclick={() => { localColor = localColor === c ? null : c; document.getElementById('appearance-form')?.requestSubmit(); }}
+                ></button>
+              {/each}
+            </div>
+          </Popover.Content>
+        </Popover.Root>
+      {:else}
+        <div
+          class="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+          style="background-color: {data.list.color || 'hsl(var(--foreground-muted))'}"
+        >
+          <ListIcon class="w-3.5 h-3.5 text-white" />
+        </div>
+      {/if}
       <h1 class="text-page-title font-accent">{data.list.name}</h1>
     </div>
     {#if isOwner}

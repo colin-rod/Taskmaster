@@ -30,6 +30,8 @@ export const actions: Actions = {
     const formData = await request.formData();
     const title = formData.get('title')?.toString()?.trim();
     const due_at = formData.get('due_at')?.toString() || null;
+    const priorityRaw = parseInt(formData.get('priority')?.toString() ?? '4', 10);
+    const priority = [1, 2, 3, 4].includes(priorityRaw) ? priorityRaw : 4;
 
     if (!title) return fail(400, { error: 'Task title is required' });
 
@@ -39,7 +41,7 @@ export const actions: Actions = {
       owner_id: profileId!,
       due_at,
       status: 'todo',
-      priority: 4,
+      priority,
     });
 
     if (error) return fail(500, { error: error.message });

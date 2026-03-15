@@ -47,7 +47,14 @@
   }
 </script>
 
-<div class="px-2 pb-2">
+<div
+  role="search"
+  onfocusout={(e) => {
+    if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+      onClose();
+    }
+  }}
+>
   <div class="relative">
     <Search class="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-foreground-muted pointer-events-none" />
     <input
