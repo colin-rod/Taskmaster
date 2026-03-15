@@ -25,7 +25,9 @@
 
   // Profile editing state
   let editingName = $state(false);
+  // svelte-ignore state_referenced_locally
   let nameValue = $state(data.profile?.display_name ?? '');
+  // svelte-ignore state_referenced_locally
   let avatarPreviewUrl = $state<string | null>(data.profile?.avatar_url ?? null);
 
   function handleFileChange(e: Event) {
@@ -101,7 +103,7 @@
           style={!avatarPreviewUrl ? `background-color: ${data.profile?.avatar_color ?? '#3B82F6'}` : ''}
         >
           {#if avatarPreviewUrl}
-            <img src={avatarPreviewUrl} alt="Profile photo" class="h-full w-full object-cover" />
+            <img src={avatarPreviewUrl} alt="Profile" class="h-full w-full object-cover" />
           {:else}
             {getInitials(data.profile?.display_name ?? null)}
           {/if}

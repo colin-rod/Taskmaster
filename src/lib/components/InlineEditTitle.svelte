@@ -13,6 +13,7 @@
   } = $props();
 
   let editing = $state(false);
+  // svelte-ignore state_referenced_locally
   let editValue = $state(value);
   let inputEl = $state<HTMLInputElement | null>(null);
 

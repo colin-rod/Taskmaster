@@ -33,7 +33,9 @@
   let showCompleted = $state(false);
   const ListIcon = $derived(getListIcon(data.list.icon));
 
+  // svelte-ignore state_referenced_locally
   let localIcon = $state(data.list.icon);
+  // svelte-ignore state_referenced_locally
   let localColor = $state<string | null>(data.list.color);
   const LocalListIcon = $derived(getListIcon(localIcon));
 
@@ -46,7 +48,7 @@
 <div>
   <!-- Header -->
   <div class="flex items-center gap-3 mb-6">
-    <a href="/lists" class="text-foreground-secondary hover:text-foreground">
+    <a href="/lists" aria-label="Back to lists" class="text-foreground-secondary hover:text-foreground">
       <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
         <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
       </svg>
@@ -95,7 +97,7 @@
                     {localIcon === item.name
                       ? 'bg-primary text-primary-foreground'
                       : 'text-foreground-secondary hover:bg-surface-subtle hover:text-foreground'}"
-                  onclick={() => { localIcon = item.name; document.getElementById('appearance-form')?.requestSubmit(); }}
+                  onclick={() => { localIcon = item.name; (document.getElementById('appearance-form') as HTMLFormElement | null)?.requestSubmit(); }}
                 >
                   <IconComp class="w-4 h-4" />
                 </button>
@@ -107,9 +109,10 @@
               {#each LIST_COLORS as c}
                 <button
                   type="button"
+                  aria-label={c}
                   class="w-7 h-7 rounded-full border-2 transition-transform {localColor === c ? 'border-foreground scale-110' : 'border-transparent'}"
                   style="background-color: {c}"
-                  onclick={() => { localColor = localColor === c ? null : c; document.getElementById('appearance-form')?.requestSubmit(); }}
+                  onclick={() => { localColor = localColor === c ? null : c; (document.getElementById('appearance-form') as HTMLFormElement | null)?.requestSubmit(); }}
                 ></button>
               {/each}
             </div>

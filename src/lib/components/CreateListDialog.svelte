@@ -78,7 +78,7 @@
         />
       </div>
       <div>
-        <label class="text-sm font-medium">Icon</label>
+        <p class="text-sm font-medium">Icon</p>
         <div class="grid grid-cols-10 gap-1 mt-1">
           {#each LIST_ICONS as item}
             {@const IconComponent = getListIcon(item.name)}
@@ -97,12 +97,13 @@
         </div>
       </div>
       <div>
-        <label class="text-sm font-medium">Color</label>
+        <p class="text-sm font-medium">Color</p>
         <input type="hidden" name="color" value={color || ''} />
         <div class="flex gap-2 mt-1">
           {#each LIST_COLORS as c}
             <button
               type="button"
+              aria-label={c}
               class="w-7 h-7 rounded-full border-2 transition-transform {color === c ? 'border-foreground scale-110' : 'border-transparent'}"
               style="background-color: {c}"
               onclick={() => { color = color === c ? null : c; }}

@@ -74,7 +74,7 @@
           />
         </div>
         <div>
-          <label class="text-sm font-medium">Icon</label>
+          <p class="text-sm font-medium">Icon</p>
           <input type="hidden" name="icon" value={newListIcon} />
           <div class="grid grid-cols-10 gap-1 mt-1">
             {#each LIST_ICONS as item}
@@ -94,12 +94,13 @@
           </div>
         </div>
         <div>
-          <label class="text-sm font-medium">Color</label>
+          <p class="text-sm font-medium">Color</p>
           <input type="hidden" name="color" value={newListColor || ''} />
           <div class="flex gap-2 mt-1">
             {#each LIST_COLORS as color}
               <button
                 type="button"
+                aria-label={color}
                 class="w-7 h-7 rounded-full border-2 transition-transform {newListColor === color ? 'border-foreground scale-110' : 'border-transparent'}"
                 style="background-color: {color}"
                 onclick={() => { newListColor = newListColor === color ? null : color; }}
@@ -163,7 +164,7 @@
                 class="select-input"
               />
               <div>
-                <label class="text-sm font-medium">Icon</label>
+                <p class="text-sm font-medium">Icon</p>
                 <input type="hidden" name="icon" value={editIcon} />
                 <div class="grid grid-cols-10 gap-1 mt-1">
                   {#each LIST_ICONS as item}
@@ -187,6 +188,7 @@
                 {#each LIST_COLORS as color}
                   <button
                     type="button"
+                    aria-label={color}
                     class="w-6 h-6 rounded-full border-2 {editColor === color ? 'border-foreground scale-110' : 'border-transparent'}"
                     style="background-color: {color}"
                     onclick={() => { editColor = editColor === color ? null : color; }}
