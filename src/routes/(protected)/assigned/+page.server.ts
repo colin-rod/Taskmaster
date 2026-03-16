@@ -23,6 +23,12 @@ export const actions: Actions = {
     const due_at = formData.get('due_at')?.toString() || null;
     const priorityRaw = parseInt(formData.get('priority')?.toString() ?? '4', 10);
     const priority = [1, 2, 3, 4].includes(priorityRaw) ? priorityRaw : 4;
+    const is_recurring = formData.get('is_recurring') === 'true';
+    const recurrence_rule_raw = formData.get('recurrence_rule')?.toString() || null;
+    let recurrence_rule = null;
+    if (is_recurring && recurrence_rule_raw) {
+      try { recurrence_rule = JSON.parse(recurrence_rule_raw); } catch {}
+    }
 
     if (!title) return fail(400, { error: 'Task title is required' });
 
@@ -33,6 +39,8 @@ export const actions: Actions = {
       due_at,
       status: 'todo',
       priority,
+      is_recurring,
+      recurrence_rule,
     });
 
     if (error) return fail(500, { error: error.message });

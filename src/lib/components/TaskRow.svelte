@@ -150,13 +150,6 @@
             <span class="flex-1 min-w-0 {optimisticStatus === 'done' ? 'line-through text-foreground-muted text-sm' : 'font-medium text-[15px]'}">
               <InlineEditTitle taskId={task.id} value={task.title} disabled={!canEdit} />
             </span>
-            {#if canEdit}
-              <PriorityPicker taskId={task.id} value={task.priority} />
-            {:else}
-              <span class="text-xs font-medium px-1.5 py-0.5 rounded bg-surface-subtle shrink-0 {PRIORITY_OPTIONS.find(p => p.level === task.priority)?.color ?? 'text-foreground-muted'}">
-                P{task.priority}
-              </span>
-            {/if}
           </div>
           <div class="flex items-center gap-2 mt-1">
             {#if canEdit}
@@ -187,6 +180,15 @@
             />
           </div>
         </div>
+
+        <!-- Priority badge -->
+        {#if canEdit}
+          <PriorityPicker taskId={task.id} value={task.priority} />
+        {:else}
+          <span class="text-xs font-medium px-1.5 py-0.5 rounded bg-surface-subtle shrink-0 {PRIORITY_OPTIONS.find(p => p.level === task.priority)?.color ?? 'text-foreground-muted'}">
+            P{task.priority}
+          </span>
+        {/if}
 
         <!-- More menu (opens TaskSheet) -->
         <button
