@@ -204,4 +204,52 @@
     margin-bottom: 0.75rem;
     font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
+
+  /* Bolder section label — Fraunces uppercase */
+  .section-header-bold {
+    font-family: 'Fraunces', Georgia, serif;
+    font-size: 0.6875rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: hsl(var(--foreground-secondary));
+    margin-bottom: 0.75rem;
+    display: block;
+  }
+
+  /* Left-accent hover for task rows */
+  .task-row-hover {
+    position: relative;
+    transition: background-color 150ms ease, box-shadow 150ms ease;
+  }
+  .task-row-hover::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 3px;
+    border-radius: 3px 0 0 3px;
+    background-color: hsl(var(--primary));
+    opacity: 0;
+    transition: opacity 150ms ease;
+  }
+  .task-row-hover:hover::before,
+  .task-row-hover:focus-within::before { opacity: 1; }
+  .task-row-hover:hover {
+    background-color: hsl(var(--primary-tint));
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+
+  /* Circular badge for autosave state in TaskSheet */
+  .save-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 9999px;
+    transition: background-color 200ms ease;
+  }
+  .save-badge--saving { background-color: hsl(var(--surface-subtle)); }
+  .save-badge--saved  { background-color: hsl(142 71% 45% / 0.12); }
+  .save-badge--error  { background-color: hsl(var(--destructive) / 0.1); }
 }

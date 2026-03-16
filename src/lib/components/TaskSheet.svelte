@@ -46,6 +46,7 @@
   let editRecurrenceRule = $state<RecurrenceRule | null>(null);
   let prevCompleted = $state(0);
   let checklistJustFinished = $state(false);
+  let justFinishedTimeout: ReturnType<typeof setTimeout>;
 
   // Autosave state
   type SaveState = 'idle' | 'saving' | 'saved' | 'error';
@@ -218,9 +219,11 @@
   $effect(() => {
     if (totalCount > 0 && completedCount === totalCount && prevCompleted < totalCount) {
       checklistJustFinished = true;
-      setTimeout(() => { checklistJustFinished = false; }, 1200);
+      clearTimeout(justFinishedTimeout);
+      justFinishedTimeout = setTimeout(() => { checklistJustFinished = false; }, 1200);
     }
     prevCompleted = completedCount;
+    return () => clearTimeout(justFinishedTimeout);
   });
   let completedCount = $derived(checklistItems.filter((i) => i.is_completed).length);
   let totalCount = $derived(checklistItems.length);
@@ -229,22 +232,22 @@
 <Sheet bind:open>
   <SheetContent
     side={isMd ? 'right' : 'bottom'}
-    class={isMd ? 'h-full overflow-y-auto w-[420px] px-5' : 'max-h-[85vh] overflow-y-auto rounded-t-xl px-5'}
+    class={isMd ? 'h-full overflow-y-auto w-[440px] px-6 pt-6' : 'max-h-[85vh] overflow-y-auto rounded-t-2xl px-5 pt-4'}
   >
-    <SheetHeader class="px-0">
+    <SheetHeader class="px-0 pb-4 border-b border-border-divider">
       <div class="flex items-center justify-between">
-        <SheetTitle>Task Details</SheetTitle>
+        <SheetTitle class="font-accent text-xl tracking-tight">Task Details</SheetTitle>
         {#if saveState === 'saving'}
-          <span class="text-foreground-muted" aria-label="Saving">
-            <Loader class="size-4 animate-spin" />
+          <span class="save-badge save-badge--saving text-foreground-muted" aria-label="Saving">
+            <Loader class="size-3.5 animate-spin" />
           </span>
         {:else if saveState === 'saved'}
-          <span class="text-status-done animate-[scale-in_0.15s_ease-out]" aria-label="Saved">
-            <Check class="size-4" />
+          <span class="save-badge save-badge--saved text-status-done animate-[scale-in_0.15s_ease-out]" aria-label="Saved">
+            <Check class="size-3.5" />
           </span>
         {:else if saveState === 'error'}
-          <span class="text-destructive animate-[scale-in_0.15s_ease-out]" aria-label="Save failed">
-            <AlertCircle class="size-4" />
+          <span class="save-badge save-badge--error text-destructive animate-[scale-in_0.15s_ease-out]" aria-label="Save failed">
+            <AlertCircle class="size-3.5" />
           </span>
         {/if}
       </div>
@@ -255,34 +258,34 @@
       <!-- View-only mode for viewers -->
       <div class="space-y-4 mt-2">
         <div>
-          <span class="text-sm font-medium text-foreground-secondary">Title</span>
+          <span class="section-header-bold">Title</span>
           <p class="mt-1">{task.title}</p>
         </div>
         {#if task.notes}
           <div>
-            <span class="text-sm font-medium text-foreground-secondary">Notes</span>
+            <span class="section-header-bold">Notes</span>
             <p class="mt-1 text-sm whitespace-pre-wrap">{task.notes}</p>
           </div>
         {/if}
         <div class="flex gap-4">
           <div>
-            <span class="text-sm font-medium text-foreground-secondary">Priority</span>
+            <span class="section-header-bold">Priority</span>
             <p class="mt-1 text-sm">{getPriorityLabel(task.priority)}</p>
           </div>
           <div>
-            <span class="text-sm font-medium text-foreground-secondary">Status</span>
+            <span class="section-header-bold">Status</span>
             <p class="mt-1 text-sm">{formatStatus(task.status)}</p>
           </div>
         </div>
         {#if task.due_at}
           <div>
-            <span class="text-sm font-medium text-foreground-secondary">Due date</span>
+            <span class="section-header-bold">Due date</span>
             <p class="mt-1 text-sm">{new Date(task.due_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
           </div>
         {/if}
         {#if (task.checklist_items ?? []).length > 0}
           <div class="border-t pt-4">
-            <span class="text-sm font-medium">Checklist</span>
+            <span class="section-header-bold">Checklist</span>
             <div class="space-y-1 mt-2">
               {#each (task.checklist_items ?? []).slice().sort((a, b) => a.position - b.position) as item (item.id)}
                 <div class="flex items-center gap-2 py-1">
@@ -305,7 +308,7 @@
 
         <!-- Title -->
         <div>
-          <label for="edit-title" class="text-sm font-medium">Title</label>
+          <label for="edit-title" class="text-sm font-semibold tracking-wide text-foreground">Title</label>
           <input
             id="edit-title"
             name="title"
@@ -313,33 +316,33 @@
             bind:value={editTitle}
             required
             onblur={handleTitleBlur}
-            class="select-input mt-1"
+            class="select-input mt-1 text-base font-medium"
           />
         </div>
 
         <!-- Notes -->
         <div>
-          <label for="edit-notes" class="text-sm font-medium">Notes</label>
+          <label for="edit-notes" class="text-sm font-semibold tracking-wide text-foreground">Notes</label>
           <textarea
             id="edit-notes"
             name="notes"
             bind:value={editNotes}
-            rows="3"
+            rows="4"
             placeholder="Add context, links, or extra detail..."
             onblur={handleNotesBlur}
-            class="select-input mt-1 resize-y"
+            class="select-input mt-1 resize-y min-h-22.5"
           ></textarea>
         </div>
 
         <!-- Metadata zone (priority, status, due, reminder, recurrence) -->
-        <div class="border-t border-border-divider pt-4 space-y-4">
+        <div class="border-t border-border-divider pt-5 space-y-4">
 
-          <p class="section-header">Details</p>
+          <p class="section-header-bold">Details</p>
 
           <!-- Priority + Status row -->
           <div class="flex gap-3">
             <div class="flex-1">
-              <label for="edit-priority" class="text-sm font-medium">Priority</label>
+              <label for="edit-priority" class="text-sm font-semibold tracking-wide text-foreground">Priority</label>
               <select
                 id="edit-priority"
                 name="priority"
@@ -353,7 +356,7 @@
               </select>
             </div>
             <div class="flex-1">
-              <label for="edit-status" class="text-sm font-medium">Status</label>
+              <label for="edit-status" class="text-sm font-semibold tracking-wide text-foreground">Status</label>
               <select
                 id="edit-status"
                 name="status"
@@ -370,7 +373,7 @@
 
           <!-- Due date -->
           <div>
-            <label for="edit-due" class="text-sm font-medium">Due date</label>
+            <label for="edit-due" class="text-sm font-semibold tracking-wide text-foreground">Due date</label>
             <input
               id="edit-due"
               name="due_at"
@@ -381,7 +384,7 @@
               class="select-input mt-1"
             />
             {#if editDueAt}
-              <label for="edit-due-time" class="text-sm font-medium mt-3 block">
+              <label for="edit-due-time" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
                 Time <span class="text-foreground-muted font-normal">(optional)</span>
               </label>
               <input
@@ -397,7 +400,7 @@
 
           <!-- Reminder -->
           <div>
-            <label for="edit-reminder" class="text-sm font-medium">Reminder</label>
+            <label for="edit-reminder" class="text-sm font-semibold tracking-wide text-foreground">Reminder</label>
             <input
               id="edit-reminder"
               name="reminder_at"
@@ -411,17 +414,17 @@
               <div class="flex gap-2 flex-wrap">
                 <button
                   type="button"
-                  class="text-xs px-3 py-2 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground min-h-11 flex items-center"
+                  class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-9 flex items-center font-medium"
                   onclick={() => setReminderPreset(10)}
                 >10 min</button>
                 <button
                   type="button"
-                  class="text-xs px-3 py-2 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground min-h-11 flex items-center"
+                  class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-9 flex items-center font-medium"
                   onclick={() => setReminderPreset(60)}
                 >1 hr</button>
                 <button
                   type="button"
-                  class="text-xs px-3 py-2 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground min-h-11 flex items-center"
+                  class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-9 flex items-center font-medium"
                   onclick={() => setReminderPreset(1440)}
                 >1 day</button>
               </div>
@@ -478,9 +481,9 @@
       {/if}
 
       <!-- Checklist Section -->
-      <div class="mt-4 pt-4 border-t">
+      <div class="mt-5 pt-5 border-t">
         <div class="flex items-center justify-between mb-3">
-          <span class="text-sm font-medium">Checklist</span>
+          <span class="section-header-bold" style="margin-bottom:0">Checklist</span>
           {#if totalCount > 0}
             <span class="text-xs {completedCount === totalCount && totalCount > 0 ? 'text-green-600 font-medium' : 'text-foreground-secondary'}">
               {completedCount === totalCount && totalCount > 0 ? 'All done ✓' : `${completedCount}/${totalCount}`}
@@ -490,7 +493,7 @@
 
         <!-- Progress bar -->
         {#if totalCount > 0}
-          <div class="h-1.5 rounded-full bg-surface-subtle mb-3 overflow-hidden" class:progress-finish={checklistJustFinished}>
+          <div class="h-2 rounded-full bg-surface-subtle mb-3 overflow-hidden" class:progress-finish={checklistJustFinished}>
             <div
               class="h-full rounded-full transition-all duration-300 {completedCount === totalCount ? 'bg-status-done' : 'bg-primary'}"
               style="width: {(completedCount / totalCount) * 100}%"
@@ -502,15 +505,19 @@
         {#if checklistItems.length > 0}
           <div class="space-y-1 mb-3">
             {#each checklistItems as item (item.id)}
-              <div class="flex items-center gap-2 group rounded-md px-1 py-1 hover:bg-surface-subtle">
+              <div class="flex items-center gap-2 group rounded-md px-2 py-1.5 hover:bg-primary-tint/60 transition-colors">
                 <!-- Toggle -->
                 <form
                   method="POST"
                   action="?/toggleChecklistItem"
                   use:enhance={() => {
+                    const wasCompleted = item.is_completed;
+                    item.is_completed = !item.is_completed;
                     return async ({ result, update }) => {
                       if (result.type === 'success') {
-                        toast.success(item.is_completed ? 'Item unchecked' : 'Item checked');
+                        toast.success(wasCompleted ? 'Item unchecked' : 'Item checked');
+                      } else {
+                        item.is_completed = wasCompleted;
                       }
                       await update();
                     };
@@ -543,9 +550,16 @@
                   method="POST"
                   action="?/deleteChecklistItem"
                   use:enhance={() => {
+                    const idx = task!.checklist_items!.findIndex(i => i.id === item.id);
+                    const removed = task!.checklist_items![idx];
+                    task!.checklist_items = task!.checklist_items!.filter(i => i.id !== item.id);
                     return async ({ result, update }) => {
                       if (result.type === 'success') {
                         toast.success('Item removed');
+                      } else {
+                        const rollback = [...task!.checklist_items!];
+                        rollback.splice(idx, 0, removed);
+                        task!.checklist_items = rollback;
                       }
                       await update();
                     };
@@ -574,10 +588,23 @@
           class="flex items-center gap-2"
           use:enhance={() => {
             addingItem = true;
+            const label = newItemLabel.trim();
+            const tempItem = {
+              id: `temp-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+              task_id: task!.id,
+              label,
+              is_completed: false,
+              position: (task?.checklist_items?.length ?? 0),
+              created_at: new Date().toISOString(),
+              updated_at: new Date().toISOString(),
+            };
+            task!.checklist_items = [...(task!.checklist_items ?? []), tempItem];
+            newItemLabel = '';
             return async ({ result, update }) => {
               addingItem = false;
-              if (result.type === 'success') {
-                newItemLabel = '';
+              if (result.type !== 'success') {
+                task!.checklist_items = task!.checklist_items!.filter(i => i.id !== tempItem.id);
+                newItemLabel = label;
               }
               await update();
             };
@@ -611,7 +638,7 @@
           <AlertDialog.Trigger>
             <button
               type="button"
-              class="w-full rounded-md border border-destructive/30 px-4 py-2 text-sm text-destructive hover:bg-destructive/10 disabled:opacity-50"
+              class="w-full rounded-md border border-destructive/40 px-4 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 hover:border-destructive/60 transition-colors disabled:opacity-50"
               disabled={deleting}
             >
               {deleting ? 'Removing...' : 'Delete task'}
@@ -630,12 +657,16 @@
                 use:enhance={() => {
                   deleting = true;
                   deleteAlertOpen = false;
+                  const savedTask = task;
+                  open = false;
+                  task = null;
                   return async ({ result, update }) => {
                     deleting = false;
                     if (result.type === 'success') {
-                      open = false;
-                      task = null;
                       toast.success('Task deleted');
+                    } else {
+                      open = true;
+                      task = savedTask;
                     }
                     await update();
                   };

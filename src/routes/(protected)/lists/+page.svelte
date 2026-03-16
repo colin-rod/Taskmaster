@@ -33,9 +33,10 @@
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-page-title font-accent">Task Lists</h1>
     <button
-      class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
+      class="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition-colors shadow-sm inline-flex items-center gap-1.5"
       onclick={() => { showCreateForm = !showCreateForm; }}
     >
+      {#if !showCreateForm}<span aria-hidden="true" class="text-base leading-none">+</span>{/if}
       {showCreateForm ? 'Cancel' : 'New List'}
     </button>
   </div>
@@ -44,7 +45,7 @@
     <form
       method="POST"
       action="?/createList"
-      class="mb-6 rounded-md border bg-surface p-4"
+      class="mb-6 rounded-xl border bg-surface p-5 shadow-level-1"
       use:enhance={() => {
         creating = true;
         return async ({ result, update }) => {
@@ -96,7 +97,7 @@
         <div>
           <p class="text-sm font-medium">Color</p>
           <input type="hidden" name="color" value={newListColor || ''} />
-          <div class="flex gap-2 mt-1">
+          <div class="flex gap-2 mt-1 items-center">
             {#each LIST_COLORS as color}
               <button
                 type="button"
@@ -126,17 +127,17 @@
   {/if}
 
   {#if data.lists.length === 0 && !showCreateForm}
-    <div class="text-center py-12">
-      <p class="text-foreground-secondary mb-4">No lists yet. Create one to organize your tasks.</p>
+    <div class="text-center py-16">
+      <p class="text-foreground-secondary mb-5 text-base">No lists yet. Create one to organize your tasks.</p>
       <button
-        class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
+        class="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition-colors shadow-sm"
         onclick={() => { showCreateForm = true; }}
       >
         Create your first list
       </button>
     </div>
   {:else}
-    <div class="space-y-2">
+    <div class="space-y-3">
       {#each data.lists as list (list.id)}
         {#if editingListId === list.id}
           <!-- Edit mode -->
@@ -184,7 +185,7 @@
                 </div>
               </div>
               <input type="hidden" name="color" value={editColor || ''} />
-              <div class="flex gap-2">
+              <div class="flex gap-2 items-center">
                 {#each LIST_COLORS as color}
                   <button
                     type="button"
@@ -210,16 +211,16 @@
           <!-- Display mode -->
           <a
             href="/lists/{list.id}"
-            class="flex items-center justify-between rounded-md border bg-surface p-4 hover:bg-surface-subtle transition-colors group"
+            class="flex items-center justify-between rounded-xl border bg-surface px-5 py-4 hover:bg-primary-tint hover:border-primary/20 transition-all group shadow-level-1 hover:shadow-level-2"
           >
             <div class="flex items-center gap-3">
               <div
-                class="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0"
+                class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
                 style="background-color: {list.color || 'hsl(var(--foreground-muted))'}"
               >
-                <IconComponent class="w-3.5 h-3.5 text-white" />
+                <IconComponent class="w-5 h-5 text-white" />
               </div>
-              <span class="font-medium">{list.name}</span>
+              <span class="font-semibold text-[15px]">{list.name}</span>
               {#if list.members && list.members.length > 0}
                 <span class="text-metadata">{list.members.length} member{list.members.length !== 1 ? 's' : ''}</span>
               {/if}
@@ -227,7 +228,7 @@
             <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
               <button
                 type="button"
-                class="rounded px-2 py-1 text-xs text-foreground-secondary hover:bg-surface-subtle"
+                class="rounded-md px-2.5 py-1 text-xs font-medium text-foreground-secondary hover:bg-surface-subtle transition-colors"
                 onclick={(e) => { e.preventDefault(); e.stopPropagation(); startEdit(list); }}
               >
                 Edit
@@ -247,7 +248,7 @@
                 <input type="hidden" name="id" value={list.id} />
                 <button
                   type="submit"
-                  class="rounded px-2 py-1 text-xs text-destructive hover:bg-destructive/10"
+                  class="rounded-md px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
                   onclick={(e) => { e.stopPropagation(); if (!confirm('Delete this list? Tasks will be moved to Inbox.')) { e.preventDefault(); } }}
                 >
                   Delete

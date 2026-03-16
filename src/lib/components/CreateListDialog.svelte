@@ -52,22 +52,22 @@
 </script>
 
 <Dialog.Root bind:open>
-  <Dialog.Content class="sm:max-w-md">
+  <Dialog.Content class="sm:max-w-[480px]">
     <Dialog.Header>
-      <Dialog.Title>New List</Dialog.Title>
+      <Dialog.Title class="font-accent text-xl">New List</Dialog.Title>
       <Dialog.Description>Create a new task list to organize your tasks.</Dialog.Description>
     </Dialog.Header>
     <form onsubmit={handleSubmit} class="space-y-4 mt-2">
       <div class="flex justify-center">
         <div
-          class="w-10 h-10 rounded-full flex items-center justify-center transition-colors"
+          class="w-16 h-16 rounded-full flex items-center justify-center transition-colors shadow-level-2 ring-4 ring-white"
           style="background-color: {color || 'hsl(var(--foreground-muted))'}"
         >
-          <PreviewIcon class="w-5 h-5 text-white" />
+          <PreviewIcon class="w-8 h-8 text-white" />
         </div>
       </div>
       <div>
-        <label for="create-list-name" class="text-sm font-medium">Name</label>
+        <label for="create-list-name" class="text-sm font-semibold tracking-wide text-foreground">Name</label>
         <input
           id="create-list-name"
           type="text"
@@ -78,17 +78,17 @@
         />
       </div>
       <div>
-        <p class="text-sm font-medium">Icon</p>
+        <p class="section-header-bold">Icon</p>
         <div class="grid grid-cols-10 gap-1 mt-1">
           {#each LIST_ICONS as item}
             {@const IconComponent = getListIcon(item.name)}
             <button
               type="button"
               title={item.label}
-              class="w-7 h-7 rounded-md flex items-center justify-center transition-colors
+              class="w-8 h-8 rounded-lg flex items-center justify-center transition-colors
                 {icon === item.name
-                  ? 'bg-primary text-primary-foreground'
-                  : 'text-foreground-secondary hover:bg-surface-subtle hover:text-foreground'}"
+                  ? 'bg-primary text-primary-foreground ring-2 ring-primary/30 shadow-sm'
+                  : 'text-foreground-secondary hover:bg-primary-tint hover:text-primary'}"
               onclick={() => { icon = item.name; }}
             >
               <IconComponent class="w-4 h-4" />
@@ -97,14 +97,14 @@
         </div>
       </div>
       <div>
-        <p class="text-sm font-medium">Color</p>
+        <p class="section-header-bold">Color</p>
         <input type="hidden" name="color" value={color || ''} />
-        <div class="flex gap-2 mt-1">
+        <div class="flex gap-2 mt-1 items-center">
           {#each LIST_COLORS as c}
             <button
               type="button"
               aria-label={c}
-              class="w-7 h-7 rounded-full border-2 transition-transform {color === c ? 'border-foreground scale-110' : 'border-transparent'}"
+              class="w-8 h-8 rounded-full border-2 transition-all shadow-sm {color === c ? 'border-foreground scale-110 shadow-md' : 'border-transparent hover:scale-105'}"
               style="background-color: {c}"
               onclick={() => { color = color === c ? null : c; }}
             ></button>
@@ -114,14 +114,14 @@
       <Dialog.Footer>
         <button
           type="button"
-          class="rounded-md border px-4 py-2 text-sm"
+          class="rounded-md border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-subtle transition-colors"
           onclick={() => { open = false; }}
         >
           Cancel
         </button>
         <button
           type="submit"
-          class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
+          class="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition-colors disabled:opacity-50 shadow-sm"
           disabled={creating || !name.trim()}
         >
           {creating ? 'Creating...' : 'Create List'}
