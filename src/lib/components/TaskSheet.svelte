@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { tick } from 'svelte';
+  import { invalidateAll } from '$app/navigation';
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
   import {
@@ -12,7 +14,7 @@
   import { getPriorityLabel, formatStatus } from '$lib/utils/design-tokens.js';
   import { hasTime, buildDueAt } from '$lib/utils/dates.js';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
-  import { Plus } from '@lucide/svelte';
+  import { Plus, Loader, Check, AlertCircle } from '@lucide/svelte';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 
   let {
@@ -35,7 +37,6 @@
   let editDueAt = $state('');
   let editDueTime = $state('');
   let editStatus = $state('todo');
-  let saving = $state(false);
   let deleting = $state(false);
   let deleteAlertOpen = $state(false);
   let newItemLabel = $state('');
@@ -45,6 +46,57 @@
   let editRecurrenceRule = $state<RecurrenceRule | null>(null);
   let prevCompleted = $state(0);
   let checklistJustFinished = $state(false);
+
+  // Autosave state
+  type SaveState = 'idle' | 'saving' | 'saved' | 'error';
+  let saveState = $state<SaveState>('idle');
+  let saveStateResetTimeout: ReturnType<typeof setTimeout> | null = null;
+  let latestSaveRequestId = 0;
+  let activeSaveCount = $state(0);
+  let isInitialized = $state(false);
+
+  // Previous values for $effect change detection
+  let prevPriority = $state(4);
+  let prevStatus = $state('todo');
+  let prevIsRecurring = $state(false);
+  let prevRecurrenceRule = $state<string>('null');
+
+  function clearSaveStateResetTimeout() {
+    if (saveStateResetTimeout) { clearTimeout(saveStateResetTimeout); saveStateResetTimeout = null; }
+  }
+
+  function queueSaveStateIdleReset() {
+    clearSaveStateResetTimeout();
+    saveStateResetTimeout = setTimeout(() => { saveState = 'idle'; saveStateResetTimeout = null; }, 1500);
+  }
+
+  async function autoSave(fields: Record<string, unknown>) {
+    if (!task || !open) return;
+    const requestId = ++latestSaveRequestId;
+    activeSaveCount++;
+    clearSaveStateResetTimeout();
+    saveState = 'saving';
+
+    try {
+      const res = await fetch(`/api/tasks/${task.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(fields),
+      });
+      if (res.ok) {
+        if (requestId === latestSaveRequestId) { saveState = 'saved'; queueSaveStateIdleReset(); }
+        await invalidateAll();
+      } else {
+        if (requestId === latestSaveRequestId) saveState = 'error';
+        toast.error('Failed to save');
+      }
+    } catch {
+      if (requestId === latestSaveRequestId) saveState = 'error';
+      toast.error('Network error — please try again');
+    } finally {
+      activeSaveCount = Math.max(0, activeSaveCount - 1);
+    }
+  }
 
   let isMd = $state(false);
   $effect(() => {
@@ -57,6 +109,7 @@
 
   $effect(() => {
     if (task) {
+      isInitialized = false;
       editTitle = task.title;
       editNotes = task.notes || '';
       editPriority = task.priority;
@@ -77,8 +130,86 @@
       editIsRecurring = task.is_recurring;
       editRecurrenceRule = task.recurrence_rule;
       newItemLabel = '';
+      prevPriority = task.priority;
+      prevStatus = task.status;
+      prevIsRecurring = task.is_recurring;
+      prevRecurrenceRule = JSON.stringify(task.recurrence_rule);
+      // Reset save state when switching tasks
+      clearSaveStateResetTimeout();
+      saveState = 'idle';
+      tick().then(() => { isInitialized = true; });
     }
   });
+
+  // Reset save state when drawer closes
+  $effect(() => {
+    if (!open) {
+      clearSaveStateResetTimeout();
+      saveState = 'idle';
+      isInitialized = false;
+    }
+  });
+
+  // Autosave: priority
+  $effect(() => {
+    if (isInitialized && task && editPriority !== prevPriority && editPriority !== task.priority) {
+      autoSave({ priority: editPriority });
+      prevPriority = editPriority;
+    }
+  });
+
+  // Autosave: status
+  $effect(() => {
+    if (isInitialized && task && editStatus !== prevStatus && editStatus !== task.status) {
+      autoSave({ status: editStatus });
+      prevStatus = editStatus;
+    }
+  });
+
+  // Autosave: recurrence
+  $effect(() => {
+    if (!isInitialized || !task) return;
+    const ruleStr = JSON.stringify(editRecurrenceRule);
+    if (editIsRecurring !== prevIsRecurring || ruleStr !== prevRecurrenceRule) {
+      autoSave({ is_recurring: editIsRecurring, recurrence_rule: editIsRecurring ? editRecurrenceRule : null });
+      prevIsRecurring = editIsRecurring;
+      prevRecurrenceRule = ruleStr;
+    }
+  });
+
+  function handleTitleBlur() {
+    if (!isInitialized || !task || editTitle === task.title) return;
+    autoSave({ title: editTitle });
+  }
+
+  function handleNotesBlur() {
+    if (!isInitialized || !task || editNotes === (task.notes ?? '')) return;
+    autoSave({ notes: editNotes || null });
+  }
+
+  function handleDueBlur() {
+    if (!isInitialized || !task) return;
+    const newDueAt = buildDueAt(editDueAt, editDueTime) ?? null;
+    const currentDueAt = task.due_at ?? null;
+    if (newDueAt !== currentDueAt) autoSave({ due_at: newDueAt });
+  }
+
+  function handleReminderBlur() {
+    if (!isInitialized || !task) return;
+    const newVal = editReminderAt ? new Date(editReminderAt).toISOString() : null;
+    const currentVal = task.reminder_at ?? null;
+    if (newVal !== currentVal) autoSave({ reminder_at: newVal });
+  }
+
+  function setReminderPreset(minutesBefore: number) {
+    if (!editDueAt) return;
+    const dueIso = buildDueAt(editDueAt, editDueTime);
+    if (!dueIso) return;
+    const dueDate = new Date(dueIso);
+    dueDate.setMinutes(dueDate.getMinutes() - minutesBefore);
+    editReminderAt = dueDate.toISOString().slice(0, 16);
+    autoSave({ reminder_at: dueDate.toISOString() });
+  }
 
   let checklistItems = $derived(
     (task?.checklist_items ?? []).slice().sort((a, b) => a.position - b.position)
@@ -93,15 +224,6 @@
   });
   let completedCount = $derived(checklistItems.filter((i) => i.is_completed).length);
   let totalCount = $derived(checklistItems.length);
-
-  function setReminderPreset(minutesBefore: number) {
-    if (!editDueAt) return;
-    const dueIso = buildDueAt(editDueAt, editDueTime);
-    if (!dueIso) return;
-    const dueDate = new Date(dueIso);
-    dueDate.setMinutes(dueDate.getMinutes() - minutesBefore);
-    editReminderAt = dueDate.toISOString().slice(0, 16);
-  }
 </script>
 
 <Sheet bind:open>
@@ -110,7 +232,22 @@
     class={isMd ? 'h-full overflow-y-auto w-[420px] px-5' : 'max-h-[85vh] overflow-y-auto rounded-t-xl px-5'}
   >
     <SheetHeader class="px-0">
-      <SheetTitle>Task Details</SheetTitle>
+      <div class="flex items-center justify-between">
+        <SheetTitle>Task Details</SheetTitle>
+        {#if saveState === 'saving'}
+          <span class="text-foreground-muted" aria-label="Saving">
+            <Loader class="size-4 animate-spin" />
+          </span>
+        {:else if saveState === 'saved'}
+          <span class="text-status-done animate-[scale-in_0.15s_ease-out]" aria-label="Saved">
+            <Check class="size-4" />
+          </span>
+        {:else if saveState === 'error'}
+          <span class="text-destructive animate-[scale-in_0.15s_ease-out]" aria-label="Save failed">
+            <AlertCircle class="size-4" />
+          </span>
+        {/if}
+      </div>
       <SheetDescription class="sr-only">{isViewer ? 'View task details' : 'Edit task details'}</SheetDescription>
     </SheetHeader>
 
@@ -164,23 +301,7 @@
         {/if}
       </div>
     {:else if task}
-      <form
-        method="POST"
-        action="?/updateTask"
-        class="space-y-4 mt-2"
-        use:enhance={() => {
-          saving = true;
-          return async ({ result, update }) => {
-            saving = false;
-            if (result.type === 'success') {
-              open = false;
-              toast.success('Changes saved.');
-            }
-            await update();
-          };
-        }}
-      >
-        <input type="hidden" name="id" value={task.id} />
+      <div class="space-y-4 mt-2">
 
         <!-- Title -->
         <div>
@@ -191,6 +312,7 @@
             type="text"
             bind:value={editTitle}
             required
+            onblur={handleTitleBlur}
             class="select-input mt-1"
           />
         </div>
@@ -204,126 +326,121 @@
             bind:value={editNotes}
             rows="3"
             placeholder="Add context, links, or extra detail..."
+            onblur={handleNotesBlur}
             class="select-input mt-1 resize-y"
           ></textarea>
         </div>
 
-        <!-- Priority + Status row -->
-        <div class="flex gap-3">
-          <div class="flex-1">
-            <label for="edit-priority" class="text-sm font-medium">Priority</label>
-            <select
-              id="edit-priority"
-              name="priority"
-              bind:value={editPriority}
-              class="select-input mt-1"
-            >
-              <option value={1}>P1 — Urgent</option>
-              <option value={2}>P2 — High</option>
-              <option value={3}>P3 — Medium</option>
-              <option value={4}>P4 — Low</option>
-            </select>
-          </div>
-          <div class="flex-1">
-            <label for="edit-status" class="text-sm font-medium">Status</label>
-            <select
-              id="edit-status"
-              name="status"
-              bind:value={editStatus}
-              class="select-input mt-1"
-            >
-              <option value="todo">Todo</option>
-              <option value="in_progress">In Progress</option>
-              <option value="done">Done</option>
-              <option value="canceled">Canceled</option>
-            </select>
-          </div>
-        </div>
+        <!-- Metadata zone (priority, status, due, reminder, recurrence) -->
+        <div class="border-t border-border-divider pt-4 space-y-4">
 
-        <!-- Metadata zone (due, reminder, recurrence) -->
-        <div class="border-t border-border-divider pt-4 mt-1 space-y-4">
+          <p class="section-header">Details</p>
 
-        <!-- Due date -->
-        <div>
-          <label for="edit-due" class="text-sm font-medium">Due date</label>
-          <input
-            id="edit-due"
-            name="due_at"
-            type="date"
-            bind:value={editDueAt}
-            onchange={() => { if (!editDueAt) editDueTime = ''; }}
-            class="select-input mt-1"
-          />
-          {#if editDueAt}
-            <label for="edit-due-time" class="text-sm font-medium mt-3 block">
-              Time <span class="text-foreground-muted font-normal">(optional)</span>
-            </label>
+          <!-- Priority + Status row -->
+          <div class="flex gap-3">
+            <div class="flex-1">
+              <label for="edit-priority" class="text-sm font-medium">Priority</label>
+              <select
+                id="edit-priority"
+                name="priority"
+                bind:value={editPriority}
+                class="select-input mt-1"
+              >
+                <option value={1}>P1 — Urgent</option>
+                <option value={2}>P2 — High</option>
+                <option value={3}>P3 — Medium</option>
+                <option value={4}>P4 — Low</option>
+              </select>
+            </div>
+            <div class="flex-1">
+              <label for="edit-status" class="text-sm font-medium">Status</label>
+              <select
+                id="edit-status"
+                name="status"
+                bind:value={editStatus}
+                class="select-input mt-1"
+              >
+                <option value="todo">Todo</option>
+                <option value="in_progress">In Progress</option>
+                <option value="done">Done</option>
+                <option value="canceled">Canceled</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Due date -->
+          <div>
+            <label for="edit-due" class="text-sm font-medium">Due date</label>
             <input
-              id="edit-due-time"
-              name="due_time"
-              type="time"
-              bind:value={editDueTime}
+              id="edit-due"
+              name="due_at"
+              type="date"
+              bind:value={editDueAt}
+              onchange={() => { if (!editDueAt) { editDueTime = ''; handleDueBlur(); } }}
+              onblur={handleDueBlur}
               class="select-input mt-1"
             />
-          {/if}
-        </div>
+            {#if editDueAt}
+              <label for="edit-due-time" class="text-sm font-medium mt-3 block">
+                Time <span class="text-foreground-muted font-normal">(optional)</span>
+              </label>
+              <input
+                id="edit-due-time"
+                name="due_time"
+                type="time"
+                bind:value={editDueTime}
+                onblur={handleDueBlur}
+                class="select-input mt-1"
+              />
+            {/if}
+          </div>
 
-        <!-- Reminder -->
-        <div>
-          <label for="edit-reminder" class="text-sm font-medium">Reminder</label>
-          <input
-            id="edit-reminder"
-            name="reminder_at"
-            type="datetime-local"
-            bind:value={editReminderAt}
-            class="select-input mt-1"
-          />
-          {#if editDueAt}
-            <div class="flex gap-2 mt-1.5 flex-wrap">
+          <!-- Reminder -->
+          <div>
+            <label for="edit-reminder" class="text-sm font-medium">Reminder</label>
+            <input
+              id="edit-reminder"
+              name="reminder_at"
+              type="datetime-local"
+              bind:value={editReminderAt}
+              onblur={handleReminderBlur}
+              class="select-input mt-1"
+            />
+            {#if editDueAt}
+              <p class="text-xs text-foreground-muted mt-2 mb-1">Relative to due date:</p>
+              <div class="flex gap-2 flex-wrap">
+                <button
+                  type="button"
+                  class="text-xs px-3 py-2 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground min-h-11 flex items-center"
+                  onclick={() => setReminderPreset(10)}
+                >10 min</button>
+                <button
+                  type="button"
+                  class="text-xs px-3 py-2 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground min-h-11 flex items-center"
+                  onclick={() => setReminderPreset(60)}
+                >1 hr</button>
+                <button
+                  type="button"
+                  class="text-xs px-3 py-2 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground min-h-11 flex items-center"
+                  onclick={() => setReminderPreset(1440)}
+                >1 day</button>
+              </div>
+            {/if}
+            {#if editReminderAt}
               <button
                 type="button"
-                class="text-xs px-3 py-2 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground min-h-11 flex items-center"
-                onclick={() => setReminderPreset(10)}
-              >10 min</button>
-              <button
-                type="button"
-                class="text-xs px-3 py-2 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground min-h-11 flex items-center"
-                onclick={() => setReminderPreset(60)}
-              >1 hr</button>
-              <button
-                type="button"
-                class="text-xs px-3 py-2 rounded bg-surface-subtle text-foreground-secondary hover:text-foreground min-h-11 flex items-center"
-                onclick={() => setReminderPreset(1440)}
-              >1 day</button>
-            </div>
-          {/if}
-          {#if editReminderAt}
-            <button
-              type="button"
-              class="text-xs text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
-              onclick={() => { editReminderAt = ''; }}
-            >Clear reminder</button>
-          {/if}
-        </div>
+                class="text-xs text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
+                onclick={() => { editReminderAt = ''; autoSave({ reminder_at: null }); }}
+              >Clear reminder</button>
+            {/if}
+          </div>
 
-        <!-- Recurrence -->
-        <RecurrenceEditor bind:isRecurring={editIsRecurring} bind:recurrenceRule={editRecurrenceRule} />
-        <input type="hidden" name="is_recurring" value={String(editIsRecurring)} />
-        <input type="hidden" name="recurrence_rule" value={editIsRecurring && editRecurrenceRule ? JSON.stringify(editRecurrenceRule) : ''} />
+          <!-- Recurrence -->
+          <RecurrenceEditor bind:isRecurring={editIsRecurring} bind:recurrenceRule={editRecurrenceRule} />
 
         </div><!-- end metadata zone -->
 
-        <!-- Actions -->
-        <div class="flex gap-2 pt-2">
-          <button
-            type="submit"
-            class="flex-1 rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
-            disabled={saving || !editTitle.trim()}
-          >
-            {saving ? 'Saving...' : 'Save changes'}
-          </button>
-        </div>
-      </form>
+      </div>
 
       <!-- Assign to (only for shared lists with >1 member, hidden for viewers) -->
       {#if members.length > 1 && !isViewer}
@@ -489,7 +606,7 @@
       </div>
 
       <!-- Delete (separate form) -->
-      <div class="mt-8 pt-6 border-t">
+      <div class="mt-4 pt-4 border-t">
         <AlertDialog.Root bind:open={deleteAlertOpen}>
           <AlertDialog.Trigger>
             <button
