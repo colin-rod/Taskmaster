@@ -15,6 +15,8 @@
   import { hasTime, buildDueAt, formatTimeBlock } from '$lib/utils/dates.js';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
   import { Plus, Loader, Check, AlertCircle } from '@lucide/svelte';
+  import { slide, scale } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 
   let {
@@ -47,6 +49,22 @@
   let editDurationMinutes = $state<number | null>(null);
   let editIsRecurring = $state(false);
   let editRecurrenceRule = $state<RecurrenceRule | null>(null);
+
+  // Progressive disclosure state
+  let notesExpanded     = $state(false);
+  let showTime          = $state(false);
+  let showReminder      = $state(false);
+  let showTimeBlock     = $state(false);
+  let showRecurring     = $state(false);
+  let checklistExpanded = $state(true);
+
+  // Pill visibility (derived)
+  let showTimePill      = $derived(editDueAt !== '' && !showTime);
+  let showReminderPill  = $derived(!showReminder);
+  let showTimeBlockPill = $derived(!showTimeBlock);
+  let showRecurringPill = $derived(!showRecurring);
+  let showPillRow       = $derived(showTimePill || showReminderPill || showTimeBlockPill || showRecurringPill);
+
   let prevCompleted = $state(0);
   let checklistJustFinished = $state(false);
   let justFinishedTimeout: ReturnType<typeof setTimeout>;
@@ -147,6 +165,13 @@
       prevStatus = task.status;
       prevIsRecurring = task.is_recurring;
       prevRecurrenceRule = JSON.stringify(task.recurrence_rule);
+      // Progressive disclosure: auto-expand fields that have values
+      notesExpanded     = !!(task.notes && task.notes.trim() !== '');
+      showTime          = editDueAt !== '' && editDueTime !== '';
+      showReminder      = editReminderAt !== '';
+      showTimeBlock     = editStartAt !== '';
+      showRecurring     = editIsRecurring;
+      checklistExpanded = (task.checklist_items?.length ?? 0) > 0;
       // Reset save state when switching tasks
       clearSaveStateResetTimeout();
       saveState = 'idle';
@@ -188,6 +213,11 @@
       prevIsRecurring = editIsRecurring;
       prevRecurrenceRule = ruleStr;
     }
+  });
+
+  // Re-pill recurring when unchecked from within RecurrenceEditor
+  $effect(() => {
+    if (!editIsRecurring) showRecurring = false;
   });
 
   function handleTitleBlur() {
@@ -361,16 +391,37 @@
 
         <!-- Notes -->
         <div>
-          <label for="edit-notes" class="text-sm font-semibold tracking-wide text-foreground">Notes</label>
-          <textarea
-            id="edit-notes"
-            name="notes"
-            bind:value={editNotes}
-            rows="4"
-            placeholder="Add context, links, or extra detail..."
-            onblur={handleNotesBlur}
-            class="select-input mt-1 resize-y min-h-22.5"
-          ></textarea>
+          <button
+            type="button"
+            class="flex items-center justify-between w-full group"
+            onclick={() => { notesExpanded = !notesExpanded; }}
+            aria-expanded={notesExpanded}
+            aria-controls="notes-body"
+          >
+            <span class="text-sm font-semibold tracking-wide text-foreground">Notes</span>
+            <div class="flex items-center gap-2">
+              {#if !notesExpanded && editNotes}
+                <span class="text-xs text-foreground-secondary truncate max-w-40">{editNotes.slice(0, 40)}{editNotes.length > 40 ? '…' : ''}</span>
+              {/if}
+              <svg class="w-4 h-4 text-foreground-muted transition-transform duration-200 {notesExpanded ? 'rotate-0' : '-rotate-90'}"
+                viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                <path d="M4 6l4 4 4-4" />
+              </svg>
+            </div>
+          </button>
+          {#if notesExpanded}
+            <div id="notes-body" transition:slide={{ duration: 180, easing: cubicOut }}>
+              <textarea
+                id="edit-notes"
+                name="notes"
+                bind:value={editNotes}
+                rows="4"
+                placeholder="Add context, links, or extra detail..."
+                onblur={handleNotesBlur}
+                class="select-input mt-1 resize-y min-h-22.5"
+              ></textarea>
+            </div>
+          {/if}
         </div>
 
         <!-- Metadata zone (priority, status, due, reminder, recurrence) -->
@@ -422,7 +473,7 @@
               onblur={handleDueBlur}
               class="select-input mt-1"
             />
-            {#if editDueAt}
+            {#if editDueAt && showTime}
               <label for="edit-due-time" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
                 Time <span class="text-foreground-muted font-normal">(optional)</span>
               </label>
@@ -437,125 +488,175 @@
             {/if}
           </div>
 
+          <!-- Progressive disclosure pills -->
+          {#if showPillRow}
+            <div class="flex gap-2 flex-wrap">
+              {#if showTimePill}
+                <button
+                  transition:scale={{ duration: 120, start: 0.85 }}
+                  type="button"
+                  onclick={() => { showTime = true; }}
+                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
+                  aria-label="Add a specific time"
+                >+ Time</button>
+              {/if}
+              {#if showReminderPill}
+                <button
+                  transition:scale={{ duration: 120, start: 0.85 }}
+                  type="button"
+                  onclick={() => { showReminder = true; }}
+                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
+                  aria-label="Add a reminder"
+                >+ Reminder</button>
+              {/if}
+              {#if showTimeBlockPill}
+                <button
+                  transition:scale={{ duration: 120, start: 0.85 }}
+                  type="button"
+                  onclick={() => { showTimeBlock = true; }}
+                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
+                  aria-label="Schedule a time block"
+                >+ Time Block</button>
+              {/if}
+              {#if showRecurringPill}
+                <button
+                  transition:scale={{ duration: 120, start: 0.85 }}
+                  type="button"
+                  onclick={() => { showRecurring = true; }}
+                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
+                  aria-label="Make this task recurring"
+                >+ Recurring</button>
+              {/if}
+            </div>
+          {/if}
+
           <!-- Reminder -->
-          <div>
-            <label for="edit-reminder" class="text-sm font-semibold tracking-wide text-foreground">Reminder</label>
-            <input
-              id="edit-reminder"
-              name="reminder_at"
-              type="datetime-local"
-              bind:value={editReminderAt}
-              onblur={handleReminderBlur}
-              class="select-input mt-1"
-            />
-            {#if editDueAt}
-              <p class="text-xs text-foreground-muted mt-2 mb-1">Relative to due date:</p>
-              <div class="flex gap-2 flex-wrap">
+          {#if showReminder}
+            <div transition:slide={{ duration: 180, easing: cubicOut }}>
+              <label for="edit-reminder" class="text-sm font-semibold tracking-wide text-foreground">Reminder</label>
+              <input
+                id="edit-reminder"
+                name="reminder_at"
+                type="datetime-local"
+                bind:value={editReminderAt}
+                onblur={handleReminderBlur}
+                class="select-input mt-1"
+              />
+              {#if editDueAt}
+                <p class="text-xs text-foreground-muted mt-2 mb-1">Relative to due date:</p>
+                <div class="flex gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11 flex items-center font-medium"
+                    aria-label="Set reminder 10 minutes before due date"
+                    onclick={() => setReminderPreset(10)}
+                  >10 min</button>
+                  <button
+                    type="button"
+                    class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11 flex items-center font-medium"
+                    aria-label="Set reminder 1 hour before due date"
+                    onclick={() => setReminderPreset(60)}
+                  >1 hr</button>
+                  <button
+                    type="button"
+                    class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11 flex items-center font-medium"
+                    aria-label="Set reminder 1 day before due date"
+                    onclick={() => setReminderPreset(1440)}
+                  >1 day</button>
+                </div>
+              {/if}
+              {#if editReminderAt}
                 <button
                   type="button"
-                  class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11 flex items-center font-medium"
-                  aria-label="Set reminder 10 minutes before due date"
-                  onclick={() => setReminderPreset(10)}
-                >10 min</button>
-                <button
-                  type="button"
-                  class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11 flex items-center font-medium"
-                  aria-label="Set reminder 1 hour before due date"
-                  onclick={() => setReminderPreset(60)}
-                >1 hr</button>
-                <button
-                  type="button"
-                  class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11 flex items-center font-medium"
-                  aria-label="Set reminder 1 day before due date"
-                  onclick={() => setReminderPreset(1440)}
-                >1 day</button>
-              </div>
-            {/if}
-            {#if editReminderAt}
-              <button
-                type="button"
-                class="text-sm text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
-                onclick={() => { editReminderAt = ''; autoSave({ reminder_at: null }); }}
-              >Clear reminder</button>
-            {/if}
-          </div>
+                  class="text-sm text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
+                  onclick={() => { editReminderAt = ''; showReminder = false; autoSave({ reminder_at: null }); }}
+                >Clear reminder</button>
+              {/if}
+            </div>
+          {/if}
 
           <!-- Time Block -->
-          <div>
-            <label for="edit-start-date" class="text-sm font-semibold tracking-wide text-foreground">
-              Time block <span class="text-foreground-muted font-normal">(optional)</span>
-            </label>
-            <input
-              id="edit-start-date"
-              name="start_at_date"
-              type="date"
-              bind:value={editStartAt}
-              onchange={() => { if (!editStartAt) { editStartTime = ''; handleStartAtBlur(); } }}
-              onblur={handleStartAtBlur}
-              class="select-input mt-1"
-            />
-            {#if editStartAt}
-              <label for="edit-start-time" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
-                Start time <span class="text-foreground-muted font-normal">(optional)</span>
+          {#if showTimeBlock}
+            <div transition:slide={{ duration: 180, easing: cubicOut }}>
+              <label for="edit-start-date" class="text-sm font-semibold tracking-wide text-foreground">
+                Time block <span class="text-foreground-muted font-normal">(optional)</span>
               </label>
               <input
-                id="edit-start-time"
-                name="start_at_time"
-                type="time"
-                bind:value={editStartTime}
+                id="edit-start-date"
+                name="start_at_date"
+                type="date"
+                bind:value={editStartAt}
+                onchange={() => { if (!editStartAt) { editStartTime = ''; handleStartAtBlur(); } }}
                 onblur={handleStartAtBlur}
                 class="select-input mt-1"
               />
-              <label for="edit-duration" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
-                Duration <span class="text-foreground-muted font-normal">(optional)</span>
-              </label>
-              <div class="flex gap-2 flex-wrap mt-1 mb-2">
-                {#each [15, 30, 60, 90, 120] as preset}
+              {#if editStartAt}
+                <label for="edit-start-time" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
+                  Start time <span class="text-foreground-muted font-normal">(optional)</span>
+                </label>
+                <input
+                  id="edit-start-time"
+                  name="start_at_time"
+                  type="time"
+                  bind:value={editStartTime}
+                  onblur={handleStartAtBlur}
+                  class="select-input mt-1"
+                />
+                <label for="edit-duration" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
+                  Duration <span class="text-foreground-muted font-normal">(optional)</span>
+                </label>
+                <div class="flex gap-2 flex-wrap mt-1 mb-2">
+                  {#each [15, 30, 60, 90, 120] as preset}
+                    <button
+                      type="button"
+                      class="text-xs px-3 py-1.5 rounded-full border transition-colors min-h-9 flex items-center font-medium
+                        {editDurationMinutes === preset
+                          ? 'border-primary bg-primary-tint text-primary'
+                          : 'border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30'}"
+                      onclick={() => { editDurationMinutes = preset; autoSave({ duration_minutes: preset }); }}
+                    >
+                      {preset < 60 ? `${preset} min` : `${preset / 60} hr`}
+                    </button>
+                  {/each}
+                </div>
+                <input
+                  id="edit-duration"
+                  name="duration_minutes"
+                  type="number"
+                  min="1"
+                  step="1"
+                  placeholder="Custom (minutes)"
+                  bind:value={editDurationMinutes}
+                  onblur={handleDurationBlur}
+                  class="select-input"
+                />
+                {#if editDurationMinutes}
                   <button
                     type="button"
-                    class="text-xs px-3 py-1.5 rounded-full border transition-colors min-h-9 flex items-center font-medium
-                      {editDurationMinutes === preset
-                        ? 'border-primary bg-primary-tint text-primary'
-                        : 'border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30'}"
-                    onclick={() => { editDurationMinutes = preset; autoSave({ duration_minutes: preset }); }}
-                  >
-                    {preset < 60 ? `${preset} min` : `${preset / 60} hr`}
-                  </button>
-                {/each}
-              </div>
-              <input
-                id="edit-duration"
-                name="duration_minutes"
-                type="number"
-                min="1"
-                step="1"
-                placeholder="Custom (minutes)"
-                bind:value={editDurationMinutes}
-                onblur={handleDurationBlur}
-                class="select-input"
-              />
-              {#if editDurationMinutes}
-                <button
-                  type="button"
-                  class="text-xs text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
-                  onclick={() => { editDurationMinutes = null; autoSave({ duration_minutes: null }); }}
-                >Clear duration</button>
-              {/if}
-              {#if timeBlockDisplay}
-                <div class="text-sm text-foreground-secondary bg-surface-subtle rounded-md px-3 py-2 mt-2">
-                  <span class="font-medium text-foreground">Scheduled: </span>{timeBlockDisplay}
-                </div>
+                    class="text-xs text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
+                    onclick={() => { editDurationMinutes = null; autoSave({ duration_minutes: null }); }}
+                  >Clear duration</button>
+                {/if}
+                {#if timeBlockDisplay}
+                  <div class="text-sm text-foreground-secondary bg-surface-subtle rounded-md px-3 py-2 mt-2">
+                    <span class="font-medium text-foreground">Scheduled: </span>{timeBlockDisplay}
+                  </div>
+                {/if}
               {/if}
               <button
                 type="button"
                 class="text-xs text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
-                onclick={() => { editStartAt = ''; editStartTime = ''; editDurationMinutes = null; autoSave({ start_at: null, duration_minutes: null }); }}
+                onclick={() => { editStartAt = ''; editStartTime = ''; editDurationMinutes = null; showTimeBlock = false; autoSave({ start_at: null, duration_minutes: null }); }}
               >Clear time block</button>
-            {/if}
-          </div>
+            </div>
+          {/if}
 
           <!-- Recurrence -->
-          <RecurrenceEditor bind:isRecurring={editIsRecurring} bind:recurrenceRule={editRecurrenceRule} />
+          {#if showRecurring}
+            <div transition:slide={{ duration: 180, easing: cubicOut }}>
+              <RecurrenceEditor bind:isRecurring={editIsRecurring} bind:recurrenceRule={editRecurrenceRule} />
+            </div>
+          {/if}
 
         </div><!-- end metadata zone -->
 
@@ -598,14 +699,31 @@
 
       <!-- Checklist Section -->
       <div class="mt-5 pt-5 border-t">
-        <div class="flex items-center justify-between mb-3">
+        <button
+          type="button"
+          class="flex items-center justify-between w-full mb-3 group"
+          onclick={() => { checklistExpanded = !checklistExpanded; }}
+          aria-expanded={checklistExpanded}
+          aria-controls="checklist-body"
+        >
           <span class="section-header-bold">Checklist</span>
-          {#if totalCount > 0}
-            <span class="text-xs {completedCount === totalCount && totalCount > 0 ? 'text-green-600 font-medium' : 'text-foreground-secondary'}">
-              {completedCount === totalCount && totalCount > 0 ? 'All done ✓' : `${completedCount}/${totalCount}`}
-            </span>
-          {/if}
-        </div>
+          <div class="flex items-center gap-2">
+            {#if !checklistExpanded && totalCount > 0}
+              <span class="text-xs {completedCount === totalCount ? 'text-green-600 font-medium' : 'text-foreground-secondary'}">
+                {completedCount === totalCount ? 'All done ✓' : completedCount > 0 ? `${completedCount}/${totalCount} done` : `${totalCount} item${totalCount === 1 ? '' : 's'}`}
+              </span>
+            {/if}
+            <svg
+              class="w-4 h-4 text-foreground-muted transition-transform duration-200 {checklistExpanded ? 'rotate-0' : '-rotate-90'}"
+              viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"
+            >
+              <path d="M4 6l4 4 4-4" />
+            </svg>
+          </div>
+        </button>
+
+        <div id="checklist-body" class="checklist-body {checklistExpanded ? 'checklist-body--open' : ''}">
+        <div>
 
         <!-- Progress bar -->
         {#if totalCount > 0}
@@ -759,6 +877,9 @@
             </button>
           {/if}
         </form>
+
+        </div><!-- end checklist-body inner -->
+        </div><!-- end checklist-body -->
       </div>
 
       <!-- Delete (separate form) -->
@@ -817,3 +938,17 @@
     {/if}
   </SheetContent>
 </Sheet>
+
+<style>
+  .checklist-body {
+    display: grid;
+    grid-template-rows: 0fr;
+    transition: grid-template-rows 200ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .checklist-body > div {
+    overflow: hidden;
+  }
+  .checklist-body--open {
+    grid-template-rows: 1fr;
+  }
+</style>

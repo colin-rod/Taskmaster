@@ -10,7 +10,7 @@
 
   const motionDuration = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 200;
   import * as Popover from '$lib/components/ui/popover/index.js';
-  import { ChevronDown, X } from '@lucide/svelte';
+  import { CalendarDays, ChevronDown, X } from '@lucide/svelte';
 
   let { data }: { data: PageData } = $props();
 
@@ -184,10 +184,19 @@
       {/each}
     </div>
 
+    <a
+      href="/calendar"
+      class="flex items-center gap-1.5 text-xs px-3 py-2 min-h-11 rounded-md border border-border text-foreground-secondary hover:border-foreground hover:text-foreground transition-colors ml-auto"
+      aria-label="Open calendar view"
+    >
+      <CalendarDays class="w-3.5 h-3.5" />
+      <span class="hidden sm:inline">Calendar</span>
+    </a>
+
     {#if hasActiveFilters}
       <button
         onclick={clearFilters}
-        class="ml-auto p-1 rounded text-foreground-muted hover:text-foreground transition-colors cursor-pointer"
+        class="p-1 rounded text-foreground-muted hover:text-foreground transition-colors cursor-pointer"
         aria-label="Clear filters"
       >
         <X class="w-3.5 h-3.5" />

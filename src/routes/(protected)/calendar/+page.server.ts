@@ -2,44 +2,50 @@ import { fail } from '@sveltejs/kit';
 
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
+import {
+  parseDateParam,
+  computeMonthGridRange,
+  computeWeekRange,
+  mergeTasks,
+} from '$lib/utils/calendar.js';
 
 export const load: PageServerLoad = async (event) => {
-  const { locals: { supabase } } = event;
+  const { locals: { supabase }, url } = event;
   event.depends('app:tasks');
-  const now = new Date();
-  const startOfToday = new Date(now);
-  startOfToday.setHours(0, 0, 0, 0);
-  const endOfToday = new Date(now);
-  endOfToday.setHours(23, 59, 59, 999);
-  const sevenDaysOut = new Date(now);
-  sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
-  sevenDaysOut.setHours(23, 59, 59, 999);
 
-  // Fetch overdue, due-today, and upcoming in parallel
-  const [{ data: overdue }, { data: dueToday }, { data: upcoming }] = await Promise.all([
+  const view = url.searchParams.get('view') ?? 'month';
+  const dateParam = url.searchParams.get('date');
+  const anchor = parseDateParam(dateParam, new Date());
+
+  const { start, end } = view === 'week'
+    ? computeWeekRange(anchor)
+    : computeMonthGridRange(anchor);
+
+  const [{ data: dueTasks }, { data: startTasks }] = await Promise.all([
     supabase
       .from('tasks')
       .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
-      .lt('due_at', startOfToday.toISOString())
+      .gte('due_at', start.toISOString())
+      .lte('due_at', end.toISOString())
+      .neq('status', 'done')
+      .neq('status', 'canceled')
       .order('due_at', { ascending: true }),
     supabase
       .from('tasks')
       .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
-      .gte('due_at', startOfToday.toISOString())
-      .lte('due_at', endOfToday.toISOString())
-      .order('due_at', { ascending: true }),
-    supabase
-      .from('tasks')
-      .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
-      .gt('due_at', endOfToday.toISOString())
-      .lte('due_at', sevenDaysOut.toISOString())
-      .order('due_at', { ascending: true }),
+      .gte('start_at', start.toISOString())
+      .lte('start_at', end.toISOString())
+      .neq('status', 'done')
+      .neq('status', 'canceled')
+      .order('start_at', { ascending: true }),
   ]);
 
+  const tasks = mergeTasks(dueTasks ?? [], startTasks ?? []);
+
   return {
-    overdue: overdue ?? [],
-    dueToday: dueToday ?? [],
-    upcoming: upcoming ?? [],
+    tasks,
+    view,
+    anchorIso: anchor.toISOString(),
   };
 };
 

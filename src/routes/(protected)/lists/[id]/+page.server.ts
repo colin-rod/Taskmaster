@@ -36,7 +36,7 @@ export const actions: Actions = {
     const recurrence_rule_raw = formData.get('recurrence_rule')?.toString() || null;
     let recurrence_rule = null;
     if (is_recurring && recurrence_rule_raw) {
-      try { recurrence_rule = JSON.parse(recurrence_rule_raw); } catch {}
+      try { recurrence_rule = JSON.parse(recurrence_rule_raw); } catch { /* ignore */ }
     }
 
     if (!title) return fail(400, { error: 'Task title is required' });
