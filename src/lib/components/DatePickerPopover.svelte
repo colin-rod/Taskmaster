@@ -96,12 +96,14 @@
 
 <Popover.Root bind:open>
   <Popover.Trigger {disabled}>
-    <span
-      class="text-xs cursor-pointer hover:underline underline-offset-2 transition-colors
+    <button
+      type="button"
+      class="text-xs cursor-pointer hover:underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm
         {isOverdue(value) ? 'text-destructive' : 'text-foreground-secondary'}"
+      aria-label="Set due date: {formatDisplay(value)}"
     >
       {formatDisplay(value)}
-    </span>
+    </button>
   </Popover.Trigger>
   <Popover.Content class="w-48 p-1" align="start">
     <button
@@ -155,7 +157,7 @@
               type="button"
               class="min-w-11 min-h-11 flex items-center justify-center text-xs text-foreground-muted hover:text-foreground rounded hover:bg-surface-subtle transition-colors"
               onclick={clearTime}
-              title="Clear time"
+              aria-label="Clear time"
             >
               ✕
             </button>

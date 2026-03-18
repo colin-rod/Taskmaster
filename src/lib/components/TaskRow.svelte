@@ -82,6 +82,7 @@
         {...props}
         class="task-row-hover flex items-center gap-3 rounded-md border bg-surface px-4 py-3.5 group overflow-hidden"
         ondblclick={() => onselect(task)}
+        onkeydown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) onselect(task); }}
       >
         <!-- Toggle checkbox -->
         {#if userRole === 'viewer'}
@@ -156,18 +157,19 @@
               <DatePickerPopover taskId={task.id} value={task.due_at} />
             {:else if task.due_at}
               <span class="text-xs text-foreground-secondary">
-                {new Date(task.due_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' })}{task.due_at.endsWith('T12:00:00.000Z') ? '' : ', ' + new Date(task.due_at).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                {new Date(task.due_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}{task.due_at.endsWith('T12:00:00.000Z') ? '' : ', ' + new Date(task.due_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
               </span>
             {/if}
             {#if task.is_recurring}
               <span class="text-xs text-foreground-secondary flex items-center gap-0.5 bg-surface-subtle px-1.5 py-0.5 rounded-full" title={task.recurrence_rule ? describeRecurrence(task.recurrence_rule) : 'Recurring'}>
-                <Repeat2 class="w-3 h-3" />
+                <Repeat2 class="w-3 h-3" aria-hidden="true" />
+                <span class="sr-only">Recurring</span>
               </span>
             {/if}
             {#if task.reminder_at}
               <span
                 class="text-xs text-foreground-secondary flex items-center gap-0.5 bg-surface-subtle px-1.5 py-0.5 rounded-full"
-                title={new Date(task.reminder_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                title={new Date(task.reminder_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
               >
                 <Bell class="w-3 h-3" />
               </span>
@@ -193,7 +195,7 @@
         {#if canEdit}
           <PriorityPicker taskId={task.id} value={task.priority} />
         {:else}
-          <span class="text-xs font-medium px-1.5 py-0.5 rounded bg-surface-subtle shrink-0 {PRIORITY_OPTIONS.find(p => p.level === task.priority)?.color ?? 'text-foreground-muted'}">
+          <span class="text-xs font-medium px-1.5 py-0.5 rounded bg-surface-subtle shrink-0 {PRIORITY_OPTIONS.find(p => p.level === task.priority)?.color ?? 'text-foreground-muted'}" aria-label="Priority {PRIORITY_OPTIONS.find(p => p.level === task.priority)?.desc ?? task.priority}">
             P{task.priority}
           </span>
         {/if}
@@ -260,6 +262,7 @@
           <div class="border-t mt-1 pt-1 px-2">
             <input
               type="date"
+              aria-label="Custom due date"
               class="text-sm w-full bg-transparent outline-none py-1"
               onclick={(e) => e.stopPropagation()}
               onchange={(e) => {
@@ -286,6 +289,7 @@
           <div class="border-t mt-1 pt-1 px-2">
             <input
               type="datetime-local"
+              aria-label="Custom reminder date and time"
               class="text-sm w-full bg-transparent outline-none py-1"
               onclick={(e) => e.stopPropagation()}
               onchange={(e) => {

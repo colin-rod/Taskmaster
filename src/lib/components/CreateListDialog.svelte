@@ -78,7 +78,7 @@
         />
       </div>
       <div>
-        <p class="section-header-bold">Icon</p>
+        <p class="section-header-bold mb-3">Icon</p>
         <div class="grid grid-cols-10 gap-1 mt-1">
           {#each LIST_ICONS as item}
             {@const IconComponent = getListIcon(item.name)}
@@ -97,7 +97,7 @@
         </div>
       </div>
       <div>
-        <p class="section-header-bold">Color</p>
+        <p class="section-header-bold mb-3">Color</p>
         <input type="hidden" name="color" value={color || ''} />
         <div class="flex gap-2 mt-1 items-center">
           {#each LIST_COLORS as c}

@@ -90,7 +90,7 @@
   <!-- Smart Filters -->
   <nav class="px-2 space-y-0.5">
     {#if !$sidebarCollapsed}
-      <div class="section-header px-2 mt-1 mb-2">Views</div>
+      <h3 class="section-header px-2 mt-1 mb-2">Views</h3>
     {/if}
     {#each smartFilters as filter}
       {@const active = isActive(filter.href, $page.url.pathname)}
@@ -103,6 +103,7 @@
             {active ? 'bg-primary-tint text-foreground font-medium' : 'text-foreground-secondary hover:text-foreground hover:bg-surface-subtle'}
             {$sidebarCollapsed ? 'justify-center' : ''}"
           title={$sidebarCollapsed ? filter.label : undefined}
+          aria-label={$sidebarCollapsed ? filter.label : undefined}
         >
           {#if active}
             <span class="absolute left-0 inset-y-1 w-[3px] bg-primary rounded-r-full"></span>
@@ -134,6 +135,7 @@
           class="relative flex items-center justify-center px-2 py-1.5 rounded-md text-sm transition-colors
             {active ? 'bg-primary-tint text-foreground font-medium' : 'text-foreground-secondary hover:text-foreground hover:bg-surface-subtle'}"
           title={list.name}
+          aria-label={list.name}
         >
           {#if active}
             <span class="absolute left-0 inset-y-1 w-[3px] bg-primary rounded-r-full"></span>
@@ -142,13 +144,13 @@
             class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
             style="background-color: {list.color || 'hsl(var(--foreground-muted))'}"
           >
-            <ListIcon class="w-3 h-3 text-white" />
+            <ListIcon class="w-3 h-3 text-white drop-shadow-sm" />
           </div>
         </a>
       {/each}
     {:else}
       {#if privateLists.length > 0}
-        <div class="section-header px-2 mb-2">Private</div>
+        <h3 class="section-header px-2 mb-2">Private</h3>
         {#each privateLists as list (list.id)}
           {@const active = $page.url.pathname === `/lists/${list.id}`}
           {@const ListIcon = getListIcon(list.icon)}
@@ -164,7 +166,7 @@
               class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
               style="background-color: {list.color || 'hsl(var(--foreground-muted))'}"
             >
-              <ListIcon class="w-3 h-3 text-white" />
+              <ListIcon class="w-3 h-3 text-white drop-shadow-sm" />
             </div>
             <span class="flex-1 truncate">{list.name}</span>
             {#if list.taskCount > 0}
@@ -175,7 +177,7 @@
       {/if}
 
       {#if sharedLists.length > 0}
-        <div class="section-header px-2 mb-2 {privateLists.length > 0 ? 'mt-2' : ''}">Shared</div>
+        <h3 class="section-header px-2 mb-2 {privateLists.length > 0 ? 'mt-2' : ''}">Shared</h3>
         {#each sharedLists as list (list.id)}
           {@const active = $page.url.pathname === `/lists/${list.id}`}
           {@const ListIcon = getListIcon(list.icon)}
@@ -191,7 +193,7 @@
               class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
               style="background-color: {list.color || 'hsl(var(--foreground-muted))'}"
             >
-              <ListIcon class="w-3 h-3 text-white" />
+              <ListIcon class="w-3 h-3 text-white drop-shadow-sm" />
             </div>
             <span class="flex-1 truncate">{list.name}</span>
             {#if list.taskCount > 0}
@@ -202,7 +204,7 @@
       {/if}
 
       {#if privateLists.length === 0 && sharedLists.length === 0}
-        <div class="section-header px-2 mb-2">Lists</div>
+        <h3 class="section-header px-2 mb-2">Lists</h3>
       {/if}
     {/if}
 

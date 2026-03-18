@@ -201,7 +201,6 @@
     font-size: 0.75rem;
     font-weight: 500;
     color: hsl(var(--foreground-muted));
-    margin-bottom: 0.75rem;
     font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
@@ -213,7 +212,6 @@
     letter-spacing: 0.08em;
     text-transform: uppercase;
     color: hsl(var(--foreground-secondary));
-    margin-bottom: 0.75rem;
     display: block;
   }
 

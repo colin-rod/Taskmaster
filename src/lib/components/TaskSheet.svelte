@@ -291,40 +291,40 @@
       <!-- View-only mode for viewers -->
       <div class="space-y-4 mt-2">
         <div>
-          <span class="section-header-bold">Title</span>
+          <span class="section-header-bold mb-3">Title</span>
           <p class="mt-1">{task.title}</p>
         </div>
         {#if task.notes}
           <div>
-            <span class="section-header-bold">Notes</span>
+            <span class="section-header-bold mb-3">Notes</span>
             <p class="mt-1 text-sm whitespace-pre-wrap">{task.notes}</p>
           </div>
         {/if}
         <div class="flex gap-4">
           <div>
-            <span class="section-header-bold">Priority</span>
+            <span class="section-header-bold mb-3">Priority</span>
             <p class="mt-1 text-sm">{getPriorityLabel(task.priority)}</p>
           </div>
           <div>
-            <span class="section-header-bold">Status</span>
+            <span class="section-header-bold mb-3">Status</span>
             <p class="mt-1 text-sm">{formatStatus(task.status)}</p>
           </div>
         </div>
         {#if task.due_at}
           <div>
-            <span class="section-header-bold">Due date</span>
-            <p class="mt-1 text-sm">{new Date(task.due_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
+            <span class="section-header-bold mb-3">Due date</span>
+            <p class="mt-1 text-sm">{new Date(task.due_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
           </div>
         {/if}
         {#if task.start_at}
           <div>
-            <span class="section-header-bold">Time block</span>
+            <span class="section-header-bold mb-3">Time block</span>
             <p class="mt-1 text-sm">{formatTimeBlock(task.start_at, task.duration_minutes) ?? ''}</p>
           </div>
         {/if}
         {#if (task.checklist_items ?? []).length > 0}
           <div class="border-t pt-4">
-            <span class="section-header-bold">Checklist</span>
+            <span class="section-header-bold mb-3">Checklist</span>
             <div class="space-y-1 mt-2">
               {#each (task.checklist_items ?? []).slice().sort((a, b) => a.position - b.position) as item (item.id)}
                 <div class="flex items-center gap-2 py-1">
@@ -376,7 +376,7 @@
         <!-- Metadata zone (priority, status, due, reminder, recurrence) -->
         <div class="border-t border-border-divider pt-5 space-y-4">
 
-          <p class="section-header-bold">Details</p>
+          <p class="section-header-bold mb-3">Details</p>
 
           <!-- Priority + Status row -->
           <div class="flex gap-3">
@@ -453,17 +453,20 @@
               <div class="flex gap-2 flex-wrap">
                 <button
                   type="button"
-                  class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-9 flex items-center font-medium"
+                  class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11 flex items-center font-medium"
+                  aria-label="Set reminder 10 minutes before due date"
                   onclick={() => setReminderPreset(10)}
                 >10 min</button>
                 <button
                   type="button"
-                  class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-9 flex items-center font-medium"
+                  class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11 flex items-center font-medium"
+                  aria-label="Set reminder 1 hour before due date"
                   onclick={() => setReminderPreset(60)}
                 >1 hr</button>
                 <button
                   type="button"
-                  class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-9 flex items-center font-medium"
+                  class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11 flex items-center font-medium"
+                  aria-label="Set reminder 1 day before due date"
                   onclick={() => setReminderPreset(1440)}
                 >1 day</button>
               </div>
@@ -471,7 +474,7 @@
             {#if editReminderAt}
               <button
                 type="button"
-                class="text-xs text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
+                class="text-sm text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
                 onclick={() => { editReminderAt = ''; autoSave({ reminder_at: null }); }}
               >Clear reminder</button>
             {/if}
@@ -596,7 +599,7 @@
       <!-- Checklist Section -->
       <div class="mt-5 pt-5 border-t">
         <div class="flex items-center justify-between mb-3">
-          <span class="section-header-bold" style="margin-bottom:0">Checklist</span>
+          <span class="section-header-bold">Checklist</span>
           {#if totalCount > 0}
             <span class="text-xs {completedCount === totalCount && totalCount > 0 ? 'text-green-600 font-medium' : 'text-foreground-secondary'}">
               {completedCount === totalCount && totalCount > 0 ? 'All done ✓' : `${completedCount}/${totalCount}`}
@@ -606,7 +609,15 @@
 
         <!-- Progress bar -->
         {#if totalCount > 0}
-          <div class="h-2 rounded-full bg-surface-subtle mb-3 overflow-hidden" class:progress-finish={checklistJustFinished}>
+          <div
+            class="h-2 rounded-full bg-surface-subtle mb-3 overflow-hidden"
+            class:progress-finish={checklistJustFinished}
+            role="progressbar"
+            aria-valuenow={Math.round((completedCount / totalCount) * 100)}
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-label="Checklist progress: {completedCount} of {totalCount} items complete"
+          >
             <div
               class="h-full rounded-full transition-all duration-300 {completedCount === totalCount ? 'bg-status-done' : 'bg-primary'}"
               style="width: {(completedCount / totalCount) * 100}%"
@@ -734,6 +745,7 @@
             type="text"
             bind:value={newItemLabel}
             placeholder="Add item..."
+            aria-label="New checklist item"
             class="flex-1 bg-transparent text-sm py-1 outline-none placeholder:text-foreground-muted"
             disabled={addingItem}
           />

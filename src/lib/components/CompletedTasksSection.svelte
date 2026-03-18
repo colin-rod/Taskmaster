@@ -21,6 +21,7 @@
     <button
       type="button"
       class="flex items-center gap-1 text-sm text-foreground-secondary hover:text-foreground transition-colors"
+      aria-expanded={showCompleted}
       onclick={() => { showCompleted = !showCompleted; }}
     >
       <ChevronDown class="w-3.5 h-3.5 transition-transform duration-200 {showCompleted ? 'rotate-180' : ''}" />
