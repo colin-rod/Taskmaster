@@ -89,9 +89,6 @@
     goto(`/calendar?view=month&date=${y}-${m}`);
   }
 
-  function drillToDay(isoDate: string) {
-    goto(`/calendar?view=day&date=${isoDate}`);
-  }
 </script>
 
 <div class="flex flex-col h-full gap-4">
