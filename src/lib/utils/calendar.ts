@@ -114,7 +114,7 @@ export function computeMonthGridRange(anchor: Date): { start: Date; end: Date } 
   const year = anchor.getFullYear();
   const month = anchor.getMonth();
   const firstOfMonth = new Date(year, month, 1);
-  let startDow = (firstOfMonth.getDay() + 6) % 7;
+  const startDow = (firstOfMonth.getDay() + 6) % 7;
   const start = new Date(year, month, 1 - startDow);
   start.setHours(0, 0, 0, 0);
   const end = new Date(start);
