@@ -82,6 +82,7 @@
   let latestSaveRequestId = 0;
   let activeSaveCount = $state(0);
   let isInitialized = $state(false);
+  let initializedTaskId = $state<string | null>(null);
 
   // Previous values for $effect change detection
   let prevPriority = $state(4);
@@ -171,13 +172,16 @@
       prevStatus = task.status;
       prevIsRecurring = task.is_recurring;
       prevRecurrenceRule = JSON.stringify(task.recurrence_rule);
-      // Progressive disclosure: auto-expand fields that have values
-      notesExpanded     = !!(task.notes && task.notes.trim() !== '');
-      showTime          = editDueAt !== '' && editDueTime !== '';
-      showReminder      = editReminderAt !== '';
-      showTimeBlock     = editStartAt !== '';
-      showRecurring     = editIsRecurring;
-      checklistExpanded = (task.checklist_items?.length ?? 0) > 0;
+      // Progressive disclosure: auto-expand fields that have values, but only when switching to a new task
+      if (task.id !== initializedTaskId) {
+        notesExpanded     = !!(task.notes && task.notes.trim() !== '');
+        showTime          = editDueAt !== '' && editDueTime !== '';
+        showReminder      = editReminderAt !== '';
+        showTimeBlock     = editStartAt !== '';
+        showRecurring     = editIsRecurring;
+        checklistExpanded = (task.checklist_items?.length ?? 0) > 0;
+        initializedTaskId = task.id;
+      }
       // Reset save state when switching tasks
       clearSaveStateResetTimeout();
       saveState = 'idle';
@@ -191,6 +195,7 @@
       clearSaveStateResetTimeout();
       saveState = 'idle';
       isInitialized = false;
+      initializedTaskId = null;
     }
   });
 
@@ -223,7 +228,7 @@
 
   // Re-pill recurring when unchecked from within RecurrenceEditor
   $effect(() => {
-    if (!editIsRecurring) showRecurring = false;
+    if (isInitialized && !editIsRecurring) showRecurring = false;
   });
 
   function handleTitleBlur() {
@@ -284,6 +289,9 @@
   let checklistItems = $derived(
     (task?.checklist_items ?? []).slice().sort((a, b) => a.position - b.position)
   );
+  let hasPendingItems = $derived(
+    checklistItems.some((i) => i.id.startsWith('temp-'))
+  );
 
   $effect(() => {
     if (totalCount > 0 && completedCount === totalCount && prevCompleted < totalCount) {
@@ -310,6 +318,7 @@
 
   // Drag-to-reorder
   function onDragStart(id: string) {
+    if (hasPendingItems) return;
     draggingId = id;
     preDragOrder = (task?.checklist_items ?? [])
       .slice()
@@ -831,7 +840,7 @@
             {#each checklistItems as item (item.id)}
               <div
                 class="flex items-center gap-2 group rounded-md px-2 py-1.5 hover:bg-primary-tint/60 transition-colors {draggingId === item.id ? 'opacity-50' : ''} {dragOverId === item.id && draggingId !== item.id ? 'ring-1 ring-primary' : ''}"
-                draggable="true"
+                draggable={!hasPendingItems}
                 ondragstart={() => onDragStart(item.id)}
                 ondragover={(e) => onDragOver(e, item.id)}
                 ondrop={() => onDrop(item.id)}
@@ -840,9 +849,10 @@
                 <!-- Drag handle -->
                 <button
                   type="button"
-                  class="md:opacity-0 md:group-hover:opacity-100 shrink-0 text-foreground-muted cursor-grab active:cursor-grabbing transition-opacity"
+                  class="md:opacity-0 md:group-hover:opacity-100 shrink-0 text-foreground-muted transition-opacity {hasPendingItems ? 'cursor-not-allowed opacity-30' : 'cursor-grab active:cursor-grabbing'}"
                   aria-label="Drag to reorder"
                   tabindex={-1}
+                  disabled={hasPendingItems}
                 >
                   <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
                     <circle cx="5" cy="4" r="1.2"/><circle cx="11" cy="4" r="1.2"/>

@@ -12,10 +12,7 @@
 
   const { children, data } = $props();
 
-  let unreadCount = $state(0);
-  $effect(() => {
-    unreadCount = data.unreadCount ?? 0;
-  });
+  let unreadCount = $state(data.unreadCount ?? 0);
 
   let showCreateListDialog = $state(false);
   let searchOpen = $state(false);

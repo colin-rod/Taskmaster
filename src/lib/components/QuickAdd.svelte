@@ -4,6 +4,7 @@
   import * as Popover from '$lib/components/ui/popover/index.js';
   import { PRIORITY_OPTIONS } from '$lib/utils/design-tokens.js';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
+  import TimePickerPopover from '$lib/components/TimePickerPopover.svelte';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
   import type { RecurrenceRule } from '$lib/types/index.js';
 
@@ -66,8 +67,9 @@
     <input type="hidden" name="is_recurring" value={isRecurring ? 'true' : ''} />
     <input type="hidden" name="recurrence_rule" value={recurrenceRule ? JSON.stringify(recurrenceRule) : ''} />
 
-    <!-- Date popover -->
+    <!-- Date and time popovers -->
     <DatePickerPopover bind:value={dueAt} mode="controlled" disabled={creating} />
+    <TimePickerPopover bind:value={dueAt} mode="controlled" disabled={creating} />
 
     <!-- Repeat toggle -->
     <button

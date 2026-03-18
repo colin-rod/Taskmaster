@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as Popover from '$lib/components/ui/popover/index.js';
-  import { hasTime, toDateString, formatDisplay } from '$lib/utils/dates.js';
+  import { hasTime, toDateString, formatDateOnly } from '$lib/utils/dates.js';
   import { patchTask } from '$lib/utils/api.js';
 
   let {
@@ -20,16 +20,6 @@
   function isOverdue(due_at: string | null): boolean {
     if (!due_at) return false;
     return new Date(due_at) < new Date();
-  }
-
-  // Get the current time portion from value (if a specific time is set), else null
-  function getCurrentTimeSuffix(): string | null {
-    if (!value || !hasTime(value)) return null;
-    // Return "HH:MM" in local time for <input type="time">
-    const d = new Date(value);
-    const hh = String(d.getHours()).padStart(2, '0');
-    const mm = String(d.getMinutes()).padStart(2, '0');
-    return `${hh}:${mm}`;
   }
 
   // Get YYYY-MM-DD from current value (for <input type="date">)
@@ -78,20 +68,6 @@
     }
   }
 
-  function handleTimeChange(e: Event) {
-    const input = e.target as HTMLInputElement;
-    if (!input.value || !value) return;
-    const [hh, mm] = input.value.split(':').map(Number);
-    const d = new Date(value);
-    d.setHours(hh, mm, 0, 0);
-    setDate(d.toISOString());
-  }
-
-  function clearTime() {
-    if (!value) return;
-    const d = new Date(value);
-    setDate(toDateString(d));
-  }
 </script>
 
 <Popover.Root bind:open>
@@ -100,9 +76,9 @@
       type="button"
       class="text-xs cursor-pointer hover:underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm
         {isOverdue(value) ? 'text-destructive' : 'text-foreground-secondary'}"
-      aria-label="Set due date: {formatDisplay(value)}"
+      aria-label="Set due date: {formatDateOnly(value)}"
     >
-      {formatDisplay(value)}
+      {formatDateOnly(value)}
     </button>
   </Popover.Trigger>
   <Popover.Content class="w-48 p-1" align="start">
@@ -143,27 +119,6 @@
         class="w-full px-2 py-1.5 text-sm rounded bg-transparent border-0 outline-none"
         onchange={handleCustomDate}
       />
-      {#if value}
-        <div class="flex items-center gap-1">
-          <input
-            type="time"
-            value={getCurrentTimeSuffix() ?? ''}
-            placeholder="Add time"
-            class="flex-1 px-2 py-1.5 text-sm rounded bg-transparent border-0 outline-none"
-            onchange={handleTimeChange}
-          />
-          {#if value && hasTime(value)}
-            <button
-              type="button"
-              class="min-w-11 min-h-11 flex items-center justify-center text-xs text-foreground-muted hover:text-foreground rounded hover:bg-surface-subtle transition-colors"
-              onclick={clearTime}
-              aria-label="Clear time"
-            >
-              ✕
-            </button>
-          {/if}
-        </div>
-      {/if}
     </div>
   </Popover.Content>
 </Popover.Root>

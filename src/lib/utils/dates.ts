@@ -28,6 +28,24 @@ export function formatTimeBlock(
   return `${startDate}, ${startTime} – ${endDate}, ${endTime}`;
 }
 
+export function formatDateOnly(due_at: string | null): string {
+  if (!due_at) return 'No date';
+  const date = new Date(due_at);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const tomorrow = new Date(today);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  const dateOnly = new Date(date);
+  dateOnly.setHours(0, 0, 0, 0);
+  if (dateOnly.getTime() === today.getTime()) return 'Today';
+  if (dateOnly.getTime() === tomorrow.getTime()) return 'Tomorrow';
+  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+export function formatTimeOnly(due_at: string): string {
+  return new Date(due_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' });
+}
+
 export function formatDisplay(due_at: string | null): string {
   if (!due_at) return 'No date';
   const date = new Date(due_at);

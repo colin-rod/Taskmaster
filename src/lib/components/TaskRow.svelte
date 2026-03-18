@@ -8,7 +8,9 @@
   import InlineEditTitle from '$lib/components/InlineEditTitle.svelte';
   import PriorityPicker from '$lib/components/PriorityPicker.svelte';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
+  import TimePickerPopover from '$lib/components/TimePickerPopover.svelte';
   import AssigneePicker from '$lib/components/AssigneePicker.svelte';
+  import { hasTime, formatDateOnly, formatTimeOnly } from '$lib/utils/dates.js';
   import { PRIORITY_OPTIONS } from '$lib/utils/design-tokens.js';
   import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -155,9 +157,10 @@
           <div class="flex items-center gap-2 mt-1">
             {#if canEdit}
               <DatePickerPopover taskId={task.id} value={task.due_at} />
+              <TimePickerPopover taskId={task.id} value={task.due_at} />
             {:else if task.due_at}
               <span class="text-xs text-foreground-secondary">
-                {new Date(task.due_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}{task.due_at.endsWith('T12:00:00.000Z') ? '' : ', ' + new Date(task.due_at).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' })}
+                {formatDateOnly(task.due_at)}{hasTime(task.due_at) ? ', ' + formatTimeOnly(task.due_at) : ''}
               </span>
             {/if}
             {#if task.is_recurring}
