@@ -12,7 +12,7 @@
   } from '$lib/components/ui/sheet/index.js';
   import type { Task, RecurrenceRule, ListRole, TaskListMember } from '$lib/types/index.js';
   import { getPriorityLabel, formatStatus } from '$lib/utils/design-tokens.js';
-  import { hasTime, buildDueAt } from '$lib/utils/dates.js';
+  import { hasTime, buildDueAt, formatTimeBlock } from '$lib/utils/dates.js';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
   import { Plus, Loader, Check, AlertCircle } from '@lucide/svelte';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -42,6 +42,9 @@
   let newItemLabel = $state('');
   let addingItem = $state(false);
   let editReminderAt = $state('');
+  let editStartAt = $state('');
+  let editStartTime = $state('');
+  let editDurationMinutes = $state<number | null>(null);
   let editIsRecurring = $state(false);
   let editRecurrenceRule = $state<RecurrenceRule | null>(null);
   let prevCompleted = $state(0);
@@ -128,6 +131,15 @@
       editReminderAt = task.reminder_at
         ? new Date(task.reminder_at).toISOString().slice(0, 16)
         : '';
+      if (task.start_at) {
+        const s = new Date(task.start_at);
+        editStartAt = `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}-${String(s.getDate()).padStart(2, '0')}`;
+        editStartTime = `${String(s.getHours()).padStart(2, '0')}:${String(s.getMinutes()).padStart(2, '0')}`;
+      } else {
+        editStartAt = '';
+        editStartTime = '';
+      }
+      editDurationMinutes = task.duration_minutes ?? null;
       editIsRecurring = task.is_recurring;
       editRecurrenceRule = task.recurrence_rule;
       newItemLabel = '';
@@ -201,6 +213,27 @@
     const currentVal = task.reminder_at ?? null;
     if (newVal !== currentVal) autoSave({ reminder_at: newVal });
   }
+
+  function handleStartAtBlur() {
+    if (!isInitialized || !task) return;
+    const newStartAt = editStartAt
+      ? new Date(editStartAt + 'T' + (editStartTime || '12:00') + ':00').toISOString()
+      : null;
+    if (newStartAt !== (task.start_at ?? null)) autoSave({ start_at: newStartAt });
+  }
+
+  function handleDurationBlur() {
+    if (!isInitialized || !task) return;
+    if (editDurationMinutes !== (task.duration_minutes ?? null))
+      autoSave({ duration_minutes: editDurationMinutes });
+  }
+
+  let startAtIso = $derived(
+    editStartAt
+      ? new Date(editStartAt + 'T' + (editStartTime || '12:00') + ':00').toISOString()
+      : null
+  );
+  let timeBlockDisplay = $derived(formatTimeBlock(startAtIso, editDurationMinutes));
 
   function setReminderPreset(minutesBefore: number) {
     if (!editDueAt) return;
@@ -281,6 +314,12 @@
           <div>
             <span class="section-header-bold">Due date</span>
             <p class="mt-1 text-sm">{new Date(task.due_at).toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
+          </div>
+        {/if}
+        {#if task.start_at}
+          <div>
+            <span class="section-header-bold">Time block</span>
+            <p class="mt-1 text-sm">{formatTimeBlock(task.start_at, task.duration_minutes) ?? ''}</p>
           </div>
         {/if}
         {#if (task.checklist_items ?? []).length > 0}
@@ -438,6 +477,80 @@
             {/if}
           </div>
 
+          <!-- Time Block -->
+          <div>
+            <label for="edit-start-date" class="text-sm font-semibold tracking-wide text-foreground">
+              Time block <span class="text-foreground-muted font-normal">(optional)</span>
+            </label>
+            <input
+              id="edit-start-date"
+              name="start_at_date"
+              type="date"
+              bind:value={editStartAt}
+              onchange={() => { if (!editStartAt) { editStartTime = ''; handleStartAtBlur(); } }}
+              onblur={handleStartAtBlur}
+              class="select-input mt-1"
+            />
+            {#if editStartAt}
+              <label for="edit-start-time" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
+                Start time <span class="text-foreground-muted font-normal">(optional)</span>
+              </label>
+              <input
+                id="edit-start-time"
+                name="start_at_time"
+                type="time"
+                bind:value={editStartTime}
+                onblur={handleStartAtBlur}
+                class="select-input mt-1"
+              />
+              <label for="edit-duration" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
+                Duration <span class="text-foreground-muted font-normal">(optional)</span>
+              </label>
+              <div class="flex gap-2 flex-wrap mt-1 mb-2">
+                {#each [15, 30, 60, 90, 120] as preset}
+                  <button
+                    type="button"
+                    class="text-xs px-3 py-1.5 rounded-full border transition-colors min-h-9 flex items-center font-medium
+                      {editDurationMinutes === preset
+                        ? 'border-primary bg-primary-tint text-primary'
+                        : 'border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30'}"
+                    onclick={() => { editDurationMinutes = preset; autoSave({ duration_minutes: preset }); }}
+                  >
+                    {preset < 60 ? `${preset} min` : `${preset / 60} hr`}
+                  </button>
+                {/each}
+              </div>
+              <input
+                id="edit-duration"
+                name="duration_minutes"
+                type="number"
+                min="1"
+                step="1"
+                placeholder="Custom (minutes)"
+                bind:value={editDurationMinutes}
+                onblur={handleDurationBlur}
+                class="select-input"
+              />
+              {#if editDurationMinutes}
+                <button
+                  type="button"
+                  class="text-xs text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
+                  onclick={() => { editDurationMinutes = null; autoSave({ duration_minutes: null }); }}
+                >Clear duration</button>
+              {/if}
+              {#if timeBlockDisplay}
+                <div class="text-sm text-foreground-secondary bg-surface-subtle rounded-md px-3 py-2 mt-2">
+                  <span class="font-medium text-foreground">Scheduled: </span>{timeBlockDisplay}
+                </div>
+              {/if}
+              <button
+                type="button"
+                class="text-xs text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
+                onclick={() => { editStartAt = ''; editStartTime = ''; editDurationMinutes = null; autoSave({ start_at: null, duration_minutes: null }); }}
+              >Clear time block</button>
+            {/if}
+          </div>
+
           <!-- Recurrence -->
           <RecurrenceEditor bind:isRecurring={editIsRecurring} bind:recurrenceRule={editRecurrenceRule} />
 
@@ -515,7 +628,11 @@
                     item.is_completed = !item.is_completed;
                     return async ({ result, update }) => {
                       if (result.type === 'success') {
-                        toast.success(wasCompleted ? 'Item unchecked' : 'Item checked');
+                        if ((result.data as { rolled?: boolean })?.rolled) {
+                          toast.success('Recurring task rolled to next occurrence');
+                        } else {
+                          toast.success(wasCompleted ? 'Item unchecked' : 'Item checked');
+                        }
                       } else {
                         item.is_completed = wasCompleted;
                       }

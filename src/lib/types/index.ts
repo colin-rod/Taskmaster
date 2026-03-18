@@ -47,6 +47,8 @@ export interface Task {
   priority: TaskPriority;
   due_at: string | null;
   reminder_at: string | null;
+  start_at: string | null;
+  duration_minutes: number | null;
   timezone: string | null;
   is_recurring: boolean;
   recurrence_rule: RecurrenceRule | null;

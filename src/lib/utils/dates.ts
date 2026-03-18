@@ -12,6 +12,22 @@ export function toDateString(date: Date): string {
   return date.toISOString().split('T')[0] + 'T12:00:00.000Z';
 }
 
+export function formatTimeBlock(
+  start_at: string | null,
+  duration_minutes: number | null
+): string | null {
+  if (!start_at) return null;
+  const start = new Date(start_at);
+  const startDate = start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const startTime = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  if (!duration_minutes) return `${startDate}, ${startTime}`;
+  const end = new Date(start.getTime() + duration_minutes * 60_000);
+  const endDate = end.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const endTime = end.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  if (startDate === endDate) return `${startDate}, ${startTime} – ${endTime}`;
+  return `${startDate}, ${startTime} – ${endDate}, ${endTime}`;
+}
+
 export function formatDisplay(due_at: string | null): string {
   if (!due_at) return 'No date';
   const date = new Date(due_at);

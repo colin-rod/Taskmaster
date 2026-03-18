@@ -85,7 +85,8 @@ export async function toggleChecklistItem(formData: FormData, supabase: Supabase
         .single();
 
       if (task?.is_recurring && task.recurrence_rule) {
-        await rollForwardRecurringTask(task_id, task, supabase);
+        const result = await rollForwardRecurringTask(task_id, task, supabase);
+        if (result.rolled) return { success: true, rolled: true };
       } else {
         await supabase
           .from('tasks')

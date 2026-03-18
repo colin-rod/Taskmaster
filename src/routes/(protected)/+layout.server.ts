@@ -116,6 +116,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
     })),
     filterCounts: {
       today: (todayCount ?? 0) + (overdueCount ?? 0),
+      overdue: overdueCount ?? 0,
       upcoming: upcomingCount ?? 0,
       inbox: inboxCount ?? 0,
       assigned: assignedCount ?? 0,

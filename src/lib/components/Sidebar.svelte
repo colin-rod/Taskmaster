@@ -2,6 +2,7 @@
   import { page } from '$app/stores';
   import { sidebarCollapsed } from '$lib/stores/sidebar.js';
   import {
+    AlertCircle,
     CalendarDays,
     CalendarRange,
     Inbox,
@@ -17,7 +18,7 @@
     lists,
     onCreateList,
   }: {
-    filterCounts: { today: number; upcoming: number; inbox: number; assigned: number };
+    filterCounts: { today: number; overdue: number; upcoming: number; inbox: number; assigned: number };
     lists: { id: string; name: string; color: string | null; icon: string; taskCount: number; isShared: boolean }[];
     onCreateList: () => void;
   } = $props();
@@ -25,6 +26,7 @@
   const inboxFilter = { label: 'Inbox', href: '/inbox', icon: Inbox, countKey: 'inbox' as const };
 
   const smartFilters = [
+    { label: 'Overdue', href: '/overdue', icon: AlertCircle, countKey: 'overdue' as const },
     { label: 'Today', href: '/today', icon: CalendarDays, countKey: 'today' as const },
     { label: 'Upcoming', href: '/upcoming', icon: CalendarRange, countKey: 'upcoming' as const },
     { label: 'Assigned to Me', href: '/assigned', icon: UserCheck, countKey: 'assigned' as const },
@@ -93,24 +95,28 @@
     {#each smartFilters as filter}
       {@const active = isActive(filter.href, $page.url.pathname)}
       {@const count = filterCounts[filter.countKey]}
-      <a
-        href={filter.href}
-        class="relative flex items-center gap-3 px-2 py-1.5 rounded-md text-sm transition-colors
-          {active ? 'bg-primary-tint text-foreground font-medium' : 'text-foreground-secondary hover:text-foreground hover:bg-surface-subtle'}
-          {$sidebarCollapsed ? 'justify-center' : ''}"
-        title={$sidebarCollapsed ? filter.label : undefined}
-      >
-        {#if active}
-          <span class="absolute left-0 inset-y-1 w-[3px] bg-primary rounded-r-full"></span>
-        {/if}
-        <filter.icon class="w-4 h-4 flex-shrink-0 {active ? 'text-primary' : ''}" />
-        {#if !$sidebarCollapsed}
-          <span class="flex-1 truncate">{filter.label}</span>
-          {#if count > 0}
-            <span class="text-xs font-medium bg-surface-subtle px-1.5 py-0.5 rounded-md text-foreground-secondary tabular-nums">{count}</span>
+      {@const isOverdue = filter.countKey === 'overdue'}
+      {#if !isOverdue || count > 0 || active}
+        <a
+          href={filter.href}
+          class="relative flex items-center gap-3 px-2 py-1.5 rounded-md text-sm transition-colors
+            {active ? 'bg-primary-tint text-foreground font-medium' : 'text-foreground-secondary hover:text-foreground hover:bg-surface-subtle'}
+            {$sidebarCollapsed ? 'justify-center' : ''}"
+          title={$sidebarCollapsed ? filter.label : undefined}
+        >
+          {#if active}
+            <span class="absolute left-0 inset-y-1 w-[3px] bg-primary rounded-r-full"></span>
           {/if}
-        {/if}
-      </a>
+          <filter.icon class="w-4 h-4 flex-shrink-0 {active ? 'text-primary' : isOverdue && count > 0 ? 'text-destructive' : ''}" />
+          {#if !$sidebarCollapsed}
+            <span class="flex-1 truncate">{filter.label}</span>
+            {#if count > 0}
+              <span class="text-xs font-medium px-1.5 py-0.5 rounded-md tabular-nums
+                {isOverdue ? 'bg-destructive/10 text-destructive' : 'bg-surface-subtle text-foreground-secondary'}">{count}</span>
+            {/if}
+          {/if}
+        </a>
+      {/if}
     {/each}
   </nav>
 

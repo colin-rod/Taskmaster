@@ -4,7 +4,7 @@
   import { toast } from 'svelte-sonner';
   import type { Task, ListRole, Profile } from '$lib/types/index.js';
   import { describeRecurrence } from '$lib/utils/recurrence.js';
-  import { Repeat2, Ellipsis, Check } from '@lucide/svelte';
+  import { Repeat2, Ellipsis, Check, Bell } from '@lucide/svelte';
   import InlineEditTitle from '$lib/components/InlineEditTitle.svelte';
   import PriorityPicker from '$lib/components/PriorityPicker.svelte';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
@@ -162,6 +162,14 @@
             {#if task.is_recurring}
               <span class="text-xs text-foreground-secondary flex items-center gap-0.5 bg-surface-subtle px-1.5 py-0.5 rounded-full" title={task.recurrence_rule ? describeRecurrence(task.recurrence_rule) : 'Recurring'}>
                 <Repeat2 class="w-3 h-3" />
+              </span>
+            {/if}
+            {#if task.reminder_at}
+              <span
+                class="text-xs text-foreground-secondary flex items-center gap-0.5 bg-surface-subtle px-1.5 py-0.5 rounded-full"
+                title={new Date(task.reminder_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+              >
+                <Bell class="w-3 h-3" />
               </span>
             {/if}
             {#if checklistTotal > 0}
