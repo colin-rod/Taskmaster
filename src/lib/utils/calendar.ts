@@ -148,6 +148,26 @@ export function formatMonthLabel(anchor: Date): string {
   return anchor.toLocaleDateString(undefined, { month: 'long', year: 'numeric' });
 }
 
+// Build single-cell array for a given day
+export function buildDayGrid(date: Date): CalendarDay[] {
+  const today = todayIso();
+  return [makeDay(new Date(date), date.getMonth(), today)];
+}
+
+// Compute start-of-day to end-of-day range
+export function computeDayRange(anchor: Date): { start: Date; end: Date } {
+  const start = new Date(anchor);
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(anchor);
+  end.setHours(23, 59, 59, 999);
+  return { start, end };
+}
+
+// Format day label: "Wednesday, March 18, 2026"
+export function formatDayLabel(anchor: Date): string {
+  return anchor.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
+}
+
 // Format week label: "Mar 16 – 22, 2026"
 export function formatWeekLabel(days: CalendarDay[]): string {
   if (days.length < 7) return '';

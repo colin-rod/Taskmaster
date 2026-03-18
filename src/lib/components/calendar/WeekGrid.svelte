@@ -6,9 +6,11 @@
 
   let {
     days,
+    showTime = false,
     onTaskClick,
   }: {
     days: CalendarDay[];
+    showTime?: boolean;
     onTaskClick: (task: Task) => void;
   } = $props();
 
@@ -46,7 +48,7 @@
         </div>
         <!-- All-day due tasks (no specific time) -->
         {#each day.dueTasks as task (task.id)}
-          <CalendarTaskChip {task} role="due" {onTaskClick} />
+          <CalendarTaskChip {task} role="due" {showTime} {onTaskClick} />
         {/each}
       </div>
     {/each}
@@ -77,7 +79,7 @@
               {@const taskHour = task.due_at ? new Date(task.due_at).getHours() : -1}
               {#if taskHour === hour}
                 <div class="absolute inset-x-0.5 top-0.5">
-                  <CalendarTaskChip {task} role="due" {onTaskClick} />
+                  <CalendarTaskChip {task} role="due" {showTime} {onTaskClick} />
                 </div>
               {/if}
             {/each}

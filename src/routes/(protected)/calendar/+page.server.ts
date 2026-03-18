@@ -6,6 +6,7 @@ import {
   parseDateParam,
   computeMonthGridRange,
   computeWeekRange,
+  computeDayRange,
   mergeTasks,
 } from '$lib/utils/calendar.js';
 
@@ -19,7 +20,9 @@ export const load: PageServerLoad = async (event) => {
 
   const { start, end } = view === 'week'
     ? computeWeekRange(anchor)
-    : computeMonthGridRange(anchor);
+    : view === 'day'
+      ? computeDayRange(anchor)
+      : computeMonthGridRange(anchor);
 
   const [{ data: dueTasks }, { data: startTasks }] = await Promise.all([
     supabase
@@ -96,6 +99,12 @@ export const actions: Actions = {
   },
   deleteChecklistItem: async ({ request, locals: { supabase } }) => {
     return taskActions.deleteChecklistItem(await request.formData(), supabase);
+  },
+  editChecklistItem: async ({ request, locals: { supabase } }) => {
+    return taskActions.editChecklistItem(await request.formData(), supabase);
+  },
+  reorderChecklistItems: async ({ request, locals: { supabase } }) => {
+    return taskActions.reorderChecklistItems(await request.formData(), supabase);
   },
   assignTask: async ({ request, locals: { supabase, profileId } }) => {
     return taskActions.assignTask(await request.formData(), supabase, profileId!);

@@ -220,7 +220,7 @@
         <ContextMenu.SubTrigger>Change Status</ContextMenu.SubTrigger>
         <ContextMenu.SubContent>
           {#each [['todo', 'Todo'], ['in_progress', 'In Progress'], ['done', 'Done'], ['canceled', 'Canceled']] as [val, label]}
-            <ContextMenu.Item onselect={() => patchTask({ status: val })}>
+            <ContextMenu.Item onSelect={() => patchTask({ status: val })}>
               {#if task.status === val}
                 <Check class="w-3 h-3 mr-2 shrink-0" />
               {:else}
@@ -237,7 +237,7 @@
         <ContextMenu.SubTrigger>Change Priority</ContextMenu.SubTrigger>
         <ContextMenu.SubContent>
           {#each [[1, 'P1 — Urgent'], [2, 'P2 — High'], [3, 'P3 — Medium'], [4, 'P4 — Low']] as [val, label]}
-            <ContextMenu.Item onselect={() => patchTask({ priority: val })}>
+            <ContextMenu.Item onSelect={() => patchTask({ priority: val })}>
               {#if task.priority === val}
                 <Check class="w-3 h-3 mr-2 shrink-0" />
               {:else}
@@ -253,11 +253,11 @@
       <ContextMenu.Sub>
         <ContextMenu.SubTrigger>Set Due Date</ContextMenu.SubTrigger>
         <ContextMenu.SubContent>
-          <ContextMenu.Item onselect={() => patchTask({ due_at: quickDate(0) })}>Today</ContextMenu.Item>
-          <ContextMenu.Item onselect={() => patchTask({ due_at: quickDate(1) })}>Tomorrow</ContextMenu.Item>
-          <ContextMenu.Item onselect={() => patchTask({ due_at: quickDate(7) })}>Next week</ContextMenu.Item>
+          <ContextMenu.Item onSelect={() => patchTask({ due_at: quickDate(0) })}>Today</ContextMenu.Item>
+          <ContextMenu.Item onSelect={() => patchTask({ due_at: quickDate(1) })}>Tomorrow</ContextMenu.Item>
+          <ContextMenu.Item onSelect={() => patchTask({ due_at: quickDate(7) })}>Next week</ContextMenu.Item>
           {#if task.due_at}
-            <ContextMenu.Item onselect={() => patchTask({ due_at: null })}>Remove date</ContextMenu.Item>
+            <ContextMenu.Item onSelect={() => patchTask({ due_at: null })}>Remove date</ContextMenu.Item>
           {/if}
           <div class="border-t mt-1 pt-1 px-2">
             <input
@@ -279,12 +279,12 @@
         <ContextMenu.SubTrigger>Set Reminder</ContextMenu.SubTrigger>
         <ContextMenu.SubContent>
           {#if task.due_at}
-            <ContextMenu.Item onselect={() => patchTask({ reminder_at: offsetFromDueAt(10) })}>10 min</ContextMenu.Item>
-            <ContextMenu.Item onselect={() => patchTask({ reminder_at: offsetFromDueAt(60) })}>1 hr</ContextMenu.Item>
-            <ContextMenu.Item onselect={() => patchTask({ reminder_at: offsetFromDueAt(1440) })}>1 day</ContextMenu.Item>
+            <ContextMenu.Item onSelect={() => patchTask({ reminder_at: offsetFromDueAt(10) })}>10 min</ContextMenu.Item>
+            <ContextMenu.Item onSelect={() => patchTask({ reminder_at: offsetFromDueAt(60) })}>1 hr</ContextMenu.Item>
+            <ContextMenu.Item onSelect={() => patchTask({ reminder_at: offsetFromDueAt(1440) })}>1 day</ContextMenu.Item>
           {/if}
           {#if task.reminder_at}
-            <ContextMenu.Item onselect={() => patchTask({ reminder_at: null })}>Clear reminder</ContextMenu.Item>
+            <ContextMenu.Item onSelect={() => patchTask({ reminder_at: null })}>Clear reminder</ContextMenu.Item>
           {/if}
           <div class="border-t mt-1 pt-1 px-2">
             <input
@@ -303,7 +303,7 @@
 
       <ContextMenu.Separator />
 
-      <ContextMenu.Item class="text-destructive focus:text-destructive" onselect={deleteTaskFromContext}>
+      <ContextMenu.Item class="text-destructive focus:text-destructive" onSelect={deleteTaskFromContext}>
         Delete Task
       </ContextMenu.Item>
     </ContextMenu.Content>

@@ -100,6 +100,18 @@ export async function toggleChecklistItem(formData: FormData, supabase: Supabase
   return { success: true };
 }
 
+export async function editChecklistItem(formData: FormData, supabase: SupabaseClient) {
+  const id = formData.get('id')?.toString();
+  const label = formData.get('label')?.toString()?.trim();
+
+  if (!id || !label) return fail(400, { error: 'ID and label are required' });
+
+  const { error } = await supabase.from('checklist_items').update({ label }).eq('id', id);
+
+  if (error) return fail(500, { error: error.message });
+  return { success: true };
+}
+
 export async function deleteChecklistItem(formData: FormData, supabase: SupabaseClient) {
   const id = formData.get('id')?.toString();
 

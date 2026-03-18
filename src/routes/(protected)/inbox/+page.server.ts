@@ -64,4 +64,10 @@ export const actions: Actions = {
   deleteChecklistItem: async ({ request, locals: { supabase } }) => {
     return taskActions.deleteChecklistItem(await request.formData(), supabase);
   },
+  editChecklistItem: async ({ request, locals: { supabase } }) => {
+    return taskActions.editChecklistItem(await request.formData(), supabase);
+  },
+  reorderChecklistItems: async ({ request, locals: { supabase } }) => {
+    return taskActions.reorderChecklistItems(await request.formData(), supabase);
+  },
 };

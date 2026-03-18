@@ -9,9 +9,11 @@
   import {
     buildMonthGrid,
     buildWeekGrid,
+    buildDayGrid,
     distributeTasks,
     formatMonthLabel,
     formatWeekLabel,
+    formatDayLabel,
   } from '$lib/utils/calendar.js';
 
   let { data }: { data: PageData } = $props();
@@ -21,18 +23,24 @@
   let sheetOpen = $state(false);
 
   const anchor = $derived(new Date(data.anchorIso));
-  const view = $derived(data.view as 'month' | 'week');
+  const view = $derived(data.view as 'month' | 'week' | 'day');
 
   const calendarDays = $derived.by(() => {
     const days =
       view === 'week'
         ? buildWeekGrid(anchor)
-        : buildMonthGrid(anchor.getFullYear(), anchor.getMonth());
+        : view === 'day'
+          ? buildDayGrid(anchor)
+          : buildMonthGrid(anchor.getFullYear(), anchor.getMonth());
     return distributeTasks(days, data.tasks);
   });
 
   const periodLabel = $derived(
-    view === 'week' ? formatWeekLabel(calendarDays) : formatMonthLabel(anchor)
+    view === 'week'
+      ? formatWeekLabel(calendarDays)
+      : view === 'day'
+        ? formatDayLabel(anchor)
+        : formatMonthLabel(anchor)
   );
 
   function taskRole(task: Task): ListRole {
@@ -54,22 +62,24 @@
     const d = new Date(anchor);
     if (view === 'week') {
       d.setDate(d.getDate() + direction * 7);
+    } else if (view === 'day') {
+      d.setDate(d.getDate() + direction);
     } else {
       d.setMonth(d.getMonth() + direction);
     }
     const dateStr =
-      view === 'week'
-        ? d.toISOString().slice(0, 10)
-        : `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      view === 'month'
+        ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
+        : d.toISOString().slice(0, 10);
     goto(`/calendar?view=${view}&date=${dateStr}`);
   }
 
-  function switchView(newView: 'month' | 'week') {
+  function switchView(newView: 'month' | 'week' | 'day') {
     if (newView === view) return;
     const dateStr =
-      newView === 'week'
-        ? anchor.toISOString().slice(0, 10)
-        : `${anchor.getFullYear()}-${String(anchor.getMonth() + 1).padStart(2, '0')}`;
+      newView === 'month'
+        ? `${anchor.getFullYear()}-${String(anchor.getMonth() + 1).padStart(2, '0')}`
+        : anchor.toISOString().slice(0, 10);
     goto(`/calendar?view=${newView}&date=${dateStr}`);
   }
 
@@ -78,23 +88,34 @@
     const m = String(anchor.getMonth() + 1).padStart(2, '0');
     goto(`/calendar?view=month&date=${y}-${m}`);
   }
+
+  function drillToDay(isoDate: string) {
+    goto(`/calendar?view=day&date=${isoDate}`);
+  }
 </script>
 
 <div class="flex flex-col h-full gap-4">
   <!-- Header -->
   <div class="flex items-center gap-3 flex-wrap">
-    {#if view === 'week'}
-      <button
-        type="button"
+    <div class="flex items-center gap-2">
+      <a
+        href="/inbox"
         class="text-xs text-foreground-secondary hover:text-foreground flex items-center gap-1 transition-colors"
-        onclick={backToMonth}
       >
         <ChevronLeft class="w-3.5 h-3.5" />
-        Month
-      </button>
-    {:else}
-      <h1 class="text-page-title font-accent">Calendar</h1>
-    {/if}
+        Inbox
+      </a>
+      {#if view === 'week' || view === 'day'}
+        <span class="text-foreground-muted text-xs">/</span>
+        <button
+          type="button"
+          class="text-xs text-foreground-secondary hover:text-foreground transition-colors"
+          onclick={backToMonth}
+        >
+          Month
+        </button>
+      {/if}
+    </div>
 
     <!-- Nav controls -->
     <div class="flex items-center gap-1 ml-auto">
@@ -139,6 +160,16 @@
       >
         Week
       </button>
+      <button
+        type="button"
+        class="px-3 py-1.5 transition-colors border-l border-border
+          {view === 'day'
+            ? 'bg-primary text-primary-foreground'
+            : 'bg-surface text-foreground-secondary hover:bg-surface-subtle'}"
+        onclick={() => switchView('day')}
+      >
+        Day
+      </button>
     </div>
   </div>
 
@@ -146,6 +177,8 @@
   <div class="flex-1 min-h-0 overflow-auto">
     {#if view === 'month'}
       <MonthGrid days={calendarDays} onTaskClick={openTask} onDayClick={drillToWeek} />
+    {:else if view === 'day'}
+      <WeekGrid days={calendarDays} onTaskClick={openTask} showTime={true} />
     {:else}
       <WeekGrid days={calendarDays} onTaskClick={openTask} />
     {/if}

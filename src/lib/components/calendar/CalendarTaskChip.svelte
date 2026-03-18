@@ -5,10 +5,12 @@
   let {
     task,
     role = 'due',
+    showTime = false,
     onTaskClick,
   }: {
     task: Task;
     role?: 'due' | 'start';
+    showTime?: boolean;
     onTaskClick: (task: Task) => void;
   } = $props();
 
@@ -44,7 +46,7 @@
     class="shrink-0 w-1.5 h-1.5 rounded-full {priorityDotClass[task.priority] ?? 'hidden'}"
   ></span>
   <span class="truncate">{task.title}</span>
-  {#if timeLabel}
+  {#if timeLabel && showTime}
     <span class="shrink-0 text-foreground-muted ml-auto pl-1">{timeLabel}</span>
   {/if}
 </button>

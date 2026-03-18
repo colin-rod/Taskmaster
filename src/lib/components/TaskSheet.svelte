@@ -43,6 +43,12 @@
   let deleteAlertOpen = $state(false);
   let newItemLabel = $state('');
   let addingItem = $state(false);
+  let editingItemId = $state<string | null>(null);
+  let editingLabel = $state('');
+  let draggingId = $state<string | null>(null);
+  let dragOverId = $state<string | null>(null);
+  let preDragOrder = $state<string[]>([]);
+  let reorderFormEl = $state<HTMLFormElement | null>(null);
   let editReminderAt = $state('');
   let editStartAt = $state('');
   let editStartTime = $state('');
@@ -290,6 +296,58 @@
   });
   let completedCount = $derived(checklistItems.filter((i) => i.is_completed).length);
   let totalCount = $derived(checklistItems.length);
+
+  // Checklist item edit
+  function startEditItem(id: string, label: string) {
+    editingItemId = id;
+    editingLabel = label;
+  }
+
+  function cancelEditItem() {
+    editingItemId = null;
+    editingLabel = '';
+  }
+
+  // Drag-to-reorder
+  function onDragStart(id: string) {
+    draggingId = id;
+    preDragOrder = (task?.checklist_items ?? [])
+      .slice()
+      .sort((a, b) => a.position - b.position)
+      .map((i) => i.id);
+  }
+
+  function onDragOver(e: DragEvent, id: string) {
+    e.preventDefault();
+    dragOverId = id;
+  }
+
+  function onDrop(id: string) {
+    if (!draggingId || draggingId === id || !task?.checklist_items || !reorderFormEl) return;
+
+    const items = task.checklist_items.slice().sort((a, b) => a.position - b.position);
+    const fromIdx = items.findIndex((i) => i.id === draggingId);
+    const toIdx = items.findIndex((i) => i.id === id);
+    if (fromIdx === -1 || toIdx === -1) return;
+
+    const [moved] = items.splice(fromIdx, 1);
+    items.splice(toIdx, 0, moved);
+
+    // Optimistically update positions
+    task.checklist_items = items.map((item, idx) => ({ ...item, position: idx }));
+
+    draggingId = null;
+    dragOverId = null;
+
+    // Submit reorder to server
+    reorderFormEl.querySelector<HTMLInputElement>('[name="item_ids"]')!.value = JSON.stringify(items.map((i) => i.id));
+    reorderFormEl.requestSubmit();
+  }
+
+  function onDragEnd() {
+    draggingId = null;
+    dragOverId = null;
+  }
 </script>
 
 <Sheet bind:open>
@@ -745,9 +803,53 @@
 
         <!-- Checklist items -->
         {#if checklistItems.length > 0}
+          <!-- Hidden reorder form -->
+          <form
+            method="POST"
+            action="?/reorderChecklistItems"
+            bind:this={reorderFormEl}
+            use:enhance={() => {
+              const snapshot = preDragOrder;
+              return async ({ result, update }) => {
+                if (result.type !== 'success') {
+                  // Rollback to pre-drag order
+                  if (task?.checklist_items) {
+                    task.checklist_items = task.checklist_items.map((item) => ({
+                      ...item,
+                      position: snapshot.indexOf(item.id),
+                    }));
+                  }
+                  toast.error('Failed to reorder items');
+                }
+                await update();
+              };
+            }}
+          >
+            <input type="hidden" name="item_ids" value="" />
+          </form>
           <div class="space-y-1 mb-3">
             {#each checklistItems as item (item.id)}
-              <div class="flex items-center gap-2 group rounded-md px-2 py-1.5 hover:bg-primary-tint/60 transition-colors">
+              <div
+                class="flex items-center gap-2 group rounded-md px-2 py-1.5 hover:bg-primary-tint/60 transition-colors {draggingId === item.id ? 'opacity-50' : ''} {dragOverId === item.id && draggingId !== item.id ? 'ring-1 ring-primary' : ''}"
+                draggable="true"
+                ondragstart={() => onDragStart(item.id)}
+                ondragover={(e) => onDragOver(e, item.id)}
+                ondrop={() => onDrop(item.id)}
+                ondragend={onDragEnd}
+              >
+                <!-- Drag handle -->
+                <button
+                  type="button"
+                  class="md:opacity-0 md:group-hover:opacity-100 shrink-0 text-foreground-muted cursor-grab active:cursor-grabbing transition-opacity"
+                  aria-label="Drag to reorder"
+                  tabindex={-1}
+                >
+                  <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                    <circle cx="5" cy="4" r="1.2"/><circle cx="11" cy="4" r="1.2"/>
+                    <circle cx="5" cy="8" r="1.2"/><circle cx="11" cy="8" r="1.2"/>
+                    <circle cx="5" cy="12" r="1.2"/><circle cx="11" cy="12" r="1.2"/>
+                  </svg>
+                </button>
                 <!-- Toggle -->
                 <form
                   method="POST"
@@ -774,7 +876,7 @@
                   <input type="hidden" name="is_completed" value={String(item.is_completed)} />
                   <button
                     type="submit"
-                    class="w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 transition-colors
+                    class="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors
                       {item.is_completed ? 'bg-primary border-primary' : 'border-foreground-muted hover:border-primary'}"
                     aria-label={item.is_completed ? 'Uncheck item' : 'Check item'}
                   >
@@ -786,10 +888,52 @@
                   </button>
                 </form>
 
-                <!-- Label -->
-                <span class="flex-1 text-sm {item.is_completed ? 'line-through text-foreground-muted' : ''}">
-                  {item.label}
-                </span>
+                <!-- Label / inline edit -->
+                {#if editingItemId === item.id}
+                  <form
+                    method="POST"
+                    action="?/editChecklistItem"
+                    class="flex-1"
+                    use:enhance={() => {
+                      const oldLabel = item.label;
+                      const newLabel = editingLabel.trim();
+                      if (!newLabel) { cancelEditItem(); return async () => {}; }
+                      item.label = newLabel;
+                      editingItemId = null;
+                      return async ({ result, update }) => {
+                        if (result.type !== 'success') {
+                          item.label = oldLabel;
+                          toast.error('Failed to update item');
+                        }
+                        await update();
+                      };
+                    }}
+                  >
+                    <input type="hidden" name="id" value={item.id} />
+                    <input
+                      name="label"
+                      type="text"
+                      bind:value={editingLabel}
+                      autofocus
+                      class="w-full bg-transparent text-sm outline-none border-b border-primary focus:border-primary"
+                      onblur={(e) => { (e.currentTarget.closest('form') as HTMLFormElement)?.requestSubmit(); }}
+                      onkeydown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); (e.currentTarget.closest('form') as HTMLFormElement)?.requestSubmit(); }
+                        if (e.key === 'Escape') { e.preventDefault(); cancelEditItem(); }
+                      }}
+                    />
+                  </form>
+                {:else}
+                  <button
+                    type="button"
+                    class="flex-1 text-left text-sm {item.is_completed ? 'line-through text-foreground-muted cursor-default' : 'cursor-text'}"
+                    onclick={() => { if (!item.is_completed) startEditItem(item.id, item.label); }}
+                    tabindex={item.is_completed ? -1 : 0}
+                    aria-label="Edit item label"
+                  >
+                    {item.label}
+                  </button>
+                {/if}
 
                 <!-- Delete -->
                 <form
