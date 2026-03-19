@@ -32,11 +32,14 @@
 <div class="min-h-screen flex flex-col">
   <!-- Header -->
   <header class="sticky top-0 z-40 border-b bg-surface px-4 py-3 [box-shadow:var(--shadow-1)]">
-    <div class="flex items-center justify-between">
-      <h1 class="font-accent text-xl font-semibold flex items-center gap-1">
+    <div class="flex items-center gap-4">
+      <h1 class="font-accent text-xl font-semibold flex items-center gap-1 shrink-0">
         Taskmaster<span class="w-1.5 h-1.5 rounded-full bg-primary inline-block mb-0.5"></span>
       </h1>
-      <div class="flex items-center gap-1 min-w-0">
+      <div class="hidden md:flex flex-1 min-w-0 max-w-sm">
+        <QuickAdd action="/inbox?/createTask" compact />
+      </div>
+      <div class="flex items-center gap-1 min-w-0 ml-auto">
         <div class="flex items-center">
           {#if searchOpen}
             <div class="w-56 max-w-[calc(100vw-7rem)]">
@@ -81,9 +84,6 @@
     <!-- Main content -->
     <main class="flex-1 overflow-y-auto px-4 py-6 pb-20 md:pb-6 md:px-8">
       <div class="max-w-4xl mx-auto">
-        <div class="mb-6">
-          <QuickAdd />
-        </div>
         {@render children()}
       </div>
     </main>

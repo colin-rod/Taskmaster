@@ -8,11 +8,13 @@
     value = $bindable<string | null>(null),
     disabled = false,
     mode = 'patch',
+    onchange,
   }: {
     taskId?: string;
     value: string | null;
     disabled?: boolean;
     mode?: 'patch' | 'controlled';
+    onchange?: () => void;
   } = $props();
 
   let open = $state(false);
@@ -36,6 +38,7 @@
     open = false;
     if (mode === 'controlled') {
       value = due_at;
+      onchange?.();
     } else {
       await patchTask(taskId!, { due_at }, "Couldn't save date. Try again.");
     }
@@ -52,6 +55,18 @@
     }
     return toDateString(d);
   }
+
+  const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
+
+  const weekDays = $derived(
+    open
+      ? Array.from({ length: 7 }, (_, i) => {
+          const d = new Date();
+          d.setDate(d.getDate() + i);
+          return { offset: i, label: DAY_ABBR[d.getDay()] };
+        })
+      : []
+  );
 
   function handleCustomDate(e: Event) {
     const input = e.target as HTMLInputElement;
@@ -103,6 +118,23 @@
     >
       Next week
     </button>
+    <div class="border-t border-border-divider mt-1 pt-1">
+      <div class="grid grid-cols-7 gap-0.5">
+        {#each weekDays as day (day.offset)}
+          <button
+            type="button"
+            class="flex items-center justify-center h-7 rounded text-xs font-medium transition-colors
+              {day.offset === 0
+                ? 'bg-primary/10 text-primary hover:bg-primary/20'
+                : 'text-foreground-secondary hover:bg-surface-subtle'}"
+            aria-label={day.offset === 0 ? 'Today' : day.offset === 1 ? 'Tomorrow' : `In ${day.offset} days`}
+            onclick={() => setDate(quickDate(day.offset))}
+          >
+            {day.label}
+          </button>
+        {/each}
+      </div>
+    </div>
     {#if value}
       <button
         type="button"

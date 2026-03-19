@@ -8,7 +8,7 @@
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
   import type { RecurrenceRule } from '$lib/types/index.js';
 
-  let { action = '?/createTask' }: { action?: string } = $props();
+  let { action = '?/createTask', compact = false }: { action?: string; compact?: boolean } = $props();
 
   let title = $state('');
   let dueAt = $state<string | null>(null);
@@ -27,7 +27,7 @@
 <form
   method="POST"
   {action}
-  class="flex flex-col gap-2 rounded-xl border border-border bg-surface p-3 shadow-sm"
+  class={compact ? 'flex flex-col gap-2 w-full' : 'flex flex-col gap-2 rounded-xl border border-border bg-surface p-3 shadow-sm'}
   class:form-success={justAdded}
   use:enhance={() => {
     creating = true;
@@ -77,7 +77,9 @@
       class="text-sm px-1.5 py-0.5 rounded transition-colors {showRecurrence ? 'text-primary font-medium' : 'text-foreground-secondary hover:text-foreground'}"
       onclick={() => {
         showRecurrence = !showRecurrence;
-        if (!showRecurrence) {
+        if (showRecurrence) {
+          isRecurring = true;
+        } else {
           isRecurring = false;
           recurrenceRule = null;
         }
@@ -122,6 +124,6 @@
   </div>
 
   {#if showRecurrence}
-    <RecurrenceEditor bind:isRecurring bind:recurrenceRule />
+    <RecurrenceEditor bind:isRecurring bind:recurrenceRule onclose={() => { showRecurrence = false; isRecurring = false; recurrenceRule = null; }} />
   {/if}
 </form>

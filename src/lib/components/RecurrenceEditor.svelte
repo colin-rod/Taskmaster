@@ -6,9 +6,11 @@
 	let {
 		isRecurring = $bindable(false),
 		recurrenceRule = $bindable<RecurrenceRule | null>(null),
+		onclose,
 	}: {
 		isRecurring: boolean;
 		recurrenceRule: RecurrenceRule | null;
+		onclose?: () => void;
 	} = $props();
 
 	const DAY_LABELS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -108,18 +110,23 @@
 </script>
 
 <div class="border-t pt-4 space-y-3">
-	<!-- Toggle -->
-	<label class="flex items-center gap-2 cursor-pointer">
-		<input
-			type="checkbox"
-			bind:checked={isRecurring}
-			class="w-4 h-4 rounded border-foreground-muted accent-[hsl(var(--primary))]"
-		/>
+	<!-- Header -->
+	<div class="flex items-center justify-between">
 		<span class="text-sm font-medium">Recurring</span>
-		{#if isRecurring && summary}
-			<span class="text-xs text-foreground-secondary ml-auto">{summary}</span>
-		{/if}
-	</label>
+		<div class="flex items-center gap-2">
+			{#if summary}
+				<span class="text-xs text-foreground-secondary">{summary}</span>
+			{/if}
+			{#if onclose}
+				<button
+					type="button"
+					onclick={onclose}
+					class="text-foreground-muted hover:text-foreground transition-colors leading-none"
+					aria-label="Remove recurring"
+				>×</button>
+			{/if}
+		</div>
+	</div>
 
 	{#if isRecurring}
 		<!-- Frequency + Interval -->
@@ -190,7 +197,7 @@
 		<!-- Time of day -->
 		<div>
 			<label for="recurrence-time" class="text-sm text-foreground-secondary">Time</label>
-			<TimeInput id="recurrence-time" bind:value={timeOfDay} disabled={!isRecurring} />
+			<TimeInput id="recurrence-time" bind:value={timeOfDay} />
 		</div>
 
 		<!-- End condition -->

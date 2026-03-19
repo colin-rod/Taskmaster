@@ -61,7 +61,7 @@
 <div class="relative" style="height: {ITEM_HEIGHT * (VISIBLE * 2 + 1)}px;">
   <!-- Highlight bar for selected item -->
   <div
-    class="pointer-events-none absolute inset-x-0 rounded-md bg-surface-subtle"
+    class="pointer-events-none absolute inset-x-0 rounded-md bg-muted border border-border"
     style="top: {ITEM_HEIGHT * VISIBLE}px; height: {ITEM_HEIGHT}px;"
   ></div>
 
@@ -79,7 +79,7 @@
         type="button"
         class="flex w-full items-center justify-center text-sm font-mono transition-all"
         style="height: {ITEM_HEIGHT}px; scroll-snap-align: center;"
-        class:font-medium={values[i] === value}
+        class:font-semibold={values[i] === value}
         class:text-foreground={values[i] === value}
         class:text-foreground-muted={values[i] !== value}
         class:opacity-40={Math.abs(i - indexOfValue(value)) > 2}

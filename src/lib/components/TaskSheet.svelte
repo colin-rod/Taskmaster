@@ -180,7 +180,6 @@
       prevStatus = task.status;
       prevIsRecurring = task.is_recurring;
       prevRecurrenceRule = JSON.stringify(task.recurrence_rule);
-      prevReminderDate = reminderDate;
       // Progressive disclosure: auto-expand fields that have values, but only when switching to a new task
       if (task.id !== initializedTaskId) {
         notesExpanded     = !!(task.notes && task.notes.trim() !== '');
@@ -238,16 +237,6 @@
   // Re-pill recurring when unchecked from within RecurrenceEditor
   $effect(() => {
     if (isInitialized && !editIsRecurring) showRecurring = false;
-  });
-
-  // Autosave: reminder date change (time change handled via TimeInput onchange → handleReminderBlur)
-  let prevReminderDate = $state('');
-  $effect(() => {
-    if (!isInitialized || !task) return;
-    if (reminderDate !== prevReminderDate) {
-      prevReminderDate = reminderDate;
-      handleReminderBlur();
-    }
   });
 
   function handleTitleBlur() {
@@ -610,7 +599,7 @@
                 <button
                   transition:scale={{ duration: 120, start: 0.85 }}
                   type="button"
-                  onclick={() => { showRecurring = true; }}
+                  onclick={() => { showRecurring = true; editIsRecurring = true; }}
                   class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
                   aria-label="Make this task recurring"
                 >+ Recurring</button>
@@ -621,12 +610,26 @@
           <!-- Reminder -->
           {#if showReminder}
             <div transition:slide={{ duration: 180, easing: cubicOut }}>
-              <label for="edit-reminder-time" class="text-sm font-semibold tracking-wide text-foreground">Reminder</label>
+              <div class="flex items-center justify-between">
+                <label for="edit-reminder-time" class="text-sm font-semibold tracking-wide text-foreground">Reminder</label>
+                {#if !isViewer}
+                  <button
+                    type="button"
+                    class="text-xs text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle"
+                    aria-label="Remove reminder"
+                    onclick={() => {
+                      if (reminderDate) autoSave({ reminder_at: null });
+                      reminderDate = ''; reminderTime = ''; showReminder = false;
+                    }}
+                  >&times;</button>
+                {/if}
+              </div>
               <div class="flex items-center gap-2 mt-1">
                 <DatePickerPopover
                   bind:value={reminderDate}
                   mode="controlled"
                   disabled={isViewer}
+                  onchange={handleReminderBlur}
                 />
                 <TimeInput
                   id="edit-reminder-time"
@@ -740,7 +743,7 @@
           <!-- Recurrence -->
           {#if showRecurring}
             <div transition:slide={{ duration: 180, easing: cubicOut }}>
-              <RecurrenceEditor bind:isRecurring={editIsRecurring} bind:recurrenceRule={editRecurrenceRule} />
+              <RecurrenceEditor bind:isRecurring={editIsRecurring} bind:recurrenceRule={editRecurrenceRule} onclose={() => { editIsRecurring = false; showRecurring = false; }} />
             </div>
           {/if}
 

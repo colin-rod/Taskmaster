@@ -119,25 +119,31 @@
       {/if}
     </Popover.Trigger>
 
-    <Popover.Content class="w-52 p-0 overflow-hidden" align="start">
-      <!-- Quick select -->
-      <div class="grid grid-cols-3 gap-1 p-2 border-b border-border">
-        {#each QUICK_TIMES as qt (qt.label)}
-          <button
-            type="button"
-            class="text-xs py-1 px-1.5 rounded hover:bg-surface-subtle transition-colors text-foreground-secondary hover:text-foreground font-mono"
-            onclick={() => pickQuickTime(qt.h, qt.m)}
-          >
-            {qt.label}
-          </button>
-        {/each}
-      </div>
+    <Popover.Content class="w-64 p-0 overflow-hidden" align="start">
+      <!-- Side-by-side: quick times + scroll wheels -->
+      <div class="flex">
+        <!-- Quick select column -->
+        <div class="flex flex-col p-2 gap-0.5">
+          {#each QUICK_TIMES as qt (qt.label)}
+            <button
+              type="button"
+              class="text-xs py-1 px-2 rounded hover:bg-surface-subtle transition-colors text-foreground-secondary hover:text-foreground font-mono text-left"
+              onclick={() => pickQuickTime(qt.h, qt.m)}
+            >
+              {qt.label}
+            </button>
+          {/each}
+        </div>
 
-      <!-- Scroll wheels -->
-      <div class="flex items-center justify-center gap-1 px-3 py-2">
-        <ScrollWheel items={HOUR_LABELS} values={HOURS} bind:value={wheelHour} />
-        <span class="text-foreground-muted font-mono text-sm pb-0.5">:</span>
-        <ScrollWheel items={MINUTE_LABELS} values={MINUTES} bind:value={wheelMinute} />
+        <!-- Vertical divider -->
+        <div class="w-px bg-border self-stretch"></div>
+
+        <!-- Scroll wheels -->
+        <div class="flex flex-1 items-center justify-center gap-1 px-3 py-2">
+          <ScrollWheel items={HOUR_LABELS} values={HOURS} bind:value={wheelHour} />
+          <span class="text-foreground-muted font-mono text-sm pb-0.5">:</span>
+          <ScrollWheel items={MINUTE_LABELS} values={MINUTES} bind:value={wheelMinute} />
+        </div>
       </div>
 
       <!-- Remove time -->
