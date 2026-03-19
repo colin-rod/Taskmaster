@@ -5,6 +5,7 @@
     AlertCircle,
     CalendarDays,
     CalendarRange,
+    CheckCheck,
     Inbox,
     UserCheck,
     PanelLeftClose,
@@ -18,7 +19,7 @@
     lists,
     onCreateList,
   }: {
-    filterCounts: { today: number; overdue: number; upcoming: number; inbox: number; assigned: number };
+    filterCounts: { today: number; overdue: number; upcoming: number; inbox: number; assigned: number; completed: number };
     lists: { id: string; name: string; color: string | null; icon: string; taskCount: number; isShared: boolean }[];
     onCreateList: () => void;
   } = $props();
@@ -30,6 +31,7 @@
     { label: 'Today', href: '/today', icon: CalendarDays, countKey: 'today' as const },
     { label: 'Upcoming', href: '/upcoming', icon: CalendarRange, countKey: 'upcoming' as const },
     { label: 'Assigned to Me', href: '/assigned', icon: UserCheck, countKey: 'assigned' as const },
+    { label: 'Completed', href: '/completed', icon: CheckCheck, countKey: 'completed' as const },
   ];
 
   function isActive(href: string, pathname: string): boolean {

@@ -23,6 +23,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
     { count: upcomingCount },
     { count: inboxCount },
     { count: assignedCount },
+    { count: completedCount },
     { data: listTaskCounts },
     { data: profileData },
     { data: memberships },
@@ -77,6 +78,12 @@ export const load: LayoutServerLoad = async ({ locals }) => {
       .eq('assigned_to_user_id', locals.profileId)
       .not('status', 'in', '(done,canceled)'),
 
+    // Completed count (all done/canceled tasks)
+    locals.supabase
+      .from('tasks')
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['done', 'canceled']),
+
     // Task counts per list via aggregate RPC
     locals.supabase.rpc('get_list_task_counts'),
 
@@ -120,6 +127,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
       upcoming: upcomingCount ?? 0,
       inbox: inboxCount ?? 0,
       assigned: assignedCount ?? 0,
+      completed: completedCount ?? 0,
     },
   };
 };

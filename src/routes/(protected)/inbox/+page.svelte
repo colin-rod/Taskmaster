@@ -3,7 +3,6 @@
   import type { Task } from '$lib/types/index.js';
   import TaskRow from '$lib/components/TaskRow.svelte';
   import TaskSheet from '$lib/components/TaskSheet.svelte';
-  import CompletedTasksSection from '$lib/components/CompletedTasksSection.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
@@ -25,7 +24,6 @@
   let filterDue = $state<DueFilter>(null);
 
   let activeTasks = $derived(data.tasks.filter((t) => t.status !== 'done' && t.status !== 'canceled'));
-  let completedTasks = $derived(data.tasks.filter((t) => t.status === 'done' || t.status === 'canceled'));
 
   const todayStartMs = $derived.by(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); });
   const todayEndMs = $derived.by(() => { const d = new Date(); d.setHours(23, 59, 59, 999); return d.getTime(); });
@@ -204,7 +202,7 @@
     {/if}
   </div>
 
-  {#if activeTasks.length === 0 && completedTasks.length === 0}
+  {#if activeTasks.length === 0}
     <EmptyState title="Nothing waiting for you." subtitle="Your inbox is clear. Add a task to get started.">
       {#snippet illustration()}
         <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
@@ -244,7 +242,6 @@
     </div>
   {/if}
 
-  <CompletedTasksSection tasks={completedTasks} {openTask} />
 </div>
 
 <TaskSheet bind:task={selectedTask} bind:open={sheetOpen} userRole="owner" />
