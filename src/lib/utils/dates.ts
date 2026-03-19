@@ -9,7 +9,10 @@ export function buildDueAt(dateStr: string, timeStr: string): string | null {
 }
 
 export function toDateString(date: Date): string {
-  return date.toISOString().split('T')[0] + 'T12:00:00.000Z';
+  const yyyy = date.getFullYear();
+  const mm = String(date.getMonth() + 1).padStart(2, '0');
+  const dd = String(date.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}T12:00:00.000Z`;
 }
 
 export function formatTimeBlock(

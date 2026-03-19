@@ -14,6 +14,8 @@
   import { getPriorityLabel, formatStatus } from '$lib/utils/design-tokens.js';
   import { hasTime, buildDueAt, formatTimeBlock } from '$lib/utils/dates.js';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
+  import TimeInput from '$lib/components/TimeInput.svelte';
+  import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
   import { Plus, Loader, Check, AlertCircle } from '@lucide/svelte';
   import { slide, scale } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
@@ -50,6 +52,8 @@
   let preDragOrder = $state<string[]>([]);
   let reorderFormEl = $state<HTMLFormElement | null>(null);
   let editReminderAt = $state('');
+  let reminderDate = $state('');   // YYYY-MM-DD ISO string (for DatePickerPopover)
+  let reminderTime = $state('');   // HH:MM
   let editStartAt = $state('');
   let editStartTime = $state('');
   let editDurationMinutes = $state<number | null>(null);
@@ -156,6 +160,14 @@
       editReminderAt = task.reminder_at
         ? new Date(task.reminder_at).toISOString().slice(0, 16)
         : '';
+      if (task.reminder_at) {
+        const r = new Date(task.reminder_at);
+        reminderDate = `${r.getFullYear()}-${String(r.getMonth() + 1).padStart(2, '0')}-${String(r.getDate()).padStart(2, '0')}T12:00:00.000Z`;
+        reminderTime = `${String(r.getHours()).padStart(2, '0')}:${String(r.getMinutes()).padStart(2, '0')}`;
+      } else {
+        reminderDate = '';
+        reminderTime = '';
+      }
       if (task.start_at) {
         const s = new Date(task.start_at);
         editStartAt = `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}-${String(s.getDate()).padStart(2, '0')}`;
@@ -172,11 +184,12 @@
       prevStatus = task.status;
       prevIsRecurring = task.is_recurring;
       prevRecurrenceRule = JSON.stringify(task.recurrence_rule);
+      prevReminderDate = reminderDate;
       // Progressive disclosure: auto-expand fields that have values, but only when switching to a new task
       if (task.id !== initializedTaskId) {
         notesExpanded     = !!(task.notes && task.notes.trim() !== '');
         showTime          = editDueAt !== '' && editDueTime !== '';
-        showReminder      = editReminderAt !== '';
+        showReminder      = reminderDate !== '';
         showTimeBlock     = editStartAt !== '';
         showRecurring     = editIsRecurring;
         checklistExpanded = (task.checklist_items?.length ?? 0) > 0;
@@ -231,6 +244,16 @@
     if (isInitialized && !editIsRecurring) showRecurring = false;
   });
 
+  // Autosave: reminder date change (time change handled via TimeInput onchange → handleReminderBlur)
+  let prevReminderDate = $state('');
+  $effect(() => {
+    if (!isInitialized || !task) return;
+    if (reminderDate !== prevReminderDate) {
+      prevReminderDate = reminderDate;
+      handleReminderBlur();
+    }
+  });
+
   function handleTitleBlur() {
     if (!isInitialized || !task || editTitle === task.title) return;
     autoSave({ title: editTitle });
@@ -250,7 +273,15 @@
 
   function handleReminderBlur() {
     if (!isInitialized || !task) return;
-    const newVal = editReminderAt ? new Date(editReminderAt).toISOString() : null;
+    let newVal: string | null = null;
+    if (reminderDate) {
+      const d = new Date(reminderDate);
+      if (reminderTime) {
+        const [hh, mm] = reminderTime.split(':').map(Number);
+        d.setHours(hh, mm, 0, 0);
+      }
+      newVal = d.toISOString();
+    }
     const currentVal = task.reminder_at ?? null;
     if (newVal !== currentVal) autoSave({ reminder_at: newVal });
   }
@@ -283,6 +314,8 @@
     const dueDate = new Date(dueIso);
     dueDate.setMinutes(dueDate.getMinutes() - minutesBefore);
     editReminderAt = dueDate.toISOString().slice(0, 16);
+    reminderDate = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}-${String(dueDate.getDate()).padStart(2, '0')}T12:00:00.000Z`;
+    reminderTime = `${String(dueDate.getHours()).padStart(2, '0')}:${String(dueDate.getMinutes()).padStart(2, '0')}`;
     autoSave({ reminder_at: dueDate.toISOString() });
   }
 
@@ -541,17 +574,10 @@
               class="select-input mt-1"
             />
             {#if editDueAt && showTime}
-              <label for="edit-due-time" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
+              <label class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
                 Time <span class="text-foreground-muted font-normal">(optional)</span>
               </label>
-              <input
-                id="edit-due-time"
-                name="due_time"
-                type="time"
-                bind:value={editDueTime}
-                onblur={handleDueBlur}
-                class="select-input mt-1"
-              />
+              <TimeInput bind:value={editDueTime} disabled={isViewer} onchange={handleDueBlur} />
             {/if}
           </div>
 
@@ -600,15 +626,19 @@
           <!-- Reminder -->
           {#if showReminder}
             <div transition:slide={{ duration: 180, easing: cubicOut }}>
-              <label for="edit-reminder" class="text-sm font-semibold tracking-wide text-foreground">Reminder</label>
-              <input
-                id="edit-reminder"
-                name="reminder_at"
-                type="datetime-local"
-                bind:value={editReminderAt}
-                onblur={handleReminderBlur}
-                class="select-input mt-1"
-              />
+              <label class="text-sm font-semibold tracking-wide text-foreground">Reminder</label>
+              <div class="flex items-center gap-2 mt-1">
+                <DatePickerPopover
+                  bind:value={reminderDate}
+                  mode="controlled"
+                  disabled={isViewer}
+                />
+                <TimeInput
+                  bind:value={reminderTime}
+                  disabled={isViewer || !reminderDate}
+                  onchange={handleReminderBlur}
+                />
+              </div>
               {#if editDueAt}
                 <p class="text-xs text-foreground-muted mt-2 mb-1">Relative to due date:</p>
                 <div class="flex gap-2 flex-wrap">
@@ -632,11 +662,11 @@
                   >1 day</button>
                 </div>
               {/if}
-              {#if editReminderAt}
+              {#if reminderDate}
                 <button
                   type="button"
                   class="text-sm text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
-                  onclick={() => { editReminderAt = ''; showReminder = false; autoSave({ reminder_at: null }); }}
+                  onclick={() => { editReminderAt = ''; reminderDate = ''; reminderTime = ''; showReminder = false; autoSave({ reminder_at: null }); }}
                 >Clear reminder</button>
               {/if}
             </div>
@@ -658,17 +688,10 @@
                 class="select-input mt-1"
               />
               {#if editStartAt}
-                <label for="edit-start-time" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
+                <label class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
                   Start time <span class="text-foreground-muted font-normal">(optional)</span>
                 </label>
-                <input
-                  id="edit-start-time"
-                  name="start_at_time"
-                  type="time"
-                  bind:value={editStartTime}
-                  onblur={handleStartAtBlur}
-                  class="select-input mt-1"
-                />
+                <TimeInput bind:value={editStartTime} disabled={isViewer} onchange={handleStartAtBlur} />
                 <label for="edit-duration" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
                   Duration <span class="text-foreground-muted font-normal">(optional)</span>
                 </label>

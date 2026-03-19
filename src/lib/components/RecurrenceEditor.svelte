@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { RecurrenceRule } from '$lib/types/index.js';
 	import { describeRecurrence } from '$lib/utils/recurrence.js';
+	import TimeInput from '$lib/components/TimeInput.svelte';
 
 	let {
 		isRecurring = $bindable(false),
@@ -188,13 +189,8 @@
 
 		<!-- Time of day -->
 		<div>
-			<label for="recurrence-time" class="text-sm text-foreground-secondary">Time</label>
-			<input
-				id="recurrence-time"
-				type="time"
-				bind:value={timeOfDay}
-				class="select-input mt-1"
-			/>
+			<label class="text-sm text-foreground-secondary">Time</label>
+			<TimeInput bind:value={timeOfDay} disabled={!isRecurring} />
 		</div>
 
 		<!-- End condition -->

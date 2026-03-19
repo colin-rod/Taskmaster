@@ -14,6 +14,7 @@
   import { PRIORITY_OPTIONS } from '$lib/utils/design-tokens.js';
   import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
+  import * as Popover from '$lib/components/ui/popover/index.js';
 
   let {
     task,
@@ -36,6 +37,9 @@
 
   let checklistTotal = $derived((task.checklist_items ?? []).length);
   let checklistDone = $derived((task.checklist_items ?? []).filter((i) => i.is_completed).length);
+  let sortedChecklistItems = $derived(
+    [...(task.checklist_items ?? [])].sort((a, b) => a.position - b.position)
+  );
 
   let deleteForm: HTMLFormElement | undefined;
   let deleteAlertOpen = $state(false);
@@ -178,12 +182,40 @@
               </span>
             {/if}
             {#if checklistTotal > 0}
-              <span class="text-xs text-foreground-secondary flex items-center gap-1 bg-surface-subtle px-1.5 py-0.5 rounded-full">
-                <svg class="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M3 8h10M3 4h10M3 12h10" />
-                </svg>
-                {checklistDone}/{checklistTotal}
-              </span>
+              <Popover.Root>
+                <Popover.Trigger openOnHover openDelay={300} closeDelay={150} asChild>
+                  {#snippet child({ props })}
+                    <span
+                      {...props}
+                      class="text-xs text-foreground-secondary flex items-center gap-1 bg-surface-subtle px-1.5 py-0.5 rounded-full cursor-default"
+                      role="button"
+                      tabindex="0"
+                      aria-label="Checklist: {checklistDone} of {checklistTotal} complete"
+                    >
+                      <svg class="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M3 8h10M3 4h10M3 12h10" />
+                      </svg>
+                      {checklistDone}/{checklistTotal}
+                    </span>
+                  {/snippet}
+                </Popover.Trigger>
+                <Popover.Content class="w-56 p-2 space-y-1" align="start" side="top" sideOffset={6}>
+                  {#each sortedChecklistItems as item (item.id)}
+                    <div class="flex items-start gap-2 text-xs">
+                      <div class="mt-0.5 w-3.5 h-3.5 rounded-sm border shrink-0 flex items-center justify-center {item.is_completed ? 'bg-primary border-primary' : 'border-foreground-muted'}">
+                        {#if item.is_completed}
+                          <svg class="w-2 h-2 text-primary-foreground" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 4l2 2 4-4" />
+                          </svg>
+                        {/if}
+                      </div>
+                      <span class="{item.is_completed ? 'line-through text-foreground-muted' : 'text-foreground'}">
+                        {item.label}
+                      </span>
+                    </div>
+                  {/each}
+                </Popover.Content>
+              </Popover.Root>
             {/if}
             <AssigneePicker
               taskId={task.id}
@@ -289,18 +321,6 @@
           {#if task.reminder_at}
             <ContextMenu.Item onSelect={() => patchTask({ reminder_at: null })}>Clear reminder</ContextMenu.Item>
           {/if}
-          <div class="border-t mt-1 pt-1 px-2">
-            <input
-              type="datetime-local"
-              aria-label="Custom reminder date and time"
-              class="text-sm w-full bg-transparent outline-none py-1"
-              onclick={(e) => e.stopPropagation()}
-              onchange={(e) => {
-                const val = e.currentTarget.value;
-                if (val) patchTask({ reminder_at: new Date(val).toISOString() });
-              }}
-            />
-          </div>
         </ContextMenu.SubContent>
       </ContextMenu.Sub>
 
