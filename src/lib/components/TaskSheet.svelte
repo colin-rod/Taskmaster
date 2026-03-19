@@ -51,7 +51,6 @@
   let dragOverId = $state<string | null>(null);
   let preDragOrder = $state<string[]>([]);
   let reorderFormEl = $state<HTMLFormElement | null>(null);
-  let editReminderAt = $state('');
   let reminderDate = $state('');   // YYYY-MM-DD ISO string (for DatePickerPopover)
   let reminderTime = $state('');   // HH:MM
   let editStartAt = $state('');
@@ -157,9 +156,6 @@
         editDueTime = '';
       }
       editStatus = task.status;
-      editReminderAt = task.reminder_at
-        ? new Date(task.reminder_at).toISOString().slice(0, 16)
-        : '';
       if (task.reminder_at) {
         const r = new Date(task.reminder_at);
         reminderDate = `${r.getFullYear()}-${String(r.getMonth() + 1).padStart(2, '0')}-${String(r.getDate()).padStart(2, '0')}T12:00:00.000Z`;
@@ -313,7 +309,6 @@
     if (!dueIso) return;
     const dueDate = new Date(dueIso);
     dueDate.setMinutes(dueDate.getMinutes() - minutesBefore);
-    editReminderAt = dueDate.toISOString().slice(0, 16);
     reminderDate = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}-${String(dueDate.getDate()).padStart(2, '0')}T12:00:00.000Z`;
     reminderTime = `${String(dueDate.getHours()).padStart(2, '0')}:${String(dueDate.getMinutes()).padStart(2, '0')}`;
     autoSave({ reminder_at: dueDate.toISOString() });
@@ -666,7 +661,7 @@
                 <button
                   type="button"
                   class="text-sm text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
-                  onclick={() => { editReminderAt = ''; reminderDate = ''; reminderTime = ''; showReminder = false; autoSave({ reminder_at: null }); }}
+                  onclick={() => { reminderDate = ''; reminderTime = ''; showReminder = false; autoSave({ reminder_at: null }); }}
                 >Clear reminder</button>
               {/if}
             </div>

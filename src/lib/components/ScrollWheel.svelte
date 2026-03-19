@@ -23,7 +23,7 @@
     return idx >= 0 ? idx : 0;
   }
 
-  function scrollToIndex(index: number, behavior: ScrollBehavior = 'instant') {
+  function scrollToIndex(index: number, behavior: 'instant' | 'smooth' | 'auto' = 'instant') {
     if (!container) return;
     container.scrollTo({ top: index * ITEM_HEIGHT, behavior });
   }
