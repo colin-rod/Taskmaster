@@ -7,14 +7,18 @@
     disabled = false,
     id,
     onchange,
+    open = $bindable(false),
+    placeholder = '+ Time',
+    triggerClass = '',
   }: {
     value?: string;
     disabled?: boolean;
     id?: string;
     onchange?: () => void;
+    open?: boolean;
+    placeholder?: string;
+    triggerClass?: string;
   } = $props();
-
-  let open = $state(false);
 
   const HOURS = Array.from({ length: 24 }, (_, i) => i);
   const HOUR_LABELS = HOURS.map((h) => String(h).padStart(2, '0'));
@@ -92,7 +96,7 @@
       <button
         type="button"
         {id}
-        class="select-input mt-1 text-left text-sm"
+        class={triggerClass || 'select-input mt-1 text-left text-sm'}
         aria-label="Change time: {formatDisplay(value)}"
         {disabled}
       >
@@ -102,11 +106,11 @@
       <button
         type="button"
         {id}
-        class="select-input mt-1 text-left text-sm text-foreground-muted"
+        class={triggerClass ? `${triggerClass} text-foreground-muted` : 'select-input mt-1 text-left text-sm text-foreground-muted'}
         aria-label="Set time"
         {disabled}
       >
-        + Time
+        {placeholder}
       </button>
     {/if}
   </Popover.Trigger>

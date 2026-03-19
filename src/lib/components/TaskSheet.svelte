@@ -16,6 +16,7 @@
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
   import TimeInput from '$lib/components/TimeInput.svelte';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
+  import DurationPicker from '$lib/components/DurationPicker.svelte';
   import { Plus, Loader, Check, AlertCircle } from '@lucide/svelte';
   import { slide, scale } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
@@ -56,6 +57,7 @@
   let editStartAt = $state('');
   let editStartTime = $state('');
   let editDurationMinutes = $state<number | null>(null);
+  let timeBlockDateOpen = $state(false);
   let editIsRecurring = $state(false);
   let editRecurrenceRule = $state<RecurrenceRule | null>(null);
 
@@ -291,6 +293,27 @@
       : null
   );
   let timeBlockDisplay = $derived(formatTimeBlock(startAtIso, editDurationMinutes));
+
+  // Writable date value for DatePickerPopover (ISO format)
+  let timeBlockDateValue = $state<string | null>(null);
+
+  // Sync editStartAt → timeBlockDateValue
+  $effect(() => {
+    timeBlockDateValue = editStartAt
+      ? new Date(editStartAt + 'T12:00:00').toISOString()
+      : null;
+  });
+
+  function handleTimeBlockDateChange() {
+    if (timeBlockDateValue) {
+      const d = new Date(timeBlockDateValue);
+      editStartAt = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    } else {
+      editStartAt = '';
+      editStartTime = '';
+    }
+    handleStartAtBlur();
+  }
 
   function setReminderPreset(minutesBefore: number) {
     if (!editDueAt) return;
@@ -590,7 +613,7 @@
                 <button
                   transition:scale={{ duration: 120, start: 0.85 }}
                   type="button"
-                  onclick={() => { showTimeBlock = true; }}
+                  onclick={() => { showTimeBlock = true; timeBlockDateOpen = true; }}
                   class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
                   aria-label="Schedule a time block"
                 >+ Time Block</button>
@@ -661,82 +684,50 @@
                   >1 day</button>
                 </div>
               {/if}
-              {#if reminderDate}
-                <button
-                  type="button"
-                  class="text-sm text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
-                  onclick={() => { reminderDate = ''; reminderTime = ''; showReminder = false; autoSave({ reminder_at: null }); }}
-                >Clear reminder</button>
-              {/if}
             </div>
           {/if}
 
           <!-- Time Block -->
           {#if showTimeBlock}
             <div transition:slide={{ duration: 180, easing: cubicOut }}>
-              <label for="edit-start-date" class="text-sm font-semibold tracking-wide text-foreground">
-                Time block <span class="text-foreground-muted font-normal">(optional)</span>
-              </label>
-              <input
-                id="edit-start-date"
-                name="start_at_date"
-                type="date"
-                bind:value={editStartAt}
-                onchange={() => { if (!editStartAt) { editStartTime = ''; handleStartAtBlur(); } }}
-                onblur={handleStartAtBlur}
-                class="select-input mt-1"
-              />
-              {#if editStartAt}
-                <label for="edit-start-time" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
-                  Start time <span class="text-foreground-muted font-normal">(optional)</span>
-                </label>
-                <TimeInput id="edit-start-time" bind:value={editStartTime} disabled={isViewer} onchange={handleStartAtBlur} />
-                <label for="edit-duration" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
-                  Duration <span class="text-foreground-muted font-normal">(optional)</span>
-                </label>
-                <div class="flex gap-2 flex-wrap mt-1 mb-2">
-                  {#each [15, 30, 60, 90, 120] as preset}
-                    <button
-                      type="button"
-                      class="text-xs px-3 py-1.5 rounded-full border transition-colors min-h-9 flex items-center font-medium
-                        {editDurationMinutes === preset
-                          ? 'border-primary bg-primary-tint text-primary'
-                          : 'border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30'}"
-                      onclick={() => { editDurationMinutes = preset; autoSave({ duration_minutes: preset }); }}
-                    >
-                      {preset < 60 ? `${preset} min` : `${preset / 60} hr`}
-                    </button>
-                  {/each}
-                </div>
-                <input
-                  id="edit-duration"
-                  name="duration_minutes"
-                  type="number"
-                  min="1"
-                  step="1"
-                  placeholder="Custom (minutes)"
-                  bind:value={editDurationMinutes}
-                  onblur={handleDurationBlur}
-                  class="select-input"
-                />
-                {#if editDurationMinutes}
+              <div class="flex items-center justify-between">
+                <span class="text-sm font-semibold tracking-wide text-foreground">Time block</span>
+                {#if !isViewer}
                   <button
                     type="button"
-                    class="text-xs text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
-                    onclick={() => { editDurationMinutes = null; autoSave({ duration_minutes: null }); }}
-                  >Clear duration</button>
+                    class="text-xs text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle"
+                    aria-label="Remove time block"
+                    onclick={() => { editStartAt = ''; editStartTime = ''; editDurationMinutes = null; showTimeBlock = false; autoSave({ start_at: null, duration_minutes: null }); }}
+                  >&times;</button>
                 {/if}
-                {#if timeBlockDisplay}
-                  <div class="text-sm text-foreground-secondary bg-surface-subtle rounded-md px-3 py-2 mt-2">
-                    <span class="font-medium text-foreground">Scheduled: </span>{timeBlockDisplay}
-                  </div>
+              </div>
+              <div class="flex items-center gap-1 mt-1 px-3 py-2 rounded-md border border-border bg-surface">
+                <DatePickerPopover
+                  bind:value={timeBlockDateValue}
+                  bind:open={timeBlockDateOpen}
+                  mode="controlled"
+                  disabled={isViewer}
+                  placeholder="+ Date"
+                  triggerClass="text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm whitespace-nowrap {timeBlockDateValue ? 'text-foreground' : 'text-foreground-muted'}"
+                  onchange={handleTimeBlockDateChange}
+                />
+                {#if editStartAt}
+                  <span class="text-foreground-muted text-sm">&middot;</span>
+                  <TimeInput
+                    id="edit-start-time"
+                    bind:value={editStartTime}
+                    disabled={isViewer}
+                    onchange={handleStartAtBlur}
+                    triggerClass="text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm whitespace-nowrap"
+                  />
+                  <span class="text-foreground-muted text-sm">&middot;</span>
+                  <DurationPicker
+                    bind:value={editDurationMinutes}
+                    disabled={isViewer}
+                    onchange={handleDurationBlur}
+                  />
                 {/if}
-              {/if}
-              <button
-                type="button"
-                class="text-xs text-destructive mt-1 px-2 py-2 rounded min-h-11 flex items-center hover:bg-destructive/10 transition-colors"
-                onclick={() => { editStartAt = ''; editStartTime = ''; editDurationMinutes = null; showTimeBlock = false; autoSave({ start_at: null, duration_minutes: null }); }}
-              >Clear time block</button>
+              </div>
             </div>
           {/if}
 

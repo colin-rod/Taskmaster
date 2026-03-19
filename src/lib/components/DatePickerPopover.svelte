@@ -9,15 +9,19 @@
     disabled = false,
     mode = 'patch',
     onchange,
+    open = $bindable(false),
+    placeholder = 'No date',
+    triggerClass = '',
   }: {
     taskId?: string;
     value: string | null;
     disabled?: boolean;
     mode?: 'patch' | 'controlled';
     onchange?: () => void;
+    open?: boolean;
+    placeholder?: string;
+    triggerClass?: string;
   } = $props();
-
-  let open = $state(false);
 
   function isOverdue(due_at: string | null): boolean {
     if (!due_at) return false;
@@ -89,11 +93,10 @@
   <Popover.Trigger {disabled}>
     <button
       type="button"
-      class="text-xs cursor-pointer hover:underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm
-        {isOverdue(value) ? 'text-destructive' : 'text-foreground-secondary'}"
-      aria-label="Set due date: {formatDateOnly(value)}"
+      class={triggerClass || `text-xs cursor-pointer hover:underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm ${isOverdue(value) ? 'text-destructive' : 'text-foreground-secondary'}`}
+      aria-label="Set due date: {value ? formatDateOnly(value) : placeholder}"
     >
-      {formatDateOnly(value)}
+      {value ? formatDateOnly(value) : placeholder}
     </button>
   </Popover.Trigger>
   <Popover.Content class="w-48 p-1" align="start">

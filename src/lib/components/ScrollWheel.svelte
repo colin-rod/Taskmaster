@@ -77,11 +77,14 @@
     {#each items as item, i (i)}
       <button
         type="button"
-        class="flex w-full items-center justify-center text-sm font-mono transition-all"
+        class="flex w-full items-center justify-center font-mono transition-all"
         style="height: {ITEM_HEIGHT}px; scroll-snap-align: center;"
+        class:text-lg={values[i] === value}
         class:font-semibold={values[i] === value}
         class:text-foreground={values[i] === value}
+        class:text-sm={values[i] !== value}
         class:text-foreground-muted={values[i] !== value}
+        class:opacity-60={Math.abs(i - indexOfValue(value)) === 2}
         class:opacity-40={Math.abs(i - indexOfValue(value)) > 2}
         onclick={() => handleClick(i)}
       >

@@ -8,7 +8,15 @@
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
   import type { RecurrenceRule } from '$lib/types/index.js';
 
-  let { action = '?/createTask', compact = false }: { action?: string; compact?: boolean } = $props();
+  let { action = '?/createTask', compact = false, onClose }: { action?: string; compact?: boolean; onClose?: () => void } = $props();
+
+  let titleInput = $state<HTMLInputElement | null>(null);
+
+  $effect(() => {
+    if (compact && titleInput) {
+      titleInput.focus();
+    }
+  });
 
   let title = $state('');
   let dueAt = $state<string | null>(null);
@@ -42,6 +50,7 @@
         isRecurring = false;
         recurrenceRule = null;
         toast.success('Task added');
+        onClose?.();
         justAdded = true;
         clearTimeout(addedTimeout);
         addedTimeout = setTimeout(() => { justAdded = false; }, 500);
@@ -55,11 +64,13 @@
       id="quick-add-title"
       name="title"
       type="text"
+      bind:this={titleInput}
       bind:value={title}
       placeholder="Add a task..."
       required
       class="select-input flex-1"
       disabled={creating}
+      onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape') onClose?.(); }}
     />
 
     <input type="hidden" name="due_at" value={dueAt ?? ''} />
