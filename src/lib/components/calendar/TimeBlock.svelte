@@ -1,9 +1,7 @@
 <script lang="ts">
   import type { Task } from '$lib/types/index.js';
   import { formatTimeBlock } from '$lib/utils/dates.js';
-
-  const ROW_HEIGHT_PX = 56;
-  const START_HOUR = 7;
+  import { START_HOUR, ROW_HEIGHT_PX } from '$lib/constants/calendar.js';
 
   let {
     task,

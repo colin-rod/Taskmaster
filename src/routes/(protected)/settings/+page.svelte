@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
+  import { calendarSettings } from '$lib/stores/calendarSettings.js';
   import { subscribeToPush, unsubscribeFromPush, getExistingSubscription, getPushPermissionState } from '$lib/push.js';
 
   import type { PageData, ActionData } from './$types';
@@ -210,6 +211,43 @@
           Switch Profile
         </button>
       </form>
+    </div>
+
+    <!-- Calendar -->
+    <div class="rounded-lg border p-4">
+      <h2 class="text-sm font-medium mb-1">Calendar</h2>
+      <p class="text-sm text-foreground-secondary mb-3">
+        Set the hours shown by default in the week and day views.
+      </p>
+      <div class="flex items-center gap-3">
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-foreground-secondary" for="wh-start">Start</label>
+          <select
+            id="wh-start"
+            class="rounded-md border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            value={$calendarSettings.workingHoursStart}
+            onchange={(e) => calendarSettings.update((s) => ({ ...s, workingHoursStart: Number((e.currentTarget as HTMLSelectElement).value) }))}
+          >
+            {#each Array.from({ length: 16 }, (_, i) => i + 6) as h}
+              <option value={h}>{h === 0 ? '12AM' : h < 12 ? `${h}AM` : h === 12 ? '12PM' : `${h - 12}PM`}</option>
+            {/each}
+          </select>
+        </div>
+        <span class="text-sm text-foreground-secondary mt-4">to</span>
+        <div class="flex flex-col gap-1">
+          <label class="text-xs text-foreground-secondary" for="wh-end">End</label>
+          <select
+            id="wh-end"
+            class="rounded-md border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+            value={$calendarSettings.workingHoursEnd}
+            onchange={(e) => calendarSettings.update((s) => ({ ...s, workingHoursEnd: Number((e.currentTarget as HTMLSelectElement).value) }))}
+          >
+            {#each Array.from({ length: 16 }, (_, i) => i + 8) as h}
+              <option value={h}>{h < 12 ? `${h}AM` : h === 12 ? '12PM' : `${h - 12}PM`}</option>
+            {/each}
+          </select>
+        </div>
+      </div>
     </div>
 
     <!-- Push Notifications -->
