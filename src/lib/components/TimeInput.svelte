@@ -5,10 +5,12 @@
   let {
     value = $bindable(''),
     disabled = false,
+    id,
     onchange,
   }: {
     value?: string;
     disabled?: boolean;
+    id?: string;
     onchange?: () => void;
   } = $props();
 
@@ -89,6 +91,7 @@
     {#if value}
       <button
         type="button"
+        {id}
         class="select-input mt-1 text-left text-sm"
         aria-label="Change time: {formatDisplay(value)}"
         {disabled}
@@ -98,6 +101,7 @@
     {:else}
       <button
         type="button"
+        {id}
         class="select-input mt-1 text-left text-sm text-foreground-muted"
         aria-label="Set time"
         {disabled}

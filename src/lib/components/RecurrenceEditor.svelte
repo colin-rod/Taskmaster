@@ -189,8 +189,8 @@
 
 		<!-- Time of day -->
 		<div>
-			<label class="text-sm text-foreground-secondary">Time</label>
-			<TimeInput bind:value={timeOfDay} disabled={!isRecurring} />
+			<label for="recurrence-time" class="text-sm text-foreground-secondary">Time</label>
+			<TimeInput id="recurrence-time" bind:value={timeOfDay} disabled={!isRecurring} />
 		</div>
 
 		<!-- End condition -->

@@ -32,7 +32,7 @@
   let justCompleted = $state(false);
   let completedTimeout: ReturnType<typeof setTimeout>;
   let canEdit = $derived(userRole !== 'viewer');
-  let optimisticStatus = $state(task.status);
+  let optimisticStatus = $state('');
   $effect(() => { optimisticStatus = task.status; });
 
   let checklistTotal = $derived((task.checklist_items ?? []).length);
@@ -41,7 +41,7 @@
     [...(task.checklist_items ?? [])].sort((a, b) => a.position - b.position)
   );
 
-  let deleteForm: HTMLFormElement | undefined;
+  let deleteForm = $state<HTMLFormElement | undefined>(undefined);
   let deleteAlertOpen = $state(false);
   let deleted = $state(false);
 
@@ -183,21 +183,16 @@
             {/if}
             {#if checklistTotal > 0}
               <Popover.Root>
-                <Popover.Trigger openOnHover openDelay={300} closeDelay={150} asChild>
-                  {#snippet child({ props })}
-                    <span
-                      {...props}
-                      class="text-xs text-foreground-secondary flex items-center gap-1 bg-surface-subtle px-1.5 py-0.5 rounded-full cursor-default"
-                      role="button"
-                      tabindex="0"
-                      aria-label="Checklist: {checklistDone} of {checklistTotal} complete"
-                    >
-                      <svg class="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                        <path d="M3 8h10M3 4h10M3 12h10" />
-                      </svg>
-                      {checklistDone}/{checklistTotal}
-                    </span>
-                  {/snippet}
+                <Popover.Trigger openOnHover openDelay={300} closeDelay={150}>
+                  <span
+                    class="text-xs text-foreground-secondary flex items-center gap-1 bg-surface-subtle px-1.5 py-0.5 rounded-full cursor-default"
+                    aria-label="Checklist: {checklistDone} of {checklistTotal} complete"
+                  >
+                    <svg class="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                      <path d="M3 8h10M3 4h10M3 12h10" />
+                    </svg>
+                    {checklistDone}/{checklistTotal}
+                  </span>
                 </Popover.Trigger>
                 <Popover.Content class="w-56 p-2 space-y-1" align="start" side="top" sideOffset={6}>
                   {#each sortedChecklistItems as item (item.id)}

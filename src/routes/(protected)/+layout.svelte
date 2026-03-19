@@ -12,7 +12,7 @@
 
   const { children, data } = $props();
 
-  let unreadCount = $state(data.unreadCount ?? 0);
+  let unreadCount = $derived(data.unreadCount ?? 0);
 
   let showCreateListDialog = $state(false);
   let searchOpen = $state(false);

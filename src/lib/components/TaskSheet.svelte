@@ -569,10 +569,10 @@
               class="select-input mt-1"
             />
             {#if editDueAt && showTime}
-              <label class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
+              <label for="edit-due-time" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
                 Time <span class="text-foreground-muted font-normal">(optional)</span>
               </label>
-              <TimeInput bind:value={editDueTime} disabled={isViewer} onchange={handleDueBlur} />
+              <TimeInput id="edit-due-time" bind:value={editDueTime} disabled={isViewer} onchange={handleDueBlur} />
             {/if}
           </div>
 
@@ -621,7 +621,7 @@
           <!-- Reminder -->
           {#if showReminder}
             <div transition:slide={{ duration: 180, easing: cubicOut }}>
-              <label class="text-sm font-semibold tracking-wide text-foreground">Reminder</label>
+              <label for="edit-reminder-time" class="text-sm font-semibold tracking-wide text-foreground">Reminder</label>
               <div class="flex items-center gap-2 mt-1">
                 <DatePickerPopover
                   bind:value={reminderDate}
@@ -629,6 +629,7 @@
                   disabled={isViewer}
                 />
                 <TimeInput
+                  id="edit-reminder-time"
                   bind:value={reminderTime}
                   disabled={isViewer || !reminderDate}
                   onchange={handleReminderBlur}
@@ -683,10 +684,10 @@
                 class="select-input mt-1"
               />
               {#if editStartAt}
-                <label class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
+                <label for="edit-start-time" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
                   Start time <span class="text-foreground-muted font-normal">(optional)</span>
                 </label>
-                <TimeInput bind:value={editStartTime} disabled={isViewer} onchange={handleStartAtBlur} />
+                <TimeInput id="edit-start-time" bind:value={editStartTime} disabled={isViewer} onchange={handleStartAtBlur} />
                 <label for="edit-duration" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
                   Duration <span class="text-foreground-muted font-normal">(optional)</span>
                 </label>
@@ -938,6 +939,7 @@
                     }}
                   >
                     <input type="hidden" name="id" value={item.id} />
+                    <!-- svelte-ignore a11y_autofocus -->
                     <input
                       name="label"
                       type="text"
