@@ -98,9 +98,12 @@ function addMonthsClamped(date: Date, months: number): Date {
  */
 export function isRecurrenceExpired(rule: RecurrenceRule, nextDue: Date): boolean {
 	if (!rule.ends || rule.ends.type === 'never') return false;
-	if (rule.ends.type === 'on_date' && rule.ends.date) {
+	if (rule.ends.type === 'on_date') {
 		const endDate = new Date(rule.ends.date + 'T23:59:59.999');
 		return nextDue > endDate;
+	}
+	if (rule.ends.type === 'after_n_occurrences') {
+		return rule.ends.occurrences_completed >= rule.ends.count;
 	}
 	return false;
 }
@@ -137,8 +140,13 @@ export function describeRecurrence(rule: RecurrenceRule): string {
 		parts.push(`at ${rule.time_of_day}`);
 	}
 
-	if (rule.ends?.type === 'on_date' && rule.ends.date) {
+	if (rule.ends?.type === 'on_date') {
 		parts.push(`until ${rule.ends.date}`);
+	}
+
+	if (rule.ends?.type === 'after_n_occurrences') {
+		const remaining = Math.max(0, rule.ends.count - rule.ends.occurrences_completed);
+		parts.push(remaining === 1 ? 'for 1 more time' : `for ${remaining} more times`);
 	}
 
 	return parts.join(' ');

@@ -98,3 +98,13 @@ export const shadows = {
   level1: 'shadow-level-1',
   level2: 'shadow-level-2',
 } as const;
+
+/**
+ * Priority Options
+ */
+export const PRIORITY_OPTIONS = [
+  { level: 1, label: 'P1', desc: 'Urgent', color: 'text-destructive' },
+  { level: 2, label: 'P2', desc: 'High', color: 'text-orange-500' },
+  { level: 3, label: 'P3', desc: 'Medium', color: 'text-blue-500' },
+  { level: 4, label: 'P4', desc: 'Low', color: 'text-foreground-muted' },
+] as const;

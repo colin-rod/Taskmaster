@@ -19,7 +19,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
   return json({ task });
 };
 
-const ALLOWED_FIELDS = new Set(['title', 'priority', 'due_at', 'reminder_at', 'assigned_to_user_id', 'status']);
+const ALLOWED_FIELDS = new Set(['title', 'priority', 'due_at', 'reminder_at', 'assigned_to_user_id', 'status', 'notes', 'is_recurring', 'recurrence_rule', 'start_at', 'duration_minutes']);
 
 export const PATCH: RequestHandler = async ({ params, request, locals }) => {
   if (!locals.profileId) {
@@ -72,6 +72,48 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
       updates.completed_at = new Date().toISOString();
     } else {
       updates.completed_at = null;
+    }
+  }
+
+  if ('notes' in updates) {
+    if (updates.notes !== null && typeof updates.notes !== 'string') {
+      return json({ error: 'Notes must be a string or null' }, { status: 400 });
+    }
+  }
+
+  if ('due_at' in updates) {
+    if (updates.due_at !== null && typeof updates.due_at !== 'string') {
+      return json({ error: 'due_at must be an ISO string or null' }, { status: 400 });
+    }
+  }
+
+  if ('start_at' in updates) {
+    if (updates.start_at !== null && typeof updates.start_at !== 'string') {
+      return json({ error: 'start_at must be an ISO string or null' }, { status: 400 });
+    }
+  }
+
+  if ('duration_minutes' in updates) {
+    if (updates.duration_minutes !== null) {
+      const dm = Number(updates.duration_minutes);
+      if (!Number.isInteger(dm) || dm <= 0) {
+        return json({ error: 'duration_minutes must be a positive integer or null' }, { status: 400 });
+      }
+      updates.duration_minutes = dm;
+    }
+  }
+
+  if ('is_recurring' in updates) {
+    updates.is_recurring = Boolean(updates.is_recurring);
+  }
+
+  if ('recurrence_rule' in updates) {
+    if (updates.recurrence_rule !== null && typeof updates.recurrence_rule === 'string') {
+      try {
+        updates.recurrence_rule = JSON.parse(updates.recurrence_rule);
+      } catch {
+        return json({ error: 'recurrence_rule must be valid JSON or null' }, { status: 400 });
+      }
     }
   }
 

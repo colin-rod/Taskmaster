@@ -2,8 +2,10 @@
   import { page } from '$app/stores';
   import { sidebarCollapsed } from '$lib/stores/sidebar.js';
   import {
+    AlertCircle,
     CalendarDays,
     CalendarRange,
+    CheckCheck,
     Inbox,
     UserCheck,
     PanelLeftClose,
@@ -17,7 +19,7 @@
     lists,
     onCreateList,
   }: {
-    filterCounts: { today: number; upcoming: number; inbox: number; assigned: number };
+    filterCounts: { today: number; overdue: number; upcoming: number; inbox: number; assigned: number; completed: number };
     lists: { id: string; name: string; color: string | null; icon: string; taskCount: number; isShared: boolean }[];
     onCreateList: () => void;
   } = $props();
@@ -25,9 +27,11 @@
   const inboxFilter = { label: 'Inbox', href: '/inbox', icon: Inbox, countKey: 'inbox' as const };
 
   const smartFilters = [
+    { label: 'Overdue', href: '/overdue', icon: AlertCircle, countKey: 'overdue' as const },
     { label: 'Today', href: '/today', icon: CalendarDays, countKey: 'today' as const },
     { label: 'Upcoming', href: '/upcoming', icon: CalendarRange, countKey: 'upcoming' as const },
-    { label: 'Assigned', href: '/assigned', icon: UserCheck, countKey: 'assigned' as const },
+    { label: 'Assigned to Me', href: '/assigned', icon: UserCheck, countKey: 'assigned' as const },
+    { label: 'Completed', href: '/completed', icon: CheckCheck, countKey: 'completed' as const },
   ];
 
   function isActive(href: string, pathname: string): boolean {
@@ -64,16 +68,19 @@
   <nav class="px-2 mt-1">
     <a
       href={inboxFilter.href}
-      class="flex items-center gap-3 px-2 py-2 rounded-md text-sm font-medium transition-colors
+      class="relative flex items-center gap-3 px-2 py-2 rounded-md text-sm font-medium transition-colors
         {isActive(inboxFilter.href, $page.url.pathname) ? 'bg-primary-tint text-foreground' : 'text-foreground-secondary hover:text-foreground hover:bg-surface-subtle'}
         {$sidebarCollapsed ? 'justify-center' : ''}"
       title={$sidebarCollapsed ? inboxFilter.label : undefined}
     >
+      {#if isActive(inboxFilter.href, $page.url.pathname)}
+        <span class="absolute left-0 inset-y-1 w-[3px] bg-primary rounded-r-full"></span>
+      {/if}
       <inboxFilter.icon class="w-4 h-4 flex-shrink-0 {isActive(inboxFilter.href, $page.url.pathname) ? 'text-primary' : ''}" />
       {#if !$sidebarCollapsed}
         <span class="flex-1 truncate">{inboxFilter.label}</span>
         {#if filterCounts[inboxFilter.countKey] > 0}
-          <span class="text-xs text-foreground-muted tabular-nums">{filterCounts[inboxFilter.countKey]}</span>
+          <span class="text-xs font-medium bg-surface-subtle px-1.5 py-0.5 rounded-md text-foreground-secondary tabular-nums">{filterCounts[inboxFilter.countKey]}</span>
         {/if}
       {/if}
     </a>
@@ -85,26 +92,34 @@
   <!-- Smart Filters -->
   <nav class="px-2 space-y-0.5">
     {#if !$sidebarCollapsed}
-      <div class="section-header px-2 mt-1">Filters</div>
+      <h3 class="section-header px-2 mt-1 mb-2">Views</h3>
     {/if}
     {#each smartFilters as filter}
       {@const active = isActive(filter.href, $page.url.pathname)}
       {@const count = filterCounts[filter.countKey]}
-      <a
-        href={filter.href}
-        class="flex items-center gap-3 px-2 py-1.5 rounded-md text-sm transition-colors
-          {active ? 'bg-primary-tint text-foreground font-medium' : 'text-foreground-secondary hover:text-foreground hover:bg-surface-subtle'}
-          {$sidebarCollapsed ? 'justify-center' : ''}"
-        title={$sidebarCollapsed ? filter.label : undefined}
-      >
-        <filter.icon class="w-4 h-4 flex-shrink-0 {active ? 'text-primary' : ''}" />
-        {#if !$sidebarCollapsed}
-          <span class="flex-1 truncate">{filter.label}</span>
-          {#if count > 0}
-            <span class="text-xs text-foreground-muted tabular-nums">{count}</span>
+      {@const isOverdue = filter.countKey === 'overdue'}
+      {#if !isOverdue || count > 0 || active}
+        <a
+          href={filter.href}
+          class="relative flex items-center gap-3 px-2 py-1.5 rounded-md text-sm transition-colors
+            {active ? 'bg-primary-tint text-foreground font-medium' : 'text-foreground-secondary hover:text-foreground hover:bg-surface-subtle'}
+            {$sidebarCollapsed ? 'justify-center' : ''}"
+          title={$sidebarCollapsed ? filter.label : undefined}
+          aria-label={$sidebarCollapsed ? filter.label : undefined}
+        >
+          {#if active}
+            <span class="absolute left-0 inset-y-1 w-[3px] bg-primary rounded-r-full"></span>
           {/if}
-        {/if}
-      </a>
+          <filter.icon class="w-4 h-4 flex-shrink-0 {active ? 'text-primary' : isOverdue && count > 0 ? 'text-destructive' : ''}" />
+          {#if !$sidebarCollapsed}
+            <span class="flex-1 truncate">{filter.label}</span>
+            {#if count > 0}
+              <span class="text-xs font-medium px-1.5 py-0.5 rounded-md tabular-nums
+                {isOverdue ? 'bg-destructive/10 text-destructive' : 'bg-surface-subtle text-foreground-secondary'}">{count}</span>
+            {/if}
+          {/if}
+        </a>
+      {/if}
     {/each}
   </nav>
 
@@ -112,76 +127,86 @@
   <div class="mx-3 my-3 border-t border-border-divider"></div>
 
   <!-- Lists -->
-  <nav class="px-2 space-y-0.5 flex-1 overflow-y-auto">
+  <nav class="px-2 space-y-0.5 flex-1 overflow-y-auto pb-4">
     {#if $sidebarCollapsed}
       {#each lists as list (list.id)}
         {@const active = $page.url.pathname === `/lists/${list.id}`}
         {@const ListIcon = getListIcon(list.icon)}
         <a
           href="/lists/{list.id}"
-          class="flex items-center justify-center px-2 py-1.5 rounded-md text-sm transition-colors
+          class="relative flex items-center justify-center px-2 py-1.5 rounded-md text-sm transition-colors
             {active ? 'bg-primary-tint text-foreground font-medium' : 'text-foreground-secondary hover:text-foreground hover:bg-surface-subtle'}"
           title={list.name}
+          aria-label={list.name}
         >
+          {#if active}
+            <span class="absolute left-0 inset-y-1 w-[3px] bg-primary rounded-r-full"></span>
+          {/if}
           <div
             class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
             style="background-color: {list.color || 'hsl(var(--foreground-muted))'}"
           >
-            <ListIcon class="w-3 h-3 text-white" />
+            <ListIcon class="w-3 h-3 text-white drop-shadow-sm" />
           </div>
         </a>
       {/each}
     {:else}
       {#if privateLists.length > 0}
-        <div class="section-header px-2">Private</div>
+        <h3 class="section-header px-2 mb-2">Private</h3>
         {#each privateLists as list (list.id)}
           {@const active = $page.url.pathname === `/lists/${list.id}`}
           {@const ListIcon = getListIcon(list.icon)}
           <a
             href="/lists/{list.id}"
-            class="flex items-center gap-3 px-2 py-1.5 rounded-md text-sm transition-colors
+            class="relative flex items-center gap-3 px-2 py-1.5 rounded-md text-sm transition-colors
               {active ? 'bg-primary-tint text-foreground font-medium' : 'text-foreground-secondary hover:text-foreground hover:bg-surface-subtle'}"
           >
+            {#if active}
+              <span class="absolute left-0 inset-y-1 w-[3px] bg-primary rounded-r-full"></span>
+            {/if}
             <div
               class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
               style="background-color: {list.color || 'hsl(var(--foreground-muted))'}"
             >
-              <ListIcon class="w-3 h-3 text-white" />
+              <ListIcon class="w-3 h-3 text-white drop-shadow-sm" />
             </div>
             <span class="flex-1 truncate">{list.name}</span>
             {#if list.taskCount > 0}
-              <span class="text-xs text-foreground-muted tabular-nums">{list.taskCount}</span>
+              <span class="text-xs font-medium bg-surface-subtle px-1.5 py-0.5 rounded-md text-foreground-secondary tabular-nums">{list.taskCount}</span>
             {/if}
           </a>
         {/each}
       {/if}
 
       {#if sharedLists.length > 0}
-        <div class="section-header px-2 {privateLists.length > 0 ? 'mt-2' : ''}">Shared</div>
+        <h3 class="section-header px-2 mb-2 {privateLists.length > 0 ? 'mt-2' : ''}">Shared</h3>
         {#each sharedLists as list (list.id)}
           {@const active = $page.url.pathname === `/lists/${list.id}`}
           {@const ListIcon = getListIcon(list.icon)}
           <a
             href="/lists/{list.id}"
-            class="flex items-center gap-3 px-2 py-1.5 rounded-md text-sm transition-colors
+            class="relative flex items-center gap-3 px-2 py-1.5 rounded-md text-sm transition-colors
               {active ? 'bg-primary-tint text-foreground font-medium' : 'text-foreground-secondary hover:text-foreground hover:bg-surface-subtle'}"
           >
+            {#if active}
+              <span class="absolute left-0 inset-y-1 w-[3px] bg-primary rounded-r-full"></span>
+            {/if}
             <div
               class="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
               style="background-color: {list.color || 'hsl(var(--foreground-muted))'}"
             >
-              <ListIcon class="w-3 h-3 text-white" />
+              <ListIcon class="w-3 h-3 text-white drop-shadow-sm" />
             </div>
             <span class="flex-1 truncate">{list.name}</span>
             {#if list.taskCount > 0}
-              <span class="text-xs text-foreground-muted tabular-nums">{list.taskCount}</span>
+              <span class="text-xs font-medium bg-surface-subtle px-1.5 py-0.5 rounded-md text-foreground-secondary tabular-nums">{list.taskCount}</span>
             {/if}
           </a>
         {/each}
       {/if}
 
       {#if privateLists.length === 0 && sharedLists.length === 0}
-        <div class="section-header px-2">Lists</div>
+        <h3 class="section-header px-2 mb-2">Lists</h3>
       {/if}
     {/if}
 
@@ -189,7 +214,7 @@
     <button
       type="button"
       class="flex items-center gap-2 w-full px-2 py-1.5 rounded-md text-sm text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors
-        {$sidebarCollapsed ? 'justify-center' : ''}"
+        {$sidebarCollapsed ? 'justify-center' : 'border border-dashed border-border'}"
       onclick={onCreateList}
       title={$sidebarCollapsed ? 'New list' : undefined}
     >

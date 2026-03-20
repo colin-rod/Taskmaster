@@ -16,7 +16,7 @@
     <!-- Home tab -->
     <a
       href="/today"
-      class="flex flex-col items-center gap-0.5 px-3 py-1
+      class="flex flex-col items-center gap-0.5 px-3 py-2 min-h-11 justify-center
         {isActive('/today', $page.url.pathname) ? 'text-primary' : 'text-foreground-secondary'}"
     >
       <Home class="w-5 h-5" />
@@ -36,7 +36,7 @@
     <!-- Lists tab -->
     <a
       href="/lists"
-      class="flex flex-col items-center gap-0.5 px-3 py-1
+      class="flex flex-col items-center gap-0.5 px-3 py-2 min-h-11 justify-center
         {isActive('/lists', $page.url.pathname) ? 'text-primary' : 'text-foreground-secondary'}"
     >
       <List class="w-5 h-5" />

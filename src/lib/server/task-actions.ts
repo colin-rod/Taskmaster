@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { RecurrenceRule } from '$lib/types/index.js';
 import { computeNextDue } from '$lib/utils/recurrence.js';
+import { buildDueAt } from '$lib/utils/dates.js';
 
 // =============================================================================
 // Role Map Helper
@@ -84,7 +85,8 @@ export async function toggleChecklistItem(formData: FormData, supabase: Supabase
         .single();
 
       if (task?.is_recurring && task.recurrence_rule) {
-        await rollForwardRecurringTask(task_id, task, supabase);
+        const result = await rollForwardRecurringTask(task_id, task, supabase);
+        if (result.rolled) return { success: true, rolled: true };
       } else {
         await supabase
           .from('tasks')
@@ -95,6 +97,18 @@ export async function toggleChecklistItem(formData: FormData, supabase: Supabase
     }
   }
 
+  return { success: true };
+}
+
+export async function editChecklistItem(formData: FormData, supabase: SupabaseClient) {
+  const id = formData.get('id')?.toString();
+  const label = formData.get('label')?.toString()?.trim();
+
+  if (!id || !label) return fail(400, { error: 'ID and label are required' });
+
+  const { error } = await supabase.from('checklist_items').update({ label }).eq('id', id);
+
+  if (error) return fail(500, { error: error.message });
   return { success: true };
 }
 
@@ -138,12 +152,30 @@ async function rollForwardRecurringTask(
   task: { due_at: string | null; recurrence_rule: RecurrenceRule },
   supabase: SupabaseClient
 ): Promise<{ rolled: boolean }> {
-  const currentDue = task.due_at ? new Date(task.due_at) : new Date();
-  const nextDue = computeNextDue(currentDue, task.recurrence_rule);
+  const scheduleType = task.recurrence_rule.schedule_type ?? 'due_date';
+  const baseDate =
+    scheduleType === 'completion_date'
+      ? new Date()
+      : task.due_at
+        ? new Date(task.due_at)
+        : new Date();
+  const nextDue = computeNextDue(baseDate, task.recurrence_rule);
 
   if (!nextDue) {
     // Recurrence expired — complete normally
     return { rolled: false };
+  }
+
+  // Build updated rule (increment occurrences_completed if after_n_occurrences)
+  let updatedRule: RecurrenceRule = task.recurrence_rule;
+  if (task.recurrence_rule.ends?.type === 'after_n_occurrences') {
+    updatedRule = {
+      ...task.recurrence_rule,
+      ends: {
+        ...task.recurrence_rule.ends,
+        occurrences_completed: task.recurrence_rule.ends.occurrences_completed + 1,
+      },
+    };
   }
 
   // Roll forward the task
@@ -153,6 +185,7 @@ async function rollForwardRecurringTask(
     last_completed_at: new Date().toISOString(),
     due_at: nextDue.toISOString(),
     reminder_at: null,
+    recurrence_rule: updatedRule,
   }).eq('id', taskId);
 
   if (error) return { rolled: false };
@@ -213,7 +246,9 @@ export async function updateTask(formData: FormData, supabase: SupabaseClient) {
   const title = formData.get('title')?.toString()?.trim();
   const notes = formData.get('notes')?.toString() || null;
   const priority = Number(formData.get('priority') || 4);
-  const due_at = formData.get('due_at')?.toString() || null;
+  const due_at_raw = formData.get('due_at')?.toString() || '';
+  const due_time = formData.get('due_time')?.toString() || '';
+  const due_at = buildDueAt(due_at_raw, due_time);
   const status = formData.get('status')?.toString() || 'todo';
   const is_recurring = formData.get('is_recurring') === 'true';
   const recurrence_rule_raw = formData.get('recurrence_rule')?.toString();

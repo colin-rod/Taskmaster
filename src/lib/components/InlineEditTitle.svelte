@@ -1,6 +1,5 @@
 <script lang="ts">
-  import { invalidateAll } from '$app/navigation';
-  import { toast } from 'svelte-sonner';
+  import { patchTask } from '$lib/utils/api.js';
 
   let {
     taskId,
@@ -37,22 +36,8 @@
       return;
     }
 
-    try {
-      const res = await fetch(`/api/tasks/${taskId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ title: trimmed }),
-      });
-      if (!res.ok) {
-        toast.error('Failed to update title');
-        editValue = value;
-      } else {
-        await invalidateAll();
-      }
-    } catch {
-      toast.error('Failed to update title');
-      editValue = value;
-    }
+    const ok = await patchTask(taskId, { title: trimmed }, 'Failed to update title');
+    if (!ok) editValue = value;
   }
 
   function handleKeydown(e: KeyboardEvent) {
@@ -78,7 +63,9 @@
 {:else}
   <button
     type="button"
-    class="text-left truncate hover:underline hover:decoration-foreground-muted/40 decoration-1 underline-offset-2 cursor-text"
+    class="text-left truncate hover:underline hover:decoration-foreground-muted/40 decoration-1 underline-offset-2 cursor-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm"
+    aria-label="Edit title: {value}"
+    title={value}
     onclick={startEdit}
     {disabled}
   >

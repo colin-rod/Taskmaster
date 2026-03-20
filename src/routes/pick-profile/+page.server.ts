@@ -25,7 +25,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 };
 
 export const actions: Actions = {
-  default: async ({ request, cookies }) => {
+  select: async ({ request, cookies }) => {
     const formData = await request.formData();
     const profileId = formData.get('profile_id')?.toString();
 

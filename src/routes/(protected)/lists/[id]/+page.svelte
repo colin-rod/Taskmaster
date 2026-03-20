@@ -47,8 +47,8 @@
 
 <div>
   <!-- Header -->
-  <div class="flex items-center gap-3 mb-6">
-    <a href="/lists" aria-label="Back to lists" class="text-foreground-secondary hover:text-foreground">
+  <div class="flex items-center gap-3 mb-8">
+    <a href="/lists" aria-label="Back to lists" class="inline-flex items-center justify-center w-8 h-8 rounded-full text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors">
       <svg class="w-5 h-5" viewBox="0 0 20 20" fill="currentColor">
         <path fill-rule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clip-rule="evenodd" />
       </svg>
@@ -60,10 +60,10 @@
             <button
               type="button"
               title="Change icon and color"
-              class="w-6 h-6 rounded-full flex items-center justify-center shrink-0 hover:ring-2 hover:ring-offset-1 hover:ring-foreground-muted transition-all"
+              class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 hover:ring-2 hover:ring-offset-2 hover:ring-primary/40 transition-all shadow-sm"
               style="background-color: {localColor || 'hsl(var(--foreground-muted))'}"
             >
-              <LocalListIcon class="w-3.5 h-3.5 text-white" />
+              <LocalListIcon class="w-5 h-5 text-white" />
             </button>
           </Popover.Trigger>
           <Popover.Content class="w-72 p-3" align="start">
@@ -105,7 +105,7 @@
             </div>
 
             <p class="text-xs font-medium text-foreground-secondary mb-2">Color</p>
-            <div class="flex gap-2">
+            <div class="flex gap-2 items-center">
               {#each LIST_COLORS as c}
                 <button
                   type="button"
@@ -120,10 +120,10 @@
         </Popover.Root>
       {:else}
         <div
-          class="w-6 h-6 rounded-full flex items-center justify-center shrink-0"
+          class="w-10 h-10 rounded-xl flex items-center justify-center shrink-0 shadow-sm"
           style="background-color: {data.list.color || 'hsl(var(--foreground-muted))'}"
         >
-          <ListIcon class="w-3.5 h-3.5 text-white" />
+          <ListIcon class="w-5 h-5 text-white" />
         </div>
       {/if}
       <h1 class="text-page-title font-accent">{data.list.name}</h1>
@@ -131,7 +131,7 @@
     {#if isOwner}
       <button
         type="button"
-        class="flex items-center gap-1.5 text-sm text-foreground-secondary hover:text-foreground transition-colors"
+        class="flex items-center gap-1.5 text-sm text-foreground-secondary rounded-full bg-surface-subtle px-2.5 py-1 transition-colors hover:bg-primary-tint hover:text-primary"
         onclick={() => { membersOpen = true; }}
       >
         <Users class="w-4 h-4" />
@@ -148,11 +148,11 @@
 
   <!-- Active tasks -->
   {#if activeTasks.length === 0}
-    <div class="text-center py-8">
-      <p class="text-foreground-secondary">No tasks yet. Add one above.</p>
+    <div class="text-center py-12">
+      <p class="text-foreground-secondary text-base">No tasks yet. Add one above.</p>
     </div>
   {:else}
-    <div class="space-y-2">
+    <div class="space-y-3">
       {#each activeTasks as task (task.id)}
         <TaskRow {task} onselect={openTask} {userRole} members={data.list.members ?? []} />
       {/each}
@@ -161,16 +161,22 @@
 
   <!-- Completed tasks -->
   {#if completedTasks.length > 0}
-    <div class="mt-6">
+    <div class="mt-8 pt-6 border-t border-border-divider">
       <button
         type="button"
-        class="text-sm text-foreground-secondary hover:text-foreground"
+        class="text-sm font-medium text-foreground-secondary hover:text-foreground transition-colors inline-flex items-center gap-1.5 py-1"
         onclick={() => { showCompleted = !showCompleted; }}
       >
+        <svg
+          class="w-3.5 h-3.5 transition-transform {showCompleted ? 'rotate-180' : ''}"
+          viewBox="0 0 20 20" fill="currentColor"
+        >
+          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
         {showCompleted ? 'Hide' : 'Show'} completed ({completedTasks.length})
       </button>
       {#if showCompleted}
-        <div class="space-y-2 mt-2">
+        <div class="space-y-3 mt-2">
           {#each completedTasks as task (task.id)}
             <TaskRow {task} onselect={openTask} {userRole} members={data.list.members ?? []} />
           {/each}

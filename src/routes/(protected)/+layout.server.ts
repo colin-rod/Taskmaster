@@ -23,8 +23,10 @@ export const load: LayoutServerLoad = async ({ locals }) => {
     { count: upcomingCount },
     { count: inboxCount },
     { count: assignedCount },
+    { count: completedCount },
     { data: listTaskCounts },
     { data: profileData },
+    { data: memberships },
   ] = await Promise.all([
     // Unread notifications
     locals.supabase
@@ -76,12 +78,14 @@ export const load: LayoutServerLoad = async ({ locals }) => {
       .eq('assigned_to_user_id', locals.profileId)
       .not('status', 'in', '(done,canceled)'),
 
-    // Task counts per list (active tasks only)
+    // Completed count (all done/canceled tasks)
     locals.supabase
       .from('tasks')
-      .select('list_id')
-      .not('status', 'in', '(done,canceled)')
-      .not('list_id', 'is', null),
+      .select('*', { count: 'exact', head: true })
+      .in('status', ['done', 'canceled']),
+
+    // Task counts per list via aggregate RPC
+    locals.supabase.rpc('get_list_task_counts'),
 
     // Current profile data
     locals.supabase
@@ -89,20 +93,29 @@ export const load: LayoutServerLoad = async ({ locals }) => {
       .select('id, display_name, email, avatar_color, avatar_url')
       .eq('id', locals.profileId)
       .single(),
+
+    // Current user's role in all their lists
+    locals.supabase
+      .from('task_list_members')
+      .select('list_id, role')
+      .eq('user_id', locals.profileId),
   ]);
 
-  // Build list count map from raw task rows
+  // Build list count map from RPC aggregate rows
   const countMap: Record<string, number> = {};
   if (listTaskCounts) {
     for (const row of listTaskCounts) {
-      countMap[row.list_id] = (countMap[row.list_id] || 0) + 1;
+      countMap[row.list_id] = Number(row.count);
     }
   }
+
+  const roleMap = Object.fromEntries((memberships ?? []).map((m) => [m.list_id, m.role]));
 
   return {
     profileId: locals.profileId,
     profile: profileData ?? null,
     unreadCount: unreadCount ?? 0,
+    roleMap,
     lists: (lists ?? []).map((l) => ({
       ...l,
       taskCount: countMap[l.id] ?? 0,
@@ -110,9 +123,11 @@ export const load: LayoutServerLoad = async ({ locals }) => {
     })),
     filterCounts: {
       today: (todayCount ?? 0) + (overdueCount ?? 0),
+      overdue: overdueCount ?? 0,
       upcoming: upcomingCount ?? 0,
       inbox: inboxCount ?? 0,
       assigned: assignedCount ?? 0,
+      completed: completedCount ?? 0,
     },
   };
 };
