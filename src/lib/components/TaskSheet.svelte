@@ -435,7 +435,7 @@
               <div>
                 <span class="section-header-bold mb-1.5">Priority</span>
                 {#if task}
-                  {@const p = PRIORITY_OPTIONS.find(p => p.level === task.priority)}
+                  {@const p = PRIORITY_OPTIONS.find(p => p.level === task!.priority)}
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {p?.bg ?? 'bg-surface-subtle'} {p?.color ?? 'text-foreground-muted'}">
                     {p?.label ?? 'P4'} — {p?.desc ?? 'Low'}
                   </span>
@@ -444,7 +444,7 @@
               <div>
                 <span class="section-header-bold mb-1.5">Status</span>
                 {#if task}
-                  {@const s = STATUS_OPTIONS.find(s => s.value === task.status)}
+                  {@const s = STATUS_OPTIONS.find(s => s.value === task!.status)}
                   <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-surface-subtle {s?.selectClass ?? ''}">
                     <span class="w-1.5 h-1.5 rounded-full {s?.dotColor ?? 'bg-foreground-muted'}"></span>
                     {s?.label ?? formatStatus(task.status)}
