@@ -10,7 +10,7 @@
     SheetDescription,
   } from '$lib/components/ui/sheet/index.js';
   import type { Task, RecurrenceRule, ListRole, TaskListMember } from '$lib/types/index.js';
-  import { getPriorityLabel, formatStatus, PRIORITY_OPTIONS, STATUS_OPTIONS, getDueDateClass } from '$lib/utils/design-tokens.js';
+  import { formatStatus, PRIORITY_OPTIONS, STATUS_OPTIONS, getDueDateClass } from '$lib/utils/design-tokens.js';
   import { hasTime, buildDueAt, formatTimeBlock } from '$lib/utils/dates.js';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
   import TimeInput from '$lib/components/TimeInput.svelte';
