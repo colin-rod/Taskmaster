@@ -126,7 +126,7 @@
           <ListIcon class="w-5 h-5 text-white" />
         </div>
       {/if}
-      <h1 class="text-page-title font-accent">{data.list.name}</h1>
+      <h1 class="text-page-title font-accent page-title-accent">{data.list.name}</h1>
     </div>
     {#if isOwner}
       <button

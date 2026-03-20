@@ -32,10 +32,12 @@
 
 <div class="h-screen flex flex-col">
   <!-- Header -->
-  <header class="sticky top-0 z-40 border-b bg-surface px-4 py-3 [box-shadow:var(--shadow-1)]">
+  <header class="sticky top-0 z-40 border-b bg-background px-4 py-3.5 [box-shadow:var(--shadow-header)]">
     <div class="flex items-center gap-4">
-      <h1 class="font-accent text-xl font-semibold flex items-center gap-1 shrink-0">
-        Taskmaster<span class="w-1.5 h-1.5 rounded-full bg-primary inline-block mb-0.5"></span>
+      <h1 class="font-accent shrink-0 flex items-center leading-none"
+          style="font-size: 1.375rem; font-weight: 800; letter-spacing: -0.03em; font-style: italic;">
+        <span style="border-bottom: 2.5px solid hsl(var(--primary)); padding-bottom: 1px;">Taskmaster</span>
+        <span class="inline-block ml-1.5 w-1.5 h-1.5 rounded-full bg-primary" style="margin-bottom: 2px;"></span>
       </h1>
       <div class="hidden md:flex items-center gap-1 min-w-0 ml-auto">
         <div class="flex items-center">
@@ -46,7 +48,7 @@
           {:else}
             <button
               type="button"
-              class="p-2 rounded-lg text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
+              class="p-2.5 rounded-lg text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
               onclick={() => { quickAddOpen = true; }}
               aria-label="Add task"
             >
@@ -62,7 +64,7 @@
           {:else}
             <button
               type="button"
-              class="p-2 rounded-lg text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
+              class="p-2.5 rounded-lg text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
               onclick={() => { searchOpen = true; }}
               aria-label="Search tasks"
             >
@@ -75,7 +77,7 @@
         </div>
         <a
           href="/settings"
-          class="p-2 rounded-lg text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors cursor-pointer"
+          class="p-2.5 rounded-lg text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors cursor-pointer"
           aria-label="Settings"
         >
           <Settings class="w-4 h-4" />

@@ -84,7 +84,7 @@
 </script>
 
 <div>
-  <h1 class="text-page-title font-accent mb-6">Settings</h1>
+  <h1 class="text-page-title font-accent page-title-accent mb-8">Settings</h1>
 
   <div class="space-y-6">
     <!-- Edit Profile -->

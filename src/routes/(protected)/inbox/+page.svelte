@@ -19,7 +19,7 @@
   type SortKey = 'created_desc' | 'created_asc' | 'due_asc' | 'due_desc' | 'priority_asc' | 'priority_desc';
   type DueFilter = 'overdue' | 'today' | 'no_date' | null;
 
-  let sortKey = $state<SortKey>('created_desc');
+  let sortKey = $state<SortKey>('due_asc');
   let filterPriority = $state<number | null>(null);
   let filterDue = $state<DueFilter>(null);
 
@@ -120,7 +120,7 @@
 </script>
 
 <div>
-  <h1 class="text-page-title font-accent mb-6">Inbox</h1>
+  <h1 class="text-page-title font-accent page-title-accent mb-8">Inbox</h1>
 
   <!-- Controls bar -->
   <div class="flex flex-wrap items-center gap-3 mb-4">

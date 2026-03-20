@@ -86,15 +86,15 @@
     {#snippet child({ props })}
       <div
         {...props}
-        class="task-row-hover flex items-center gap-3 rounded-md border bg-surface px-4 py-3.5 group overflow-hidden"
+        class="task-row-hover flex items-center gap-3 rounded-md border bg-surface px-4 py-4 group overflow-hidden"
         ondblclick={() => onselect(task)}
         onkeydown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) onselect(task); }}
       >
         <!-- Toggle checkbox -->
         {#if userRole === 'viewer'}
           <div
-            class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0
-              {task.status === 'done' ? 'bg-primary border-primary' : 'border-foreground-muted'}"
+            class="w-4.5 h-4.5 rounded-full border-[1.5px] flex items-center justify-center shrink-0
+              {task.status === 'done' ? 'bg-primary border-primary' : 'border-foreground-muted/60'}"
           >
             {#if task.status === 'done'}
               <svg class="w-3 h-3 text-primary-foreground" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
@@ -135,8 +135,8 @@
             <input type="hidden" name="current_status" value={task.status} />
             <button
               type="submit"
-              class="w-5 h-5 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors
-                {optimisticStatus === 'done' ? 'bg-primary border-primary ring-2 ring-primary/20' : 'border-foreground-muted hover:border-primary'}
+              class="w-4.5 h-4.5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all
+                {optimisticStatus === 'done' ? 'bg-primary border-primary ring-2 ring-primary/25' : 'border-foreground-muted/60 hover:border-primary hover:scale-105'}
                 {toggling ? 'opacity-50' : ''}"
               class:is-completing={justCompleted}
               disabled={toggling}
@@ -154,7 +154,7 @@
         <!-- Task content — inline editable fields -->
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
-            <span class="flex-1 min-w-0 {optimisticStatus === 'done' ? 'line-through text-foreground-muted text-sm' : 'font-medium text-[15px]'}">
+            <span class="flex-1 min-w-0 {optimisticStatus === 'done' ? 'line-through text-foreground-muted/70 text-[14px]' : 'font-[510] text-[15px] text-foreground tracking-[-0.01em]'}">
               <InlineEditTitle taskId={task.id} value={task.title} disabled={!canEdit} />
             </span>
           </div>
@@ -185,7 +185,7 @@
               <Popover.Root>
                 <Popover.Trigger openOnHover openDelay={300} closeDelay={150}>
                   <span
-                    class="text-xs flex items-center gap-1 px-1.5 py-0.5 rounded-full cursor-default {checklistDone === checklistTotal ? 'bg-status-done/10 text-status-done' : 'bg-surface-subtle text-foreground-secondary'}"
+                    class="text-xs flex items-center gap-1 px-1.5 py-0.5 rounded-full cursor-default {checklistDone === checklistTotal ? 'bg-status-done/10 text-status-done' : 'bg-background text-foreground-muted/80 border border-border/50'}"
                     aria-label="Checklist: {checklistDone} of {checklistTotal} complete"
                   >
                     <svg class="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -234,7 +234,7 @@
         <!-- More menu (opens TaskSheet) -->
         <button
           type="button"
-          class="p-1.5 rounded-md text-foreground-muted hover:text-primary hover:bg-primary/10 transition-colors opacity-40 group-hover:opacity-100"
+          class="p-1.5 rounded-md text-transparent group-hover:text-foreground-muted hover:text-primary! hover:bg-primary/10 transition-all duration-150"
           onclick={() => onselect(task)}
           aria-label="Task details"
         >

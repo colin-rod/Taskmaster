@@ -40,7 +40,7 @@
 </script>
 
 <div>
-  <h1 class="text-page-title font-accent mb-6">Today</h1>
+  <h1 class="text-page-title font-accent page-title-accent mb-8">Today</h1>
 
   {#if !hasTodayTasks && upcomingGroups.length === 0 && completedTasks.length === 0}
     <EmptyState title="Clear skies ahead." subtitle="Nothing due today. A good time to plan ahead.">
@@ -77,10 +77,13 @@
   <!-- Upcoming section (combined Home view) -->
   {#if upcomingGroups.length > 0}
     <div class="mt-2">
-      <h2 class="text-section-header font-accent mb-3 text-foreground-secondary">Coming Up</h2>
+      <div class="flex items-baseline gap-3 mb-4">
+        <h2 class="text-section-header font-accent text-foreground-secondary" style="font-optical-sizing: auto;">Coming Up</h2>
+        <div class="flex-1 h-px bg-border-divider"></div>
+      </div>
       {#each upcomingGroups as group (group.isoDate)}
         <div class="mb-4">
-          <h3 class="text-sm font-medium text-foreground-muted mb-2">{group.label}</h3>
+          <h3 class="text-xs font-semibold tracking-wide uppercase text-foreground-muted/70 mb-2.5">{group.label}</h3>
           <div class="space-y-2">
             {#each group.tasks as task (task.id)}
               <TaskRow {task} onselect={openTask} userRole={taskRole(task)} />

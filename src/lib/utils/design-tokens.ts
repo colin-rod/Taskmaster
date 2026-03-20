@@ -76,7 +76,7 @@ export const borderRadius = {
  * Typography Scale
  */
 export const typography = {
-  pageTitle: 'text-page-title font-accent',
+  pageTitle: 'text-page-title font-accent page-title-accent',
   sectionHeader: 'text-section-header font-accent',
   body: 'text-body font-ui',
   metadata: 'text-metadata',

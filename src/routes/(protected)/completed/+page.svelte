@@ -28,7 +28,7 @@
 </script>
 
 <div>
-  <h1 class="text-page-title font-accent mb-6">
+  <h1 class="text-page-title font-accent page-title-accent mb-8">
     Completed{#if data.tasks.length > 0}<span class="text-foreground-secondary"> ({data.tasks.length})</span>{/if}
   </h1>
 

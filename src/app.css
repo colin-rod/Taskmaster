@@ -10,26 +10,26 @@
     /* === NORTH DESIGN SYSTEM COLORS === */
 
     /* Core Neutrals - Background */
-    --background: 42 17% 98%; /* #FAF9F6 - Base background */
+    --background: 38 20% 95%; /* Richer parchment */
     --surface: 0 0% 100%; /* #FFFFFF - Surface/card background */
-    --surface-subtle: 40 18% 95%; /* #F3F1EC - Subtle background tint */
+    --surface-subtle: 38 22% 91%; /* Warmer, more visible hover states */
 
     /* Borders */
     --border: 35 17% 88%; /* #E7E2DA - Light border */
-    --border-divider: 38 16% 91%; /* #EAE6DF - Divider */
+    --border-divider: 38 20% 85%; /* More visible divider */
     --input: 35 17% 88%; /* #E7E2DA - Input border */
 
     /* Text */
-    --foreground: 217 19% 15%; /* #1F2937 - Primary text (deep navy) */
+    --foreground: 215 25% 12%; /* Deeper, more ink-like */
     --foreground-secondary: 215 14% 48%; /* #6B7280 - Secondary text */
     --foreground-muted: 214 11% 64%; /* #9CA3AF - Muted text */
     --foreground-disabled: 214 14% 82%; /* #D1D5DB - Disabled text */
 
     /* Primary Accent - Warm Burnt Orange */
-    --primary: 17 91% 40%; /* #C2410C - Brand accent */
+    --primary: 16 95% 37%; /* Slightly more saturated brand accent */
     --primary-foreground: 0 0% 100%; /* White text on primary */
-    --primary-hover: 17 89% 33%; /* #9A3412 - Hover state */
-    --primary-tint: 17 97% 93%; /* #FDE8DD - Soft background tint */
+    --primary-hover: 16 95% 30%; /* Darker hover state */
+    --primary-tint: 17 90% 88%; /* Visible active state */
 
     /* Secondary Accent - Deep Indigo (sparingly used) */
     --accent: 239 68% 60%; /* #4F46E5 - Secondary accent */
@@ -78,7 +78,14 @@
 
     /* Shadows */
     --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-2: 0 6px 24px rgba(0, 0, 0, 0.08);
+    --shadow-2: 0 8px 32px rgba(0, 0, 0, 0.12);
+
+    /* Sidebar */
+    --sidebar-bg: 38 28% 93%;
+    --sidebar-label: 215 20% 36%;
+
+    /* Header shadow */
+    --shadow-header: 0 1px 0 hsl(35 20% 84%), 0 2px 8px rgba(0, 0, 0, 0.06);
   }
 }
 
@@ -200,21 +207,24 @@
   }
 
   .section-header {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: hsl(var(--foreground-muted));
+    font-size: 0.6875rem;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    color: hsl(var(--sidebar-label));
     font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   }
 
   /* Bolder section label — Fraunces uppercase */
   .section-header-bold {
     font-family: 'Fraunces', Georgia, serif;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
+    font-size: 0.75rem;
+    font-weight: 800;
+    letter-spacing: 0.10em;
     text-transform: uppercase;
-    color: hsl(var(--primary) / 0.7);
+    color: hsl(var(--foreground));
     display: block;
+    font-optical-sizing: auto;
   }
 
   /* Left-accent hover for task rows */
@@ -226,8 +236,8 @@
     content: '';
     position: absolute;
     left: 0; top: 0; bottom: 0;
-    width: 3px;
-    border-radius: 3px 0 0 3px;
+    width: 4px;
+    border-radius: 4px 0 0 4px;
     background-color: hsl(var(--primary));
     opacity: 0;
     transition: opacity 150ms ease;
@@ -236,7 +246,26 @@
   .task-row-hover:focus-within::before { opacity: 1; }
   .task-row-hover:hover {
     background-color: hsl(var(--primary-tint));
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  }
+
+  /* Sidebar active indicator bar */
+  .sidebar-active-bar {
+    position: absolute;
+    left: 0;
+    top: 3px;
+    bottom: 3px;
+    width: 4px;
+    background-color: hsl(var(--primary));
+    border-radius: 0 3px 3px 0;
+  }
+
+  /* Page title Fraunces italic treatment */
+  .page-title-accent {
+    font-style: italic;
+    font-weight: 800;
+    letter-spacing: -0.025em;
+    font-optical-sizing: auto;
   }
 
   /* Circular badge for autosave state in TaskSheet */

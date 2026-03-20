@@ -31,7 +31,7 @@
 </script>
 
 <div>
-  <h1 class="text-page-title font-accent mb-6">Upcoming</h1>
+  <h1 class="text-page-title font-accent page-title-accent mb-8">Upcoming</h1>
 
   {#if dayGroups.length === 0 && completedTasks.length === 0}
     <EmptyState title="Nothing on the horizon." subtitle="The next 7 days are yours.">

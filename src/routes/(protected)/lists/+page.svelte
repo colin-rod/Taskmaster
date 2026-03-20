@@ -31,7 +31,7 @@
 
 <div>
   <div class="flex items-center justify-between mb-6">
-    <h1 class="text-page-title font-accent">Task Lists</h1>
+    <h1 class="text-page-title font-accent page-title-accent">Task Lists</h1>
     <button
       class="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition-colors shadow-sm inline-flex items-center gap-1.5"
       onclick={() => { showCreateForm = !showCreateForm; }}

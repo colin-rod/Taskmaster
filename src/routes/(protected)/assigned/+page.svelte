@@ -32,7 +32,7 @@
 </script>
 
 <div>
-  <h1 class="text-page-title font-accent mb-6">Assigned to Me</h1>
+  <h1 class="text-page-title font-accent page-title-accent mb-8">Assigned to Me</h1>
 
   {#if activeTasks.length === 0 && completedTasks.length === 0}
     <EmptyState title="No open assignments." subtitle="Nothing's been sent your way yet.">

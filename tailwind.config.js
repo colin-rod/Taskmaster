@@ -38,11 +38,11 @@ export default {
         serif: ['Fraunces', 'Georgia', 'serif'],
       },
       fontSize: {
-        'page-title': ['22px', { lineHeight: '1.2', letterSpacing: '-0.3px', fontWeight: '600' }],
-        'section-header': ['16px', { lineHeight: '1.3', fontWeight: '600' }],
-        'issue-title': ['16px', { lineHeight: '1.3', fontWeight: '500' }],
+        'page-title': ['26px', { lineHeight: '1.1', letterSpacing: '-0.5px', fontWeight: '800' }],
+        'section-header': ['17px', { lineHeight: '1.25', letterSpacing: '-0.2px', fontWeight: '700' }],
+        'issue-title': ['15px', { lineHeight: '1.3', fontWeight: '500' }],
         body: ['15px', { lineHeight: '1.5', fontWeight: '400' }],
-        metadata: ['13px', { lineHeight: '1.5', fontWeight: '500' }],
+        metadata: ['12px', { lineHeight: '1.5', fontWeight: '500' }],
       },
       borderRadius: {
         sm: '6px',

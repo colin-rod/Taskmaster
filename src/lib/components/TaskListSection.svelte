@@ -25,12 +25,18 @@
       ? 'text-destructive'
       : variant === 'muted'
         ? 'text-foreground-secondary'
-        : ''
+        : 'text-foreground'
   );
 </script>
 
-<div class="mb-6">
-  <h2 class="text-section-header font-accent mb-3 {headerClass}">{label}</h2>
+<div class="mb-8">
+  <div class="flex items-baseline gap-3 mb-4">
+    <h2 class="text-section-header font-accent {headerClass}" style="font-optical-sizing: auto;">{label}</h2>
+    <div class="flex-1 h-px bg-border-divider mt-0.5"></div>
+    {#if tasks.length > 0}
+      <span class="text-[11px] font-medium text-foreground-muted tabular-nums">{tasks.length}</span>
+    {/if}
+  </div>
   <div class="space-y-2">
     {#each tasks as task (task.id)}
       <div in:fly={{ y: -8, duration: motionDuration, easing: cubicOut }}>
