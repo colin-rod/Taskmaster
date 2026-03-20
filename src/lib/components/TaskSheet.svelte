@@ -71,8 +71,8 @@
   // Pill visibility (derived)
   let showTimePill      = $derived(editDueAt !== '' && !showTime);
   let showReminderPill  = $derived(!showReminder && editDueAt !== '');
-  let showTimeBlockPill = $derived(!showTimeBlock);
-  let showRecurringPill = $derived(!showRecurring);
+  let showTimeBlockPill = $derived(!showTimeBlock && editDueAt !== '');
+  let showRecurringPill = $derived(!showRecurring && editDueAt !== '');
   let showPillRow       = $derived(showTimePill || showReminderPill || showTimeBlockPill || showRecurringPill);
 
   let prevCompleted = $state(0);
@@ -397,18 +397,18 @@
   >
     <SheetHeader class="px-0 pb-4 border-b border-border-divider">
       <div class="flex items-center justify-between">
-        <SheetTitle class="font-accent text-xl tracking-tight">Task Details</SheetTitle>
+        <SheetTitle class="font-accent text-xl tracking-tight truncate max-w-[240px]">{task?.title ?? 'Task Details'}</SheetTitle>
         {#if saveState === 'saving'}
-          <span class="save-badge save-badge--saving text-foreground-muted" aria-label="Saving">
-            <Loader class="size-3.5 animate-spin" />
+          <span class="save-badge save-badge--saving text-foreground-muted flex items-center gap-1" aria-label="Saving">
+            <Loader class="size-3.5 animate-spin" /><span class="text-xs">Saving…</span>
           </span>
         {:else if saveState === 'saved'}
-          <span class="save-badge save-badge--saved text-status-done animate-[scale-in_0.15s_ease-out]" aria-label="Saved">
-            <Check class="size-3.5" />
+          <span class="save-badge save-badge--saved text-status-done animate-[scale-in_0.15s_ease-out] flex items-center gap-1" aria-label="Saved">
+            <Check class="size-3.5" /><span class="text-xs">Saved</span>
           </span>
         {:else if saveState === 'error'}
-          <span class="save-badge save-badge--error text-destructive animate-[scale-in_0.15s_ease-out]" aria-label="Save failed">
-            <AlertCircle class="size-3.5" />
+          <span class="save-badge save-badge--error text-destructive animate-[scale-in_0.15s_ease-out] flex items-center gap-1" aria-label="Save failed">
+            <AlertCircle class="size-3.5" /><span class="text-xs">Save failed</span>
           </span>
         {/if}
       </div>
@@ -428,28 +428,33 @@
             <p class="text-sm whitespace-pre-wrap">{task.notes}</p>
           </div>
         {/if}
-        <div class="flex gap-4">
-          <div>
-            <span class="section-header-bold mb-1.5">Priority</span>
-            <p class="text-sm">{getPriorityLabel(task.priority)}</p>
-          </div>
-          <div>
-            <span class="section-header-bold mb-1.5">Status</span>
-            <p class="text-sm">{formatStatus(task.status)}</p>
+        <div class="border-t border-border-divider pt-4">
+          <span class="section-header-bold mb-3 block">Details</span>
+          <div class="space-y-3">
+            <div class="flex gap-4">
+              <div>
+                <span class="section-header-bold mb-1.5">Priority</span>
+                <p class="text-sm">{getPriorityLabel(task.priority)}</p>
+              </div>
+              <div>
+                <span class="section-header-bold mb-1.5">Status</span>
+                <p class="text-sm">{formatStatus(task.status)}</p>
+              </div>
+            </div>
+            {#if task.due_at}
+              <div>
+                <span class="section-header-bold mb-1.5">Due date</span>
+                <p class="text-sm">{new Date(task.due_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
+              </div>
+            {/if}
+            {#if task.start_at}
+              <div>
+                <span class="section-header-bold mb-1.5">Time block</span>
+                <p class="text-sm">{formatTimeBlock(task.start_at, task.duration_minutes) ?? ''}</p>
+              </div>
+            {/if}
           </div>
         </div>
-        {#if task.due_at}
-          <div>
-            <span class="section-header-bold mb-1.5">Due date</span>
-            <p class="text-sm">{new Date(task.due_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
-          </div>
-        {/if}
-        {#if task.start_at}
-          <div>
-            <span class="section-header-bold mb-1.5">Time block</span>
-            <p class="text-sm">{formatTimeBlock(task.start_at, task.duration_minutes) ?? ''}</p>
-          </div>
-        {/if}
         {#if (task.checklist_items ?? []).length > 0}
           <div class="border-t border-border-divider pt-4">
             <span class="section-header-bold mb-1.5">Checklist</span>
@@ -491,7 +496,7 @@
         <div>
           <button
             type="button"
-            class="flex items-center justify-between w-full group"
+            class="flex items-center justify-between w-full group cursor-pointer"
             onclick={() => { notesExpanded = !notesExpanded; }}
             aria-expanded={notesExpanded}
             aria-controls="notes-body"
@@ -499,7 +504,7 @@
             <span class="text-sm font-semibold tracking-wide text-foreground">Notes</span>
             <div class="flex items-center gap-2">
               {#if !notesExpanded && editNotes}
-                <span class="text-xs text-foreground-secondary truncate max-w-40">{editNotes.slice(0, 40)}{editNotes.length > 40 ? '…' : ''}</span>
+                <span class="text-xs text-foreground-secondary truncate max-w-48">{editNotes}</span>
               {/if}
               <svg class="w-4 h-4 text-foreground-muted transition-transform duration-200 {notesExpanded ? 'rotate-0' : '-rotate-90'}"
                 viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -630,7 +635,7 @@
                 {#if !isViewer}
                   <button
                     type="button"
-                    class="text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle flex items-center justify-center min-w-7 min-h-7"
+                    class="text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle flex items-center justify-center min-w-11 min-h-11"
                     aria-label="Remove reminder"
                     onclick={() => {
                       if (reminderDate) autoSave({ reminder_at: null });
@@ -687,7 +692,7 @@
                 {#if !isViewer}
                   <button
                     type="button"
-                    class="text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle flex items-center justify-center min-w-7 min-h-7"
+                    class="text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle flex items-center justify-center min-w-11 min-h-11"
                     aria-label="Remove time block"
                     onclick={() => { editStartAt = ''; editStartTime = ''; editDurationMinutes = null; showTimeBlock = false; autoSave({ start_at: null, duration_minutes: null }); }}
                   ><X class="size-3.5" /></button>
@@ -773,7 +778,7 @@
       <div class="mt-5 pt-5 border-t border-border-divider">
         <button
           type="button"
-          class="flex items-center justify-between w-full mb-3 group"
+          class="flex items-center justify-between w-full mb-3 group cursor-pointer"
           onclick={() => { checklistExpanded = !checklistExpanded; }}
           aria-expanded={checklistExpanded}
           aria-controls="checklist-body"
@@ -813,6 +818,11 @@
               style="width: {(completedCount / totalCount) * 100}%"
             ></div>
           </div>
+        {/if}
+
+        <!-- Empty state hint -->
+        {#if totalCount === 0 && checklistExpanded}
+          <p class="text-xs text-foreground-muted py-2">Break this task into steps</p>
         {/if}
 
         <!-- Checklist items -->
@@ -890,18 +900,20 @@
                   <input type="hidden" name="id" value={item.id} />
                   <input type="hidden" name="task_id" value={task.id} />
                   <input type="hidden" name="is_completed" value={String(item.is_completed)} />
-                  <button
-                    type="submit"
-                    class="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors
-                      {item.is_completed ? 'bg-primary border-primary' : 'border-foreground-muted hover:border-primary'}"
-                    aria-label={item.is_completed ? 'Uncheck item' : 'Check item'}
-                  >
-                    {#if item.is_completed}
-                      <svg class="w-2.5 h-2.5 text-primary-foreground" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M2 6l3 3 5-5" />
-                      </svg>
-                    {/if}
-                  </button>
+                  <div class="flex items-center justify-center w-11 h-11 -m-3.5 shrink-0">
+                    <button
+                      type="submit"
+                      class="w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors
+                        {item.is_completed ? 'bg-primary border-primary' : 'border-foreground-muted hover:border-primary'}"
+                      aria-label={item.is_completed ? 'Uncheck item' : 'Check item'}
+                    >
+                      {#if item.is_completed}
+                        <svg class="w-2.5 h-2.5 text-primary-foreground" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
+                          <path d="M2 6l3 3 5-5" />
+                        </svg>
+                      {/if}
+                    </button>
+                  </div>
                 </form>
 
                 <!-- Label / inline edit -->
@@ -1049,7 +1061,7 @@
           <AlertDialog.Trigger>
             <button
               type="button"
-              class="w-full rounded-md border border-destructive/40 px-4 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 hover:border-destructive/60 transition-colors disabled:opacity-50"
+              class="w-full rounded-md border border-destructive/60 bg-destructive/5 px-4 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 hover:border-destructive/80 transition-colors disabled:opacity-50"
               disabled={deleting}
             >
               {deleting ? 'Removing...' : 'Delete task'}
