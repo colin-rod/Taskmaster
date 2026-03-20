@@ -68,6 +68,15 @@ describe('computeNextDue', () => {
 			expect(result.getDate()).toBe(27); // Friday Mar 27
 		});
 
+		it('interval=2 from non-scheduled day jumps full interval', () => {
+			// Thursday (2026-03-19, weekday=3), rule: Sun(6) every 2 weeks
+			// Should NOT return this Sunday (Mar 22) — must respect the 2-week interval
+			const rule: RecurrenceRule = { frequency: 'weekly', interval: 2, byweekday: [6] };
+			const result = computeNextDue(d('2026-03-19'), rule)!;
+			expect(result.getMonth()).toBe(3); // April
+			expect(result.getDate()).toBe(5); // Sunday Apr 5
+		});
+
 		it('handles multiple days across week boundary', () => {
 			// Saturday (2026-03-14, weekday=5), rule: Mon(0), Wed(2) → next Mon
 			const rule: RecurrenceRule = { frequency: 'weekly', interval: 1, byweekday: [0, 2] };
