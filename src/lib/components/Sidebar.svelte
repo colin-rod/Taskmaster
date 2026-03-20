@@ -110,12 +110,19 @@
           {#if active}
             <span class="absolute left-0 inset-y-1 w-[3px] bg-primary rounded-r-full"></span>
           {/if}
-          <filter.icon class="w-4 h-4 flex-shrink-0 {active ? 'text-primary' : isOverdue && count > 0 ? 'text-destructive' : ''}" />
+          <filter.icon class="w-4 h-4 flex-shrink-0 {active ? 'text-primary'
+            : filter.countKey === 'overdue' && count > 0 ? 'text-destructive'
+            : filter.countKey === 'today'    ? 'text-status-blocked-strong'
+            : filter.countKey === 'upcoming' ? 'text-status-doing'
+            : filter.countKey === 'assigned' ? 'text-accent'
+            : ''}" />
           {#if !$sidebarCollapsed}
             <span class="flex-1 truncate">{filter.label}</span>
             {#if count > 0}
               <span class="text-xs font-medium px-1.5 py-0.5 rounded-md tabular-nums
-                {isOverdue ? 'bg-destructive/10 text-destructive' : 'bg-surface-subtle text-foreground-secondary'}">{count}</span>
+                {isOverdue ? 'bg-destructive/10 text-destructive'
+                : filter.countKey === 'today' ? 'bg-primary-tint text-primary'
+                : 'bg-surface-subtle text-foreground-secondary'}">{count}</span>
             {/if}
           {/if}
         </a>

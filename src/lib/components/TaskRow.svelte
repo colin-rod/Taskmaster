@@ -11,7 +11,7 @@
   import TimePickerPopover from '$lib/components/TimePickerPopover.svelte';
   import AssigneePicker from '$lib/components/AssigneePicker.svelte';
   import { hasTime, formatDateOnly, formatTimeOnly } from '$lib/utils/dates.js';
-  import { PRIORITY_OPTIONS } from '$lib/utils/design-tokens.js';
+  import { PRIORITY_OPTIONS, getDueDateClass } from '$lib/utils/design-tokens.js';
   import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
   import * as Popover from '$lib/components/ui/popover/index.js';
@@ -158,24 +158,24 @@
               <InlineEditTitle taskId={task.id} value={task.title} disabled={!canEdit} />
             </span>
           </div>
-          <div class="flex items-center gap-2 mt-1">
+          <div class="flex items-center gap-2 mt-1 {optimisticStatus === 'done' ? 'opacity-60' : ''}">
             {#if canEdit}
               <DatePickerPopover taskId={task.id} value={task.due_at} />
               <TimePickerPopover taskId={task.id} value={task.due_at} />
             {:else if task.due_at}
-              <span class="text-xs text-foreground-secondary">
+              <span class="text-xs {getDueDateClass(task.due_at) || 'text-foreground-secondary'}">
                 {formatDateOnly(task.due_at)}{hasTime(task.due_at) ? ', ' + formatTimeOnly(task.due_at) : ''}
               </span>
             {/if}
             {#if task.is_recurring}
-              <span class="text-xs text-foreground-secondary flex items-center gap-0.5 bg-surface-subtle px-1.5 py-0.5 rounded-full" title={task.recurrence_rule ? describeRecurrence(task.recurrence_rule) : 'Recurring'}>
+              <span class="text-xs text-accent flex items-center gap-0.5 bg-accent/8 px-1.5 py-0.5 rounded-full" title={task.recurrence_rule ? describeRecurrence(task.recurrence_rule) : 'Recurring'}>
                 <Repeat2 class="w-3 h-3" aria-hidden="true" />
                 <span class="sr-only">Recurring</span>
               </span>
             {/if}
             {#if task.reminder_at}
               <span
-                class="text-xs text-foreground-secondary flex items-center gap-0.5 bg-surface-subtle px-1.5 py-0.5 rounded-full"
+                class="text-xs text-status-doing flex items-center gap-0.5 bg-status-doing/10 px-1.5 py-0.5 rounded-full"
                 title={new Date(task.reminder_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
               >
                 <Bell class="w-3 h-3" />
@@ -185,7 +185,7 @@
               <Popover.Root>
                 <Popover.Trigger openOnHover openDelay={300} closeDelay={150}>
                   <span
-                    class="text-xs text-foreground-secondary flex items-center gap-1 bg-surface-subtle px-1.5 py-0.5 rounded-full cursor-default"
+                    class="text-xs flex items-center gap-1 px-1.5 py-0.5 rounded-full cursor-default {checklistDone === checklistTotal ? 'bg-status-done/10 text-status-done' : 'bg-surface-subtle text-foreground-secondary'}"
                     aria-label="Checklist: {checklistDone} of {checklistTotal} complete"
                   >
                     <svg class="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
@@ -225,7 +225,8 @@
         {#if canEdit}
           <PriorityPicker taskId={task.id} value={task.priority} />
         {:else}
-          <span class="text-xs font-medium px-1.5 py-0.5 rounded bg-surface-subtle shrink-0 {PRIORITY_OPTIONS.find(p => p.level === task.priority)?.color ?? 'text-foreground-muted'}" aria-label="Priority {PRIORITY_OPTIONS.find(p => p.level === task.priority)?.desc ?? task.priority}">
+          {@const p = PRIORITY_OPTIONS.find(p => p.level === task.priority)}
+          <span class="text-xs font-medium px-1.5 py-0.5 rounded-full shrink-0 {p?.bg ?? 'bg-surface-subtle'} {p?.color ?? 'text-foreground-muted'}" aria-label="Priority {p?.desc ?? task.priority}">
             P{task.priority}
           </span>
         {/if}

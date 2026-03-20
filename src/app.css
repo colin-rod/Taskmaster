@@ -55,6 +55,8 @@
     --bg-blocked: 48 100% 94%;
     --status-blocked-strong: 25 95% 47%;
     --bg-review: 252 100% 98%;
+    --due-soon-text: 48 96% 40%;
+    --due-soon-bg:   48 100% 94%;
 
     /* shadcn/svelte compatibility mappings */
     --card: 0 0% 100%;
@@ -211,7 +213,7 @@
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: hsl(var(--foreground-secondary));
+    color: hsl(var(--primary) / 0.7);
     display: block;
   }
 
@@ -250,4 +252,18 @@
   .save-badge--saving { background-color: hsl(var(--surface-subtle)); }
   .save-badge--saved  { background-color: hsl(142 71% 45% / 0.12); }
   .save-badge--error  { background-color: hsl(var(--destructive) / 0.1); }
+
+  /* Due-date urgency */
+  .due-overdue { color: hsl(var(--destructive));           font-weight: 500; }
+  .due-today   { color: hsl(var(--status-blocked-strong)); font-weight: 500; }
+  .due-soon    { color: hsl(var(--due-soon-text));          font-weight: 500; }
+
+  /* Colored-select text */
+  .select-priority-1      { color: hsl(var(--destructive)); }
+  .select-priority-2      { color: hsl(var(--status-blocked-strong)); }
+  .select-priority-3      { color: hsl(var(--status-doing)); }
+  .select-priority-4      { color: hsl(var(--foreground-muted)); }
+  .select-status-doing    { color: hsl(var(--status-doing)); }
+  .select-status-done     { color: hsl(var(--status-done)); }
+  .select-status-canceled { color: hsl(var(--foreground-muted)); }
 }

@@ -10,7 +10,7 @@
     SheetDescription,
   } from '$lib/components/ui/sheet/index.js';
   import type { Task, RecurrenceRule, ListRole, TaskListMember } from '$lib/types/index.js';
-  import { getPriorityLabel, formatStatus } from '$lib/utils/design-tokens.js';
+  import { getPriorityLabel, formatStatus, PRIORITY_OPTIONS, STATUS_OPTIONS, getDueDateClass } from '$lib/utils/design-tokens.js';
   import { hasTime, buildDueAt, formatTimeBlock } from '$lib/utils/dates.js';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
   import TimeInput from '$lib/components/TimeInput.svelte';
@@ -434,11 +434,18 @@
             <div class="flex gap-4">
               <div>
                 <span class="section-header-bold mb-1.5">Priority</span>
-                <p class="text-sm">{getPriorityLabel(task.priority)}</p>
+                {@const p = PRIORITY_OPTIONS.find(p => p.level === task.priority)}
+                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {p?.bg ?? 'bg-surface-subtle'} {p?.color ?? 'text-foreground-muted'}">
+                  {p?.label ?? 'P4'} — {p?.desc ?? 'Low'}
+                </span>
               </div>
               <div>
                 <span class="section-header-bold mb-1.5">Status</span>
-                <p class="text-sm">{formatStatus(task.status)}</p>
+                {@const s = STATUS_OPTIONS.find(s => s.value === task.status)}
+                <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-surface-subtle {s?.selectClass ?? ''}">
+                  <span class="w-1.5 h-1.5 rounded-full {s?.dotColor ?? 'bg-foreground-muted'}"></span>
+                  {s?.label ?? formatStatus(task.status)}
+                </span>
               </div>
             </div>
             {#if task.due_at}
@@ -480,7 +487,7 @@
 
         <!-- Title -->
         <div>
-          <label for="edit-title" class="text-sm font-semibold tracking-wide text-foreground">Title</label>
+          <label for="edit-title" class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Title</label>
           <input
             id="edit-title"
             name="title"
@@ -501,7 +508,7 @@
             aria-expanded={notesExpanded}
             aria-controls="notes-body"
           >
-            <span class="text-sm font-semibold tracking-wide text-foreground">Notes</span>
+            <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Notes</span>
             <div class="flex items-center gap-2">
               {#if !notesExpanded && editNotes}
                 <span class="text-xs text-foreground-secondary truncate max-w-48">{editNotes}</span>
@@ -536,12 +543,12 @@
           <!-- Priority + Status row -->
           <div class="flex gap-3">
             <div class="flex-1">
-              <label for="edit-priority" class="text-sm font-semibold tracking-wide text-foreground">Priority</label>
+              <label for="edit-priority" class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Priority</label>
               <select
                 id="edit-priority"
                 name="priority"
                 bind:value={editPriority}
-                class="select-input mt-1"
+                class="select-input mt-1 {PRIORITY_OPTIONS.find(p => p.level === editPriority)?.selectClass ?? ''}"
               >
                 <option value={1}>P1 — Urgent</option>
                 <option value={2}>P2 — High</option>
@@ -550,12 +557,12 @@
               </select>
             </div>
             <div class="flex-1">
-              <label for="edit-status" class="text-sm font-semibold tracking-wide text-foreground">Status</label>
+              <label for="edit-status" class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Status</label>
               <select
                 id="edit-status"
                 name="status"
                 bind:value={editStatus}
-                class="select-input mt-1"
+                class="select-input mt-1 {STATUS_OPTIONS.find(s => s.value === editStatus)?.selectClass ?? ''}"
               >
                 <option value="todo">Todo</option>
                 <option value="in_progress">In Progress</option>
@@ -567,7 +574,17 @@
 
           <!-- Due date -->
           <div>
-            <label for="edit-due" class="text-sm font-semibold tracking-wide text-foreground">Due date</label>
+            <label for="edit-due" class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">
+              Due date
+              {#if editDueAt}
+                {@const urgency = getDueDateClass(editDueAt)}
+                {#if urgency}
+                  <span class="ml-1 normal-case tracking-normal font-medium {urgency}">
+                    — {urgency === 'due-overdue' ? 'Overdue' : urgency === 'due-today' ? 'Today' : 'Soon'}
+                  </span>
+                {/if}
+              {/if}
+            </label>
             <input
               id="edit-due"
               name="due_at"
@@ -698,7 +715,7 @@
                   ><X class="size-3.5" /></button>
                 {/if}
               </div>
-              <div class="flex items-center gap-1 mt-1 px-3 py-2 rounded-md border border-border bg-surface">
+              <div class="flex items-center gap-1 mt-1 px-3 py-2 rounded-md border {editStartAt ? 'bg-accent/5 border-accent/20' : 'bg-surface border-border'}">
                 <DatePickerPopover
                   bind:value={timeBlockDateValue}
                   bind:open={timeBlockDateOpen}

@@ -103,8 +103,30 @@ export const shadows = {
  * Priority Options
  */
 export const PRIORITY_OPTIONS = [
-  { level: 1, label: 'P1', desc: 'Urgent', color: 'text-destructive' },
-  { level: 2, label: 'P2', desc: 'High', color: 'text-orange-500' },
-  { level: 3, label: 'P3', desc: 'Medium', color: 'text-blue-500' },
-  { level: 4, label: 'P4', desc: 'Low', color: 'text-foreground-muted' },
+  { level: 1, label: 'P1', desc: 'Urgent', color: 'text-destructive',     bg: 'bg-destructive/10',  selectClass: 'select-priority-1' },
+  { level: 2, label: 'P2', desc: 'High',   color: 'text-orange-500',       bg: 'bg-orange-500/10',   selectClass: 'select-priority-2' },
+  { level: 3, label: 'P3', desc: 'Medium', color: 'text-blue-500',         bg: 'bg-blue-500/10',     selectClass: 'select-priority-3' },
+  { level: 4, label: 'P4', desc: 'Low',    color: 'text-foreground-muted', bg: 'bg-surface-subtle',  selectClass: 'select-priority-4' },
 ] as const;
+
+/**
+ * Status Options
+ */
+export const STATUS_OPTIONS = [
+  { value: 'todo',        label: 'Todo',        selectClass: 'select-status-todo',     dotColor: 'bg-status-todo' },
+  { value: 'in_progress', label: 'In Progress', selectClass: 'select-status-doing',    dotColor: 'bg-status-doing' },
+  { value: 'done',        label: 'Done',        selectClass: 'select-status-done',     dotColor: 'bg-status-done' },
+  { value: 'canceled',    label: 'Canceled',    selectClass: 'select-status-canceled', dotColor: 'bg-status-canceled' },
+] as const;
+
+/**
+ * Returns a CSS class name for due-date urgency coloring.
+ */
+export function getDueDateClass(due_at: string | null | undefined): string {
+  if (!due_at) return '';
+  const diff = (new Date(due_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+  if (diff < 0)  return 'due-overdue';
+  if (diff < 1)  return 'due-today';
+  if (diff <= 3) return 'due-soon';
+  return '';
+}
