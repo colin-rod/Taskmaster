@@ -17,7 +17,7 @@
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
   import DurationPicker from '$lib/components/DurationPicker.svelte';
   import { Plus, Loader, Check, AlertCircle, X } from '@lucide/svelte';
-  import { slide, scale } from 'svelte/transition';
+  import { slide, scale, fly, fade } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 
@@ -403,7 +403,7 @@
             <Loader class="size-3.5 animate-spin" /><span class="text-xs">Saving…</span>
           </span>
         {:else if saveState === 'saved'}
-          <span class="save-badge save-badge--saved text-status-done animate-[scale-in_0.15s_ease-out] flex items-center gap-1" aria-label="Saved">
+          <span class="save-badge save-badge--saved text-status-done flex items-center gap-1" aria-label="Saved">
             <Check class="size-3.5" /><span class="text-xs">Saved</span>
           </span>
         {:else if saveState === 'error'}
@@ -807,7 +807,7 @@
           <span class="section-header-bold">Checklist</span>
           <div class="flex items-center gap-2">
             {#if !checklistExpanded && totalCount > 0}
-              <span class="text-xs {completedCount === totalCount ? 'text-status-done font-medium' : 'text-foreground-secondary'}">
+              <span class="text-xs {completedCount === totalCount ? 'text-status-done font-medium' : 'text-foreground-secondary'} {checklistJustFinished && completedCount === totalCount ? 'animate-[scale-in_0.2s_ease-out]' : ''}">
                 {completedCount === totalCount ? 'All done ✓' : completedCount > 0 ? `${completedCount}/${totalCount} done` : `${totalCount} item${totalCount === 1 ? '' : 's'}`}
               </span>
             {/if}
@@ -847,6 +847,11 @@
           <p class="text-xs text-foreground-muted py-2">Break this task into steps</p>
         {/if}
 
+        <!-- All done celebration -->
+        {#if checklistJustFinished && checklistExpanded}
+          <p class="text-xs font-medium text-status-done py-1" in:fly={{ y: 4, duration: 200, easing: cubicOut }} out:fade={{ duration: 150 }}>All done &#10003;</p>
+        {/if}
+
         <!-- Checklist items -->
         {#if checklistItems.length > 0}
           <!-- Hidden reorder form -->
@@ -877,7 +882,9 @@
             {#each checklistItems as item (item.id)}
               <div
                 role="listitem"
-                class="flex items-center gap-2 group rounded-md px-2 py-1.5 hover:bg-primary-tint/60 transition-colors {draggingId === item.id ? 'opacity-50' : ''} {dragOverId === item.id && draggingId !== item.id ? 'ring-1 ring-primary' : ''}"
+                class="flex items-center gap-2 group rounded-md px-2 py-1.5 hover:bg-primary-tint/60 transition-colors {draggingId === item.id ? 'checklist-item--dragging' : ''} {dragOverId === item.id && draggingId !== item.id ? 'ring-1 ring-primary' : ''}"
+                in:fly={{ y: 6, duration: 160, easing: cubicOut }}
+                out:fly={{ y: -6, duration: 130, easing: cubicOut }}
                 draggable={!hasPendingItems && isMd}
                 ondragstart={() => onDragStart(item.id)}
                 ondragover={(e) => onDragOver(e, item.id)}

@@ -2,6 +2,8 @@
   import { enhance } from '$app/forms';
   import { invalidate, invalidateAll } from '$app/navigation';
   import { toast } from 'svelte-sonner';
+  import { fly } from 'svelte/transition';
+  import { cubicOut } from 'svelte/easing';
   import type { Task, ListRole, Profile } from '$lib/types/index.js';
   import { describeRecurrence } from '$lib/utils/recurrence.js';
   import { Repeat2, Ellipsis, Check, Bell } from '@lucide/svelte';
@@ -27,6 +29,8 @@
     userRole?: ListRole;
     members?: { user_id: string; profile?: Profile }[];
   } = $props();
+
+  const motionDuration = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 200;
 
   let toggling = $state(false);
   let justCompleted = $state(false);
@@ -81,6 +85,7 @@
 </script>
 
 {#if !deleted}
+<div out:fly={{ y: -4, duration: motionDuration, easing: cubicOut }}>
 <ContextMenu.Root>
   <ContextMenu.Trigger>
     {#snippet child({ props })}
@@ -154,7 +159,7 @@
         <!-- Task content — inline editable fields -->
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2">
-            <span class="flex-1 min-w-0 {optimisticStatus === 'done' ? 'line-through text-foreground-muted/70 text-[14px]' : 'font-[510] text-[15px] text-foreground tracking-[-0.01em]'}">
+            <span class="flex-1 min-w-0 {optimisticStatus === 'done' ? (justCompleted ? 'task-done-title' : 'line-through') + ' text-foreground-muted/70 text-[14px]' : 'font-[510] text-[15px] text-foreground tracking-[-0.01em]'}">
               <InlineEditTitle taskId={task.id} value={task.title} disabled={!canEdit} />
             </span>
           </div>
@@ -328,6 +333,7 @@
     </ContextMenu.Content>
   {/if}
 </ContextMenu.Root>
+</div>
 
 <!-- Hidden delete form -->
 {#if canEdit}

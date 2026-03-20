@@ -16,7 +16,7 @@
 
 <div class="flex flex-col items-center text-center py-12 px-4">
   {#if illustration}
-    <div class="mb-5">
+    <div class="mb-5 empty-state-float">
       {@render illustration()}
     </div>
   {/if}

@@ -38,8 +38,8 @@
     {/if}
   </div>
   <div class="space-y-2">
-    {#each tasks as task (task.id)}
-      <div in:fly={{ y: -8, duration: motionDuration, easing: cubicOut }}>
+    {#each tasks as task, i (task.id)}
+      <div in:fly={{ y: -8, duration: motionDuration, delay: Math.min(i * 30, 150), easing: cubicOut }} out:fly={{ y: -4, duration: Math.min(motionDuration, 150), easing: cubicOut }}>
         <TaskRow {task} onselect={openTask} userRole={taskRoleFn(task)} />
       </div>
     {/each}
