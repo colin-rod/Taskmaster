@@ -249,7 +249,7 @@
                 <button
                   type="submit"
                   class="rounded-md px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
-                  onclick={(e) => { e.stopPropagation(); if (!confirm('Delete this list? Tasks will be moved to Inbox.')) { e.preventDefault(); } }}
+                  onclick={(e) => { e.stopPropagation(); if (!confirm('Delete this list? Your tasks will be moved to Inbox and the list cannot be recovered.')) { e.preventDefault(); } }}
                 >
                   Delete
                 </button>

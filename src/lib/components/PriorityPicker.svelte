@@ -18,7 +18,7 @@
   async function setPriority(level: number) {
     open = false;
     if (level === value) return;
-    await patchTask(taskId, { priority: level }, 'Failed to update priority');
+    await patchTask(taskId, { priority: level }, 'Couldn\'t update the priority — try again.');
   }
 </script>
 

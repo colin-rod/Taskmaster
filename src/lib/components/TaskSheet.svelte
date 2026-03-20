@@ -397,7 +397,7 @@
   >
     <SheetHeader class="px-0 pb-4 border-b border-border-divider">
       <div class="flex items-center justify-between">
-        <SheetTitle class="font-accent text-xl tracking-tight truncate max-w-[240px]">{task?.title ?? 'Task Details'}</SheetTitle>
+        <SheetTitle class="font-accent text-xl tracking-tight truncate max-w-[240px]">{task?.title ?? 'Task'}</SheetTitle>
         {#if saveState === 'saving'}
           <span class="save-badge save-badge--saving text-foreground-muted flex items-center gap-1" aria-label="Saving">
             <Loader class="size-3.5 animate-spin" /><span class="text-xs">Saving…</span>
@@ -412,7 +412,7 @@
           </span>
         {/if}
       </div>
-      <SheetDescription class="sr-only">{isViewer ? 'View task details' : 'Edit task details'}</SheetDescription>
+      <SheetDescription class="sr-only">{isViewer ? 'Viewing task. Read-only.' : 'Edit this task.'}</SheetDescription>
     </SheetHeader>
 
     {#if task && isViewer}
@@ -615,8 +615,8 @@
                   type="button"
                   onclick={() => { showTime = true; }}
                   class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
-                  aria-label="Add a specific time"
-                >+ Time</button>
+                  aria-label="Add a due time"
+                >+ Due time</button>
               {/if}
               {#if showReminderPill}
                 <button
@@ -633,7 +633,7 @@
                   type="button"
                   onclick={() => { showTimeBlock = true; timeBlockDateOpen = true; }}
                   class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
-                  aria-label="Schedule a time block"
+                  aria-label="Add a time block"
                 >+ Time Block</button>
               {/if}
               {#if showRecurringPill}
@@ -865,7 +865,7 @@
                       position: snapshot.indexOf(item.id),
                     }));
                   }
-                  toast.error('Failed to reorder items');
+                  toast.error('Couldn\'t save that order — try again.');
                 }
                 await update();
               };
@@ -908,7 +908,7 @@
                     return async ({ result, update }) => {
                       if (result.type === 'success') {
                         if ((result.data as { rolled?: boolean })?.rolled) {
-                          toast.success('Recurring task rolled to next occurrence');
+                          toast.success('Repeated — next occurrence is set.');
                         } else {
                           toast.success(wasCompleted ? 'Item unchecked' : 'Item checked');
                         }
@@ -953,7 +953,7 @@
                       return async ({ result, update }) => {
                         if (result.type !== 'success') {
                           item.label = oldLabel;
-                          toast.error('Failed to update item');
+                          toast.error('Couldn\'t save that change — try again.');
                         }
                         await update();
                       };
@@ -1091,8 +1091,8 @@
           </AlertDialog.Trigger>
           <AlertDialog.Content>
             <AlertDialog.Header>
-              <AlertDialog.Title>Delete task?</AlertDialog.Title>
-              <AlertDialog.Description>This action cannot be undone.</AlertDialog.Description>
+              <AlertDialog.Title>Delete this task?</AlertDialog.Title>
+              <AlertDialog.Description>This task will be permanently deleted and cannot be recovered.</AlertDialog.Description>
             </AlertDialog.Header>
             <AlertDialog.Footer>
               <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>

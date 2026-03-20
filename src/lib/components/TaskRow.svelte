@@ -52,7 +52,7 @@
       body: JSON.stringify(fields),
     });
     if (!res.ok) {
-      toast.error('Could not update — try again.');
+      toast.error('Change not saved — please try again.');
       return;
     }
     const affectsCounts = 'status' in fields;
@@ -115,7 +115,7 @@
                 if (result.type === 'success') {
                   const data = result.data as Record<string, unknown> | undefined;
                   if (data?.rolled) {
-                    toast.success('Rolled forward to next time.');
+                    toast.success('Repeated — next occurrence is set.');
                   } else {
                     toast.success(prevStatus === 'done' ? 'Back on the list.' : 'Done. One less thing.');
                     if (prevStatus !== 'done') {
@@ -350,8 +350,8 @@
 <AlertDialog.Root bind:open={deleteAlertOpen}>
   <AlertDialog.Content>
     <AlertDialog.Header>
-      <AlertDialog.Title>Delete task?</AlertDialog.Title>
-      <AlertDialog.Description>This action cannot be undone.</AlertDialog.Description>
+      <AlertDialog.Title>Delete this task?</AlertDialog.Title>
+      <AlertDialog.Description>This task will be permanently deleted and cannot be recovered.</AlertDialog.Description>
     </AlertDialog.Header>
     <AlertDialog.Footer>
       <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>

@@ -148,7 +148,7 @@
 
 		<!-- Schedule type -->
 		<div>
-			<span class="text-sm text-foreground-secondary mb-1.5 block">Schedule based on</span>
+			<span class="text-sm text-foreground-secondary mb-1.5 block">Next date based on</span>
 			<div class="flex gap-1">
 				<button
 					type="button"
@@ -158,7 +158,7 @@
 							: 'bg-surface-subtle text-foreground-secondary hover:bg-surface-subtle/80'}"
 					onclick={() => (scheduleType = 'due_date')}
 				>
-					Due date
+					Previous due date
 				</button>
 				<button
 					type="button"
@@ -206,7 +206,7 @@
 			<select id="recurrence-ends" bind:value={endsType} class="select-input flex-1">
 				<option value="never">Never</option>
 				<option value="on_date">On date</option>
-				<option value="after_n_occurrences">After N times</option>
+				<option value="after_n_occurrences">After a set number of times</option>
 			</select>
 		</div>
 

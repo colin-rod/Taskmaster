@@ -19,7 +19,7 @@
 
   async function assign(userId: string | null) {
     open = false;
-    await patchTask(taskId, { assigned_to_user_id: userId }, 'Failed to update assignee');
+    await patchTask(taskId, { assigned_to_user_id: userId }, 'Couldn\'t update the assignee — try again.');
   }
 
   function displayName(profile?: Profile): string {

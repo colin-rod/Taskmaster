@@ -199,9 +199,9 @@
 
     <!-- Switch Profile -->
     <div class="rounded-lg border p-4">
-      <h2 class="text-sm font-medium mb-1">Profile</h2>
+      <h2 class="text-sm font-medium mb-1">Switch Profile</h2>
       <p class="text-sm text-foreground-secondary mb-3">
-        Switch to a different household member.
+        Sign in as a different person in your household.
       </p>
       <form method="POST" action="?/switchProfile">
         <button
@@ -217,7 +217,7 @@
     <div class="rounded-lg border p-4">
       <h2 class="text-sm font-medium mb-1">Calendar</h2>
       <p class="text-sm text-foreground-secondary mb-3">
-        Set the hours shown by default in the week and day views.
+        Choose which hours appear by default in the calendar.
       </p>
       <div class="flex items-center gap-3">
         <div class="flex flex-col gap-1">
@@ -255,11 +255,11 @@
       <h2 class="text-sm font-medium mb-1">Push Notifications</h2>
       {#if !supported}
         <p class="text-sm text-foreground-secondary">
-          Push notifications are not supported in this browser.
+          Your browser doesn't support push notifications. Try Chrome, Edge, or Safari on desktop.
         </p>
       {:else if permissionState === 'denied'}
         <p class="text-sm text-foreground-secondary">
-          Notification permission was denied. To re-enable, update your browser's site settings for this page.
+          Notifications are blocked for this site. To turn them on, open your browser's site settings and allow notifications.
         </p>
       {:else}
         <p class="text-sm text-foreground-secondary mb-3">
