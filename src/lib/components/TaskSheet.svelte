@@ -1,6 +1,5 @@
 <script lang="ts">
   import { tick } from 'svelte';
-  import { invalidateAll } from '$app/navigation';
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
   import {
@@ -17,7 +16,7 @@
   import TimeInput from '$lib/components/TimeInput.svelte';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
   import DurationPicker from '$lib/components/DurationPicker.svelte';
-  import { Plus, Loader, Check, AlertCircle } from '@lucide/svelte';
+  import { Plus, Loader, Check, AlertCircle, X } from '@lucide/svelte';
   import { slide, scale } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -71,7 +70,7 @@
 
   // Pill visibility (derived)
   let showTimePill      = $derived(editDueAt !== '' && !showTime);
-  let showReminderPill  = $derived(!showReminder);
+  let showReminderPill  = $derived(!showReminder && editDueAt !== '');
   let showTimeBlockPill = $derived(!showTimeBlock);
   let showRecurringPill = $derived(!showRecurring);
   let showPillRow       = $derived(showTimePill || showReminderPill || showTimeBlockPill || showRecurringPill);
@@ -119,7 +118,6 @@
       });
       if (res.ok) {
         if (requestId === latestSaveRequestId) { saveState = 'saved'; queueSaveStateIdleReset(); }
-        await invalidateAll();
       } else {
         if (requestId === latestSaveRequestId) saveState = 'error';
         toast.error('Failed to save');
@@ -287,13 +285,6 @@
       autoSave({ duration_minutes: editDurationMinutes });
   }
 
-  let startAtIso = $derived(
-    editStartAt
-      ? new Date(editStartAt + 'T' + (editStartTime || '12:00') + ':00').toISOString()
-      : null
-  );
-  let timeBlockDisplay = $derived(formatTimeBlock(startAtIso, editDurationMinutes));
-
   // Writable date value for DatePickerPopover (ISO format)
   let timeBlockDateValue = $state<string | null>(null);
 
@@ -428,40 +419,40 @@
       <!-- View-only mode for viewers -->
       <div class="space-y-4 mt-2">
         <div>
-          <span class="section-header-bold mb-3">Title</span>
-          <p class="mt-1">{task.title}</p>
+          <span class="section-header-bold mb-1.5">Title</span>
+          <p>{task.title}</p>
         </div>
         {#if task.notes}
           <div>
-            <span class="section-header-bold mb-3">Notes</span>
-            <p class="mt-1 text-sm whitespace-pre-wrap">{task.notes}</p>
+            <span class="section-header-bold mb-1.5">Notes</span>
+            <p class="text-sm whitespace-pre-wrap">{task.notes}</p>
           </div>
         {/if}
         <div class="flex gap-4">
           <div>
-            <span class="section-header-bold mb-3">Priority</span>
-            <p class="mt-1 text-sm">{getPriorityLabel(task.priority)}</p>
+            <span class="section-header-bold mb-1.5">Priority</span>
+            <p class="text-sm">{getPriorityLabel(task.priority)}</p>
           </div>
           <div>
-            <span class="section-header-bold mb-3">Status</span>
-            <p class="mt-1 text-sm">{formatStatus(task.status)}</p>
+            <span class="section-header-bold mb-1.5">Status</span>
+            <p class="text-sm">{formatStatus(task.status)}</p>
           </div>
         </div>
         {#if task.due_at}
           <div>
-            <span class="section-header-bold mb-3">Due date</span>
-            <p class="mt-1 text-sm">{new Date(task.due_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
+            <span class="section-header-bold mb-1.5">Due date</span>
+            <p class="text-sm">{new Date(task.due_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
           </div>
         {/if}
         {#if task.start_at}
           <div>
-            <span class="section-header-bold mb-3">Time block</span>
-            <p class="mt-1 text-sm">{formatTimeBlock(task.start_at, task.duration_minutes) ?? ''}</p>
+            <span class="section-header-bold mb-1.5">Time block</span>
+            <p class="text-sm">{formatTimeBlock(task.start_at, task.duration_minutes) ?? ''}</p>
           </div>
         {/if}
         {#if (task.checklist_items ?? []).length > 0}
-          <div class="border-t pt-4">
-            <span class="section-header-bold mb-3">Checklist</span>
+          <div class="border-t border-border-divider pt-4">
+            <span class="section-header-bold mb-1.5">Checklist</span>
             <div class="space-y-1 mt-2">
               {#each (task.checklist_items ?? []).slice().sort((a, b) => a.position - b.position) as item (item.id)}
                 <div class="flex items-center gap-2 py-1">
@@ -521,11 +512,12 @@
               <textarea
                 id="edit-notes"
                 name="notes"
+                aria-label="Notes"
                 bind:value={editNotes}
                 rows="4"
                 placeholder="Add context, links, or extra detail..."
                 onblur={handleNotesBlur}
-                class="select-input mt-1 resize-y min-h-22.5"
+                class="select-input mt-1 resize-y min-h-[90px]"
               ></textarea>
             </div>
           {/if}
@@ -534,7 +526,7 @@
         <!-- Metadata zone (priority, status, due, reminder, recurrence) -->
         <div class="border-t border-border-divider pt-5 space-y-4">
 
-          <p class="section-header-bold mb-3">Details</p>
+          <p class="section-header-bold">Details</p>
 
           <!-- Priority + Status row -->
           <div class="flex gap-3">
@@ -638,13 +630,13 @@
                 {#if !isViewer}
                   <button
                     type="button"
-                    class="text-xs text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle"
+                    class="text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle flex items-center justify-center min-w-7 min-h-7"
                     aria-label="Remove reminder"
                     onclick={() => {
                       if (reminderDate) autoSave({ reminder_at: null });
                       reminderDate = ''; reminderTime = ''; showReminder = false;
                     }}
-                  >&times;</button>
+                  ><X class="size-3.5" /></button>
                 {/if}
               </div>
               <div class="flex items-center gap-2 mt-1">
@@ -695,10 +687,10 @@
                 {#if !isViewer}
                   <button
                     type="button"
-                    class="text-xs text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle"
+                    class="text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle flex items-center justify-center min-w-7 min-h-7"
                     aria-label="Remove time block"
                     onclick={() => { editStartAt = ''; editStartTime = ''; editDurationMinutes = null; showTimeBlock = false; autoSave({ start_at: null, duration_minutes: null }); }}
-                  >&times;</button>
+                  ><X class="size-3.5" /></button>
                 {/if}
               </div>
               <div class="flex items-center gap-1 mt-1 px-3 py-2 rounded-md border border-border bg-surface">
@@ -744,7 +736,7 @@
 
       <!-- Assign to (only for shared lists with >1 member, hidden for viewers) -->
       {#if members.length > 1 && !isViewer}
-        <div class="mt-4 pt-4 border-t">
+        <div class="mt-4 pt-4 border-t border-border-divider">
           <form
             method="POST"
             action="?/assignTask"
@@ -758,7 +750,7 @@
             }}
           >
             <input type="hidden" name="id" value={task.id} />
-            <label for="assign-to" class="text-sm font-medium">Assign to</label>
+            <label for="assign-to" class="text-sm font-semibold tracking-wide text-foreground">Assign to</label>
             <select
               id="assign-to"
               name="assigned_to_user_id"
@@ -778,7 +770,7 @@
       {/if}
 
       <!-- Checklist Section -->
-      <div class="mt-5 pt-5 border-t">
+      <div class="mt-5 pt-5 border-t border-border-divider">
         <button
           type="button"
           class="flex items-center justify-between w-full mb-3 group"
@@ -803,7 +795,7 @@
         </button>
 
         <div id="checklist-body" class="checklist-body {checklistExpanded ? 'checklist-body--open' : ''}">
-        <div>
+        <div> <!-- overflow:hidden child required for grid-template-rows animation -->
 
         <!-- Progress bar -->
         {#if totalCount > 0}
@@ -849,9 +841,10 @@
           >
             <input type="hidden" name="item_ids" value="" />
           </form>
-          <div class="space-y-1 mb-3">
+          <div role="list" class="space-y-1 mb-3">
             {#each checklistItems as item (item.id)}
               <div
+                role="listitem"
                 class="flex items-center gap-2 group rounded-md px-2 py-1.5 hover:bg-primary-tint/60 transition-colors {draggingId === item.id ? 'opacity-50' : ''} {dragOverId === item.id && draggingId !== item.id ? 'ring-1 ring-primary' : ''}"
                 draggable={!hasPendingItems}
                 ondragstart={() => onDragStart(item.id)}
@@ -1051,7 +1044,7 @@
       </div>
 
       <!-- Delete (separate form) -->
-      <div class="mt-4 pt-4 border-t">
+      <div class="mt-4 pt-4 border-t border-border-divider">
         <AlertDialog.Root bind:open={deleteAlertOpen}>
           <AlertDialog.Trigger>
             <button
