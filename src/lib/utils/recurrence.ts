@@ -57,18 +57,22 @@ function computeNextWeekday(currentDue: Date, byweekday: number[], interval: num
 	// Sort weekdays
 	const sorted = [...byweekday].sort((a, b) => a - b);
 
-	// Find next day in current week (strictly after current day)
-	const nextInWeek = sorted.find((d) => d > currentWeekday);
-
-	if (nextInWeek !== undefined) {
-		// Found a later day this week
-		const daysAhead = nextInWeek - currentWeekday;
-		const result = new Date(currentDue);
-		result.setDate(result.getDate() + daysAhead);
-		return result;
+	// Only look for a later day in the current week if we're rolling forward
+	// from the task's own scheduled weekday. If the base date is not one of
+	// the scheduled days (e.g. completing via completion_date on a Friday for
+	// a "weekly on Sun" rule), we must jump a full interval ahead instead of
+	// landing on a day just a few days away in the same week.
+	if (byweekday.includes(currentWeekday)) {
+		const nextInWeek = sorted.find((d) => d > currentWeekday);
+		if (nextInWeek !== undefined) {
+			const daysAhead = nextInWeek - currentWeekday;
+			const result = new Date(currentDue);
+			result.setDate(result.getDate() + daysAhead);
+			return result;
+		}
 	}
 
-	// No more days this week — jump to first day of next interval week
+	// Jump to first matching day of the next interval-week cycle
 	const daysUntilEndOfWeek = 6 - currentWeekday;
 	const daysToNextWeekStart = daysUntilEndOfWeek + 1 + 7 * (interval - 1);
 	const daysToFirstMatch = daysToNextWeekStart + sorted[0];
