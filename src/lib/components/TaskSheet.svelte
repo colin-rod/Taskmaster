@@ -614,7 +614,7 @@
                   transition:scale={{ duration: 120, start: 0.85 }}
                   type="button"
                   onclick={() => { showTime = true; }}
-                  class="inline-flex items-center gap-1 px-3 py-2 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11"
+                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
                   aria-label="Add a specific time"
                 >+ Time</button>
               {/if}
@@ -623,7 +623,7 @@
                   transition:scale={{ duration: 120, start: 0.85 }}
                   type="button"
                   onclick={() => { showReminder = true; }}
-                  class="inline-flex items-center gap-1 px-3 py-2 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11"
+                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
                   aria-label="Add a reminder"
                 >+ Reminder</button>
               {/if}
@@ -632,7 +632,7 @@
                   transition:scale={{ duration: 120, start: 0.85 }}
                   type="button"
                   onclick={() => { showTimeBlock = true; timeBlockDateOpen = true; }}
-                  class="inline-flex items-center gap-1 px-3 py-2 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11"
+                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
                   aria-label="Schedule a time block"
                 >+ Time Block</button>
               {/if}
@@ -641,7 +641,7 @@
                   transition:scale={{ duration: 120, start: 0.85 }}
                   type="button"
                   onclick={() => { showRecurring = true; editIsRecurring = true; }}
-                  class="inline-flex items-center gap-1 px-3 py-2 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11"
+                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
                   aria-label="Make this task recurring"
                 >+ Recurring</button>
               {/if}
@@ -652,7 +652,7 @@
           {#if showReminder}
             <div transition:slide={{ duration: 180, easing: cubicOut }}>
               <div class="flex items-center justify-between">
-                <label for="edit-reminder-time" class="text-sm font-semibold tracking-wide text-foreground">Reminder</label>
+                <label for="edit-reminder-time" class="section-header">Reminder</label>
                 {#if !isViewer}
                   <button
                     type="button"
@@ -684,19 +684,19 @@
                 <div class="flex gap-2 flex-wrap">
                   <button
                     type="button"
-                    class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11 flex items-center font-medium"
+                    class="text-xs px-3 py-1 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8 font-medium"
                     aria-label="Set reminder 10 minutes before due date"
                     onclick={() => setReminderPreset(10)}
                   >10 min</button>
                   <button
                     type="button"
-                    class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11 flex items-center font-medium"
+                    class="text-xs px-3 py-1 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8 font-medium"
                     aria-label="Set reminder 1 hour before due date"
                     onclick={() => setReminderPreset(60)}
                   >1 hr</button>
                   <button
                     type="button"
-                    class="text-xs px-3 py-1.5 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11 flex items-center font-medium"
+                    class="text-xs px-3 py-1 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8 font-medium"
                     aria-label="Set reminder 1 day before due date"
                     onclick={() => setReminderPreset(1440)}
                   >1 day</button>
@@ -709,7 +709,7 @@
           {#if showTimeBlock}
             <div transition:slide={{ duration: 180, easing: cubicOut }}>
               <div class="flex items-center justify-between">
-                <span class="text-sm font-semibold tracking-wide text-foreground">Time block</span>
+                <span class="section-header">Time block</span>
                 {#if !isViewer}
                   <button
                     type="button"
@@ -776,7 +776,7 @@
             }}
           >
             <input type="hidden" name="id" value={task.id} />
-            <label for="assign-to" class="text-sm font-semibold tracking-wide text-foreground">Assign to</label>
+            <label for="assign-to" class="section-header">Assign to</label>
             <select
               id="assign-to"
               name="assigned_to_user_id"
@@ -807,7 +807,7 @@
           <span class="section-header-bold">Checklist</span>
           <div class="flex items-center gap-2">
             {#if !checklistExpanded && totalCount > 0}
-              <span class="text-xs {completedCount === totalCount ? 'text-green-600 font-medium' : 'text-foreground-secondary'}">
+              <span class="text-xs {completedCount === totalCount ? 'text-status-done font-medium' : 'text-foreground-secondary'}">
                 {completedCount === totalCount ? 'All done ✓' : completedCount > 0 ? `${completedCount}/${totalCount} done` : `${totalCount} item${totalCount === 1 ? '' : 's'}`}
               </span>
             {/if}
@@ -833,6 +833,7 @@
             aria-valuemin={0}
             aria-valuemax={100}
             aria-label="Checklist progress: {completedCount} of {totalCount} items complete"
+            aria-valuetext="{completedCount} of {totalCount} complete"
           >
             <div
               class="h-full rounded-full transition-all duration-300 {completedCount === totalCount ? 'bg-status-done' : 'bg-primary'}"
