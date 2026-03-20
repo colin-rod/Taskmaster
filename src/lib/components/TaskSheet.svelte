@@ -393,7 +393,7 @@
 <Sheet bind:open>
   <SheetContent
     side={isMd ? 'right' : 'bottom'}
-    class={isMd ? 'h-full overflow-y-auto w-[440px] px-6 pt-6' : 'max-h-[85vh] overflow-y-auto rounded-t-2xl px-5 pt-4'}
+    class={isMd ? 'h-full overflow-y-auto w-[440px] px-6 pt-6' : 'max-h-[92vh] overflow-y-auto rounded-t-2xl px-5 pt-4 pb-[env(safe-area-inset-bottom,0px)]'}
   >
     <SheetHeader class="px-0 pb-4 border-b border-border-divider">
       <div class="flex items-center justify-between">
@@ -496,7 +496,7 @@
         <div>
           <button
             type="button"
-            class="flex items-center justify-between w-full group cursor-pointer"
+            class="flex items-center justify-between w-full group cursor-pointer min-h-11 py-2"
             onclick={() => { notesExpanded = !notesExpanded; }}
             aria-expanded={notesExpanded}
             aria-controls="notes-body"
@@ -593,7 +593,7 @@
                   transition:scale={{ duration: 120, start: 0.85 }}
                   type="button"
                   onclick={() => { showTime = true; }}
-                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
+                  class="inline-flex items-center gap-1 px-3 py-2 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11"
                   aria-label="Add a specific time"
                 >+ Time</button>
               {/if}
@@ -602,7 +602,7 @@
                   transition:scale={{ duration: 120, start: 0.85 }}
                   type="button"
                   onclick={() => { showReminder = true; }}
-                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
+                  class="inline-flex items-center gap-1 px-3 py-2 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11"
                   aria-label="Add a reminder"
                 >+ Reminder</button>
               {/if}
@@ -611,7 +611,7 @@
                   transition:scale={{ duration: 120, start: 0.85 }}
                   type="button"
                   onclick={() => { showTimeBlock = true; timeBlockDateOpen = true; }}
-                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
+                  class="inline-flex items-center gap-1 px-3 py-2 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11"
                   aria-label="Schedule a time block"
                 >+ Time Block</button>
               {/if}
@@ -620,7 +620,7 @@
                   transition:scale={{ duration: 120, start: 0.85 }}
                   type="button"
                   onclick={() => { showRecurring = true; editIsRecurring = true; }}
-                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
+                  class="inline-flex items-center gap-1 px-3 py-2 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-11"
                   aria-label="Make this task recurring"
                 >+ Recurring</button>
               {/if}
@@ -778,7 +778,7 @@
       <div class="mt-5 pt-5 border-t border-border-divider">
         <button
           type="button"
-          class="flex items-center justify-between w-full mb-3 group cursor-pointer"
+          class="flex items-center justify-between w-full mb-3 group cursor-pointer py-2 min-h-11"
           onclick={() => { checklistExpanded = !checklistExpanded; }}
           aria-expanded={checklistExpanded}
           aria-controls="checklist-body"
@@ -856,7 +856,7 @@
               <div
                 role="listitem"
                 class="flex items-center gap-2 group rounded-md px-2 py-1.5 hover:bg-primary-tint/60 transition-colors {draggingId === item.id ? 'opacity-50' : ''} {dragOverId === item.id && draggingId !== item.id ? 'ring-1 ring-primary' : ''}"
-                draggable={!hasPendingItems}
+                draggable={!hasPendingItems && isMd}
                 ondragstart={() => onDragStart(item.id)}
                 ondragover={(e) => onDragOver(e, item.id)}
                 ondrop={() => onDrop(item.id)}
@@ -865,7 +865,7 @@
                 <!-- Drag handle -->
                 <button
                   type="button"
-                  class="md:opacity-0 md:group-hover:opacity-100 shrink-0 text-foreground-muted transition-opacity {hasPendingItems ? 'cursor-not-allowed opacity-30' : 'cursor-grab active:cursor-grabbing'}"
+                  class="hidden md:flex md:opacity-0 md:group-hover:opacity-100 shrink-0 text-foreground-muted transition-opacity {hasPendingItems ? 'cursor-not-allowed opacity-30' : 'cursor-grab active:cursor-grabbing'}"
                   aria-label="Drag to reorder"
                   tabindex={-1}
                   disabled={hasPendingItems}
@@ -987,7 +987,7 @@
                   <input type="hidden" name="id" value={item.id} />
                   <button
                     type="submit"
-                    class="md:opacity-0 md:group-hover:opacity-100 p-1.5 min-w-11 min-h-11 flex items-center justify-center text-foreground-muted hover:text-destructive transition-opacity"
+                    class="opacity-100 md:opacity-0 md:group-hover:opacity-100 p-1.5 min-w-11 min-h-11 flex items-center justify-center text-foreground-muted hover:text-destructive transition-opacity"
                     aria-label="Delete item"
                   >
                     <svg class="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2">
@@ -1061,7 +1061,7 @@
           <AlertDialog.Trigger>
             <button
               type="button"
-              class="w-full rounded-md border border-destructive/60 bg-destructive/5 px-4 py-2.5 text-sm font-medium text-destructive hover:bg-destructive/10 hover:border-destructive/80 transition-colors disabled:opacity-50"
+              class="w-full rounded-md border border-destructive/60 bg-destructive/5 px-4 py-3 text-sm font-medium text-destructive hover:bg-destructive/10 hover:border-destructive/80 transition-colors disabled:opacity-50"
               disabled={deleting}
             >
               {deleting ? 'Removing...' : 'Delete task'}
