@@ -6,9 +6,35 @@
   import CompletedTasksSection from '$lib/components/CompletedTasksSection.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
   import TaskListSection from '$lib/components/TaskListSection.svelte';
+  import GettingStartedChecklist from '$lib/components/GettingStartedChecklist.svelte';
   import { groupByDay } from '$lib/utils/tasks.js';
+  import { createOnboardingStore } from '$lib/stores/onboarding.js';
+  import { browser } from '$app/environment';
+  import { get } from 'svelte/store';
 
   let { data }: { data: PageData } = $props();
+
+  // Onboarding checklist state
+  const onboardingStore = createOnboardingStore(data.profileId);
+  let onboarding = $state(get(onboardingStore));
+
+  // Keep local state in sync with store
+  onboardingStore.subscribe((val) => { onboarding = val; });
+
+  // Gate: auto-dismiss for existing users who already have tasks
+  $effect(() => {
+    if (!onboarding.dismissed && browser) {
+      const fc = data.filterCounts;
+      const hasTasks = fc.inbox + fc.today + fc.upcoming + fc.completed > 0;
+      if (hasTasks) {
+        onboardingStore.update((s) => ({ ...s, dismissed: true }));
+      }
+    }
+  });
+
+  function dismissChecklist() {
+    onboardingStore.update((s) => ({ ...s, dismissed: true }));
+  }
 
   let selectedTask = $state<Task | null>(null);
   let selectedTaskRole = $state<ListRole>('owner');
@@ -41,6 +67,15 @@
 
 <div>
   <h1 class="text-page-title font-accent page-title-accent mb-8">Today</h1>
+
+  {#if !onboarding.dismissed}
+    <GettingStartedChecklist
+      filterCounts={data.filterCounts}
+      lists={data.lists}
+      visitedCalendar={onboarding.visitedCalendar}
+      onDismiss={dismissChecklist}
+    />
+  {/if}
 
   {#if !hasTodayTasks && upcomingGroups.length === 0 && completedTasks.length === 0}
     <EmptyState title="Clear skies ahead." subtitle="Nothing due today. A good time to plan ahead.">

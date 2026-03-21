@@ -15,8 +15,15 @@
     formatWeekLabel,
     formatDayLabel,
   } from '$lib/utils/calendar.js';
+  import { createOnboardingStore } from '$lib/stores/onboarding.js';
 
   let { data }: { data: PageData } = $props();
+
+  // Mark calendar as visited for onboarding checklist
+  const onboardingStore = createOnboardingStore(data.profileId);
+  $effect(() => {
+    onboardingStore.update((s) => ({ ...s, visitedCalendar: true }));
+  });
 
   let selectedTask = $state<Task | null>(null);
   let selectedTaskRole = $state<ListRole>('owner');
