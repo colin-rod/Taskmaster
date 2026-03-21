@@ -20,6 +20,8 @@
   import { slide, scale, fly, fade } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
+  import EmptyState from '$lib/components/EmptyState.svelte';
+  import AssigneePicker from '$lib/components/AssigneePicker.svelte';
 
   let {
     task = $bindable<Task | null>(null),
@@ -34,6 +36,11 @@
   } = $props();
 
   let isViewer = $derived(userRole === 'viewer');
+  let taskAssignee = $derived(
+    task?.assigned_to_user_id
+      ? members.find(m => m.user_id === task!.assigned_to_user_id)?.profile ?? null
+      : null
+  );
 
   let editTitle = $state('');
   let editNotes = $state('');
@@ -66,14 +73,16 @@
   let showReminder      = $state(false);
   let showTimeBlock     = $state(false);
   let showRecurring     = $state(false);
-  let checklistExpanded = $state(true);
+  let showChecklist     = $state(false);
 
   // Pill visibility (derived)
   let showTimePill      = $derived(editDueAt !== '' && !showTime);
   let showReminderPill  = $derived(!showReminder && editDueAt !== '');
   let showTimeBlockPill = $derived(!showTimeBlock && editDueAt !== '');
   let showRecurringPill = $derived(!showRecurring && editDueAt !== '');
-  let showPillRow       = $derived(showTimePill || showReminderPill || showTimeBlockPill || showRecurringPill);
+  let showChecklistPill = $derived(!showChecklist);
+  let showNotesPill     = $derived(!notesExpanded);
+  let showPillRow       = $derived(showNotesPill || showTimePill || showReminderPill || showTimeBlockPill || showRecurringPill || showChecklistPill);
 
   let prevCompleted = $state(0);
   let checklistJustFinished = $state(false);
@@ -187,7 +196,7 @@
         showReminder      = reminderDate !== '';
         showTimeBlock     = editStartAt !== '';
         showRecurring     = editIsRecurring;
-        checklistExpanded = (task.checklist_items?.length ?? 0) > 0;
+        showChecklist     = (task.checklist_items?.length ?? 0) > 0;
         initializedTaskId = task.id;
       }
       // Reset save state when switching tasks
@@ -399,8 +408,29 @@
     class={isMd ? 'h-full overflow-y-auto w-[440px] px-6 pt-6' : 'max-h-[92vh] overflow-y-auto rounded-t-2xl px-5 pt-4 pb-[env(safe-area-inset-bottom,0px)]'}
   >
     <SheetHeader class="px-0 pb-4 border-b border-border-divider">
-      <div class="flex items-center justify-between">
-        <SheetTitle class="font-accent text-base tracking-tight text-foreground-muted truncate max-w-[240px]">Task details</SheetTitle>
+      <div class="flex items-center justify-between gap-2">
+        {#if task && !isViewer}
+          <SheetTitle class="flex-1 min-w-0">
+            <label for="edit-title" class="sr-only">Task title</label>
+            <input
+              id="edit-title"
+              name="title"
+              type="text"
+              maxlength="500"
+              bind:value={editTitle}
+              required
+              onblur={handleTitleBlur}
+              placeholder="Task title..."
+              class="w-full bg-transparent border-none outline-none text-xl font-semibold font-accent tracking-tight text-foreground placeholder:text-foreground-muted focus-visible:outline-none"
+            />
+          </SheetTitle>
+        {:else if task && isViewer}
+          <SheetTitle class="font-accent text-xl tracking-tight text-foreground truncate flex-1 min-w-0">
+            {task.title}
+          </SheetTitle>
+        {:else}
+          <SheetTitle class="sr-only">Task details</SheetTitle>
+        {/if}
         {#if saveState === 'saving'}
           <span class="save-badge save-badge--saving text-foreground-muted flex items-center gap-1" aria-label="Saving">
             <Loader class="size-3.5 animate-spin" /><span class="text-xs">Saving…</span>
@@ -413,9 +443,16 @@
           <span class="save-badge save-badge--error text-destructive animate-[scale-in_0.15s_ease-out] flex items-center gap-1" aria-label="Save failed">
             <AlertCircle class="size-3.5" /><span class="text-xs">Save failed</span>
           </span>
+        {:else}
+          <span class="save-badge flex items-center gap-1 invisible" aria-hidden="true">
+            <Loader class="size-3.5" /><span class="text-xs">Saving…</span>
+          </span>
         {/if}
       </div>
       <SheetDescription class="sr-only">{isViewer ? 'Viewing task. Read-only.' : 'Edit this task.'}</SheetDescription>
+      {#if task}
+        <p class="text-xs text-foreground-muted -mt-1">{formatStatus(task.status)}</p>
+      {/if}
     </SheetHeader>
 
     <div aria-live="polite" aria-atomic="true" class="sr-only">
@@ -425,13 +462,9 @@
     {#if task && isViewer}
       <!-- View-only mode for viewers -->
       <div class="space-y-4 mt-2">
-        <div>
-          <span class="section-header-bold mb-1.5">Title</span>
-          <p class="wrap-break-word">{task.title}</p>
-        </div>
         {#if task.notes}
           <div>
-            <span class="section-header-bold mb-1.5">Notes</span>
+            <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary block mb-1.5">Notes</span>
             <p class="text-sm whitespace-pre-wrap wrap-break-word">{task.notes}</p>
           </div>
         {/if}
@@ -440,7 +473,7 @@
           <div class="space-y-3">
             <div class="flex gap-4">
               <div>
-                <span class="section-header-bold mb-1.5">Priority</span>
+                <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary block mb-1.5">Priority</span>
                 {#if task}
                   {@const p = PRIORITY_OPTIONS.find(p => p.level === task!.priority)}
                   <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {p?.bg ?? 'bg-surface-subtle'} {p?.color ?? 'text-foreground-muted'}">
@@ -449,7 +482,7 @@
                 {/if}
               </div>
               <div>
-                <span class="section-header-bold mb-1.5">Status</span>
+                <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary block mb-1.5">Status</span>
                 {#if task}
                   {@const s = STATUS_OPTIONS.find(s => s.value === task!.status)}
                   <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium bg-surface-subtle {s?.selectClass ?? ''}">
@@ -461,13 +494,13 @@
             </div>
             {#if task.due_at}
               <div>
-                <span class="section-header-bold mb-1.5">Due date</span>
+                <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary block mb-1.5">Due date</span>
                 <p class="text-sm">{new Date(task.due_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
               </div>
             {/if}
             {#if task.start_at}
               <div>
-                <span class="section-header-bold mb-1.5">Time block</span>
+                <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary block mb-1.5">Time block</span>
                 <p class="text-sm">{formatTimeBlock(task.start_at, task.duration_minutes) ?? ''}</p>
               </div>
             {/if}
@@ -495,59 +528,6 @@
       </div>
     {:else if task}
       <div class="space-y-4 mt-2">
-
-        <!-- Title -->
-        <div>
-          <label for="edit-title" class="sr-only">Title</label>
-          <input
-            id="edit-title"
-            name="title"
-            type="text"
-            maxlength="500"
-            bind:value={editTitle}
-            required
-            onblur={handleTitleBlur}
-            placeholder="Task title..."
-            class="w-full bg-transparent border-none outline-none text-xl font-semibold font-accent tracking-tight text-foreground placeholder:text-foreground-muted focus-visible:outline-none py-1"
-          />
-        </div>
-
-        <!-- Notes -->
-        <div>
-          <button
-            type="button"
-            class="flex items-center justify-between w-full group cursor-pointer min-h-11 py-2"
-            onclick={() => { notesExpanded = !notesExpanded; }}
-            aria-expanded={notesExpanded}
-            aria-controls="notes-body"
-          >
-            <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Notes</span>
-            <div class="flex items-center gap-2">
-              {#if !notesExpanded && editNotes}
-                <span class="text-xs text-foreground-secondary truncate max-w-48">{editNotes}</span>
-              {/if}
-              <svg class="w-4 h-4 text-foreground-muted transition-transform duration-200 {notesExpanded ? 'rotate-0' : '-rotate-90'}"
-                viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                <path d="M4 6l4 4 4-4" />
-              </svg>
-            </div>
-          </button>
-          {#if notesExpanded}
-            <div id="notes-body" transition:slide={{ duration: 180, easing: cubicOut }}>
-              <textarea
-                id="edit-notes"
-                name="notes"
-                aria-label="Notes"
-                maxlength="10000"
-                bind:value={editNotes}
-                rows="4"
-                placeholder="Add context, links, or extra detail..."
-                onblur={handleNotesBlur}
-                class="select-input mt-1 resize-y min-h-[90px] text-sm leading-relaxed"
-              ></textarea>
-            </div>
-          {/if}
-        </div>
 
         <!-- Metadata zone (priority, status, due, reminder, recurrence) -->
         <div class="border-t border-border-divider pt-4 space-y-4">
@@ -592,7 +572,7 @@
 
           <!-- Due date -->
           <div>
-            <label for="edit-due" class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">
+            <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">
               Due date
               {#if editDueAt}
                 {@const urgency = getDueDateClass(editDueAt)}
@@ -602,16 +582,15 @@
                   </span>
                 {/if}
               {/if}
-            </label>
-            <input
-              id="edit-due"
-              name="due_at"
-              type="date"
-              bind:value={editDueAt}
-              onchange={() => { if (!editDueAt) { editDueTime = ''; handleDueBlur(); } }}
-              onblur={handleDueBlur}
-              class="select-input mt-1"
-            />
+            </span>
+            <div class="mt-1">
+              <DatePickerPopover
+                bind:value={editDueAt}
+                mode="controlled"
+                disabled={isViewer}
+                onchange={() => { if (!editDueAt) { editDueTime = ''; } handleDueBlur(); }}
+              />
+            </div>
             {#if editDueAt && showTime}
               <label for="edit-due-time" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
                 Time <span class="text-foreground-muted font-normal">(optional)</span>
@@ -623,6 +602,15 @@
           <!-- Progressive disclosure pills -->
           {#if showPillRow}
             <div class="flex gap-2 flex-wrap">
+              {#if showNotesPill}
+                <button
+                  transition:scale={{ duration: 120, start: 0.85 }}
+                  type="button"
+                  onclick={() => { notesExpanded = true; }}
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
+                  aria-label="Add notes"
+                >+ Notes</button>
+              {/if}
               {#if showTimePill}
                 <button
                   transition:scale={{ duration: 120, start: 0.85 }}
@@ -659,6 +647,43 @@
                   aria-label="Make this task recurring"
                 >+ Recurring</button>
               {/if}
+              {#if showChecklistPill}
+                <button
+                  transition:scale={{ duration: 120, start: 0.85 }}
+                  type="button"
+                  onclick={() => { showChecklist = true; }}
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
+                  aria-label="Add a checklist"
+                >+ Checklist</button>
+              {/if}
+            </div>
+          {/if}
+
+          <!-- Notes -->
+          {#if notesExpanded}
+            <div transition:slide={{ duration: 180, easing: cubicOut }}>
+              <div class="flex items-center justify-between">
+                <label for="edit-notes" class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Notes</label>
+                {#if !isViewer}
+                  <button
+                    type="button"
+                    class="text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle flex items-center justify-center min-w-11 min-h-11"
+                    aria-label="Collapse notes"
+                    onclick={() => { notesExpanded = false; }}
+                  ><X class="size-3.5" /></button>
+                {/if}
+              </div>
+              <textarea
+                id="edit-notes"
+                name="notes"
+                aria-label="Notes"
+                maxlength="10000"
+                bind:value={editNotes}
+                rows="4"
+                placeholder="Add context, links, or extra detail..."
+                onblur={handleNotesBlur}
+                class="select-input mt-1 resize-y min-h-[90px] text-sm leading-relaxed"
+              ></textarea>
             </div>
           {/if}
 
@@ -666,7 +691,7 @@
           {#if showReminder}
             <div transition:slide={{ duration: 180, easing: cubicOut }}>
               <div class="flex items-center justify-between">
-                <label for="edit-reminder-time" class="section-header">Reminder</label>
+                <label for="edit-reminder-time" class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Reminder</label>
                 {#if !isViewer}
                   <button
                     type="button"
@@ -723,7 +748,7 @@
           {#if showTimeBlock}
             <div transition:slide={{ duration: 180, easing: cubicOut }}>
               <div class="flex items-center justify-between">
-                <span class="section-header">Time block</span>
+                <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Time block</span>
                 {#if !isViewer}
                   <button
                     type="button"
@@ -777,66 +802,27 @@
       <!-- Assign to (only for shared lists with >1 member, hidden for viewers) -->
       {#if members.length > 1 && !isViewer}
         <div class="mt-4 pt-4 border-t border-border-divider">
-          <form
-            method="POST"
-            action="?/assignTask"
-            use:enhance={() => {
-              return async ({ result, update }) => {
-                if (result.type === 'success') {
-                  toast.success('Assignment updated');
-                }
-                await update();
-              };
-            }}
-          >
-            <input type="hidden" name="id" value={task.id} />
-            <label for="assign-to" class="section-header">Assign to</label>
-            <select
-              id="assign-to"
-              name="assigned_to_user_id"
-              class="select-input mt-1"
-              value={task.assigned_to_user_id ?? ''}
-              onchange={(e) => { e.currentTarget.form?.requestSubmit(); }}
-            >
-              <option value="">Unassigned</option>
-              {#each members as member (member.user_id)}
-                <option value={member.user_id}>
-                  {member.profile?.display_name ?? member.profile?.email ?? member.user_id}
-                </option>
-              {/each}
-            </select>
-          </form>
+          <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Assign to</span>
+          <div class="mt-1">
+            <AssigneePicker taskId={task.id} assignee={taskAssignee} {members} disabled={isViewer} />
+          </div>
         </div>
       {/if}
 
       <!-- Checklist Section -->
-      <div class="mt-5 pt-5 border-t border-border-divider">
-        <button
-          type="button"
-          class="flex items-center justify-between w-full mb-3 group cursor-pointer py-2 min-h-11"
-          onclick={() => { checklistExpanded = !checklistExpanded; }}
-          aria-expanded={checklistExpanded}
-          aria-controls="checklist-body"
-        >
-          <span class="section-header-bold">Checklist</span>
-          <div class="flex-1 mx-2 h-px bg-border-divider"></div>
-          <div class="flex items-center gap-2">
-            {#if !checklistExpanded && totalCount > 0}
-              <span class="text-xs {completedCount === totalCount ? 'text-status-done font-medium' : 'text-foreground-secondary'} {checklistJustFinished && completedCount === totalCount ? 'animate-[scale-in_0.2s_ease-out]' : ''}">
-                {completedCount === totalCount ? 'All done ✓' : completedCount > 0 ? `${completedCount}/${totalCount} done` : `${totalCount} item${totalCount === 1 ? '' : 's'}`}
-              </span>
-            {/if}
-            <svg
-              class="w-4 h-4 text-foreground-muted transition-transform duration-200 {checklistExpanded ? 'rotate-0' : '-rotate-90'}"
-              viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"
-            >
-              <path d="M4 6l4 4 4-4" />
-            </svg>
-          </div>
-        </button>
-
-        <div id="checklist-body" class="checklist-body {checklistExpanded ? 'checklist-body--open' : ''}">
-        <div> <!-- overflow:hidden child required for grid-template-rows animation -->
+      {#if showChecklist}
+      <div class="mt-4 pt-4 border-t border-border-divider" transition:slide={{ duration: 180, easing: cubicOut }}>
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Checklist</span>
+          {#if !isViewer && totalCount === 0}
+            <button
+              type="button"
+              class="text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle flex items-center justify-center min-w-11 min-h-11"
+              aria-label="Remove checklist"
+              onclick={() => { showChecklist = false; }}
+            ><X class="size-3.5" /></button>
+          {/if}
+        </div>
 
         <!-- Progress bar -->
         {#if totalCount > 0}
@@ -858,12 +844,12 @@
         {/if}
 
         <!-- Empty state hint -->
-        {#if totalCount === 0 && checklistExpanded}
+        {#if totalCount === 0}
           <p class="text-xs text-foreground-muted py-2">Break this task into steps</p>
         {/if}
 
         <!-- All done celebration -->
-        {#if checklistJustFinished && checklistExpanded}
+        {#if checklistJustFinished}
           <p class="text-xs font-medium text-status-done py-1" in:fly={{ y: 4, duration: 200, easing: cubicOut }} out:fade={{ duration: 150 }}>All done &#10003;</p>
         {/if}
 
@@ -1098,9 +1084,8 @@
           {/if}
         </form>
 
-        </div><!-- end checklist-body inner -->
-        </div><!-- end checklist-body -->
       </div>
+      {/if}
 
       <!-- Delete (separate form) -->
       <div class="mt-4 pt-4 border-t border-border-divider">
@@ -1155,20 +1140,11 @@
           </AlertDialog.Content>
         </AlertDialog.Root>
       </div>
+    {:else}
+      <EmptyState
+        title="Select a task"
+        subtitle="Choose a task from your list to view or edit details"
+      />
     {/if}
   </SheetContent>
 </Sheet>
-
-<style>
-  .checklist-body {
-    display: grid;
-    grid-template-rows: 0fr;
-    transition: grid-template-rows 200ms cubic-bezier(0.4, 0, 0.2, 1);
-  }
-  .checklist-body > div {
-    overflow: hidden;
-  }
-  .checklist-body--open {
-    grid-template-rows: 1fr;
-  }
-</style>
