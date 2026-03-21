@@ -93,6 +93,8 @@
         {...props}
         class="task-row-hover flex items-center gap-3 rounded-md border bg-surface px-4 py-4 group overflow-hidden"
         class:is-completing-row={justCompleted}
+        tabindex="0"
+        role="button"
         ondblclick={() => onselect(task)}
         onkeydown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) onselect(task); }}
       >
@@ -182,9 +184,10 @@
             {#if task.reminder_at}
               <span
                 class="text-xs text-status-doing flex items-center gap-1 px-1 py-0.5 rounded-full"
+                aria-label="Reminder set"
                 title={new Date(task.reminder_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
               >
-                <Bell class="w-3 h-3" />
+                <Bell class="w-3 h-3" aria-hidden="true" />
               </span>
             {/if}
             {#if checklistTotal > 0}

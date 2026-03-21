@@ -183,7 +183,7 @@
               <!-- Faint tick guideline across full width — rendered as absolute line -->
               <div
                 class="absolute top-0 left-full border-t border-border/40 pointer-events-none"
-                style="width: 9999px;"
+                style="width: 100vw;"
               ></div>
             {/if}
           </div>

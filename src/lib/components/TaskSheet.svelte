@@ -28,11 +28,13 @@
     open = $bindable(false),
     userRole = 'owner' as ListRole,
     members = [] as TaskListMember[],
+    loading = false,
   }: {
     task: Task | null;
     open: boolean;
     userRole?: ListRole;
     members?: TaskListMember[];
+    loading?: boolean;
   } = $props();
 
   let isViewer = $derived(userRole === 'viewer');
@@ -449,7 +451,7 @@
           </span>
         {/if}
       </div>
-      <SheetDescription class="sr-only">{isViewer ? 'Viewing task. Read-only.' : 'Edit this task.'}</SheetDescription>
+      <SheetDescription class="sr-only">{isViewer ? 'Viewing' : 'Editing'}: {task?.title ?? 'task details'}</SheetDescription>
       {#if task}
         <p class="text-xs text-foreground-muted -mt-1">{formatStatus(task.status)}</p>
       {/if}
@@ -459,7 +461,18 @@
       {#if saveState === 'saving'}Saving…{:else if saveState === 'saved'}Saved{:else if saveState === 'error'}Save failed — please try again{/if}
     </div>
 
-    {#if task && isViewer}
+    {#if loading && !task}
+      <!-- Loading skeleton -->
+      <div class="space-y-4 mt-4 animate-pulse">
+        <div class="h-4 bg-foreground/10 rounded w-3/4"></div>
+        <div class="h-3 bg-foreground/10 rounded w-1/2"></div>
+        <div class="border-t border-border-divider pt-4 space-y-3">
+          <div class="h-3 bg-foreground/10 rounded w-1/3"></div>
+          <div class="h-8 bg-foreground/10 rounded w-full"></div>
+          <div class="h-8 bg-foreground/10 rounded w-full"></div>
+        </div>
+      </div>
+    {:else if task && isViewer}
       <!-- View-only mode for viewers -->
       <div class="space-y-4 mt-2">
         {#if task.notes}
@@ -469,7 +482,7 @@
           </div>
         {/if}
         <div class="border-t border-border-divider pt-4">
-          <span class="section-header-bold mb-3 block">Details</span>
+          <h3 class="section-header-bold mb-3 block">Details</h3>
           <div class="space-y-3">
             <div class="flex gap-4">
               <div>
@@ -508,7 +521,7 @@
         </div>
         {#if (task.checklist_items ?? []).length > 0}
           <div class="border-t border-border-divider pt-4">
-            <span class="section-header-bold mb-1.5">Checklist</span>
+            <h3 class="section-header-bold mb-1.5">Checklist</h3>
             <div class="space-y-1 mt-2">
               {#each (task.checklist_items ?? []).slice().sort((a, b) => a.position - b.position) as item (item.id)}
                 <div class="flex items-center gap-2 py-1">
@@ -533,7 +546,7 @@
         <div class="border-t border-border-divider pt-4 space-y-4">
 
           <div class="flex items-center gap-3 mb-1">
-            <span class="section-header-bold">Details</span>
+            <h3 class="section-header-bold">Details</h3>
             <div class="flex-1 h-px bg-border-divider"></div>
           </div>
 

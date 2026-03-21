@@ -80,21 +80,22 @@
   {#if !hasTodayTasks && upcomingGroups.length === 0 && completedTasks.length === 0}
     <EmptyState title="Clear skies ahead." subtitle="Nothing due today. A good time to plan ahead.">
       {#snippet illustration()}
-        <div class="relative w-20 h-20 flex items-center justify-center">
+        <div class="relative w-20 h-20 flex items-center justify-center" style="color: hsl(var(--primary))">
           <div
             class="absolute w-16 h-16 rounded-full"
-            style="background: hsl(17 97% 93%); animation: sun-pulse 3s ease-in-out infinite;"
+            class="sun-pulse-anim"
+            style="background: hsl(var(--primary-tint));"
           ></div>
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none" class="relative z-10">
-            <line x1="24" y1="3" x2="24" y2="9" stroke="hsl(17 91% 40%)" stroke-width="2.5" stroke-linecap="round"/>
-            <line x1="24" y1="39" x2="24" y2="45" stroke="hsl(17 91% 40%)" stroke-width="2.5" stroke-linecap="round"/>
-            <line x1="3" y1="24" x2="9" y2="24" stroke="hsl(17 91% 40%)" stroke-width="2.5" stroke-linecap="round"/>
-            <line x1="39" y1="24" x2="45" y2="24" stroke="hsl(17 91% 40%)" stroke-width="2.5" stroke-linecap="round"/>
-            <line x1="8.4" y1="8.4" x2="12.6" y2="12.6" stroke="hsl(17 91% 40%)" stroke-width="2.5" stroke-linecap="round"/>
-            <line x1="35.4" y1="35.4" x2="39.6" y2="39.6" stroke="hsl(17 91% 40%)" stroke-width="2.5" stroke-linecap="round"/>
-            <line x1="39.6" y1="8.4" x2="35.4" y2="12.6" stroke="hsl(17 91% 40%)" stroke-width="2.5" stroke-linecap="round"/>
-            <line x1="12.6" y1="35.4" x2="8.4" y2="39.6" stroke="hsl(17 91% 40%)" stroke-width="2.5" stroke-linecap="round"/>
-            <circle cx="24" cy="24" r="9" fill="hsl(17 91% 40%)"/>
+            <line x1="24" y1="3" x2="24" y2="9" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="24" y1="39" x2="24" y2="45" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="3" y1="24" x2="9" y2="24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="39" y1="24" x2="45" y2="24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="8.4" y1="8.4" x2="12.6" y2="12.6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="35.4" y1="35.4" x2="39.6" y2="39.6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="39.6" y1="8.4" x2="35.4" y2="12.6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <line x1="12.6" y1="35.4" x2="8.4" y2="39.6" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="24" cy="24" r="9" fill="currentColor"/>
           </svg>
         </div>
       {/snippet}
@@ -133,3 +134,11 @@
 </div>
 
 <TaskSheet bind:task={selectedTask} bind:open={sheetOpen} userRole={selectedTaskRole} />
+
+<style>
+  @media (prefers-reduced-motion: no-preference) {
+    .sun-pulse-anim {
+      animation: sun-pulse 3s ease-in-out infinite;
+    }
+  }
+</style>

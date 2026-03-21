@@ -20,13 +20,17 @@
 
   let selectedTask = $state<Task | null>(null);
   let sheetOpen = $state(false);
+  let taskLoading = $state(false);
 
   async function onSelectTask(taskId: string) {
+    selectedTask = null;
+    taskLoading = true;
+    sheetOpen = true;
     const res = await fetch(`/api/tasks/${taskId}`);
-    if (!res.ok) return;
+    taskLoading = false;
+    if (!res.ok) { sheetOpen = false; return; }
     const { task } = await res.json();
     selectedTask = task;
-    sheetOpen = true;
   }
 </script>
 
@@ -36,8 +40,7 @@
     <div class="flex items-center gap-4">
       <h1 class="font-accent shrink-0 flex items-center leading-none"
           style="font-size: 1.375rem; font-weight: 800; letter-spacing: -0.03em; font-style: italic;">
-        <span style="border-bottom: 2.5px solid hsl(var(--primary)); padding-bottom: 1px;">Taskmaster</span>
-        <span class="inline-block ml-1.5 w-1.5 h-1.5 rounded-full bg-primary" style="margin-bottom: 2px;"></span>
+        Taskmaster
       </h1>
       <div class="hidden md:flex items-center gap-1 min-w-0 ml-auto">
         <div class="flex items-center">
@@ -108,5 +111,5 @@
 
 <BottomTabBar />
 <CreateListDialog bind:open={showCreateListDialog} />
-<TaskSheet bind:task={selectedTask} bind:open={sheetOpen} />
+<TaskSheet bind:task={selectedTask} bind:open={sheetOpen} loading={taskLoading} />
 <Toaster position="bottom-center" />

@@ -225,6 +225,7 @@
         {$sidebarCollapsed ? 'justify-center' : 'border border-dashed border-primary/30 hover:border-primary/60'}"
       onclick={onCreateList}
       title={$sidebarCollapsed ? 'New list' : undefined}
+      aria-label={$sidebarCollapsed ? 'New list' : undefined}
     >
       <Plus class="w-4 h-4 flex-shrink-0" />
       {#if !$sidebarCollapsed}

@@ -131,7 +131,7 @@
             <p class="text-xs text-destructive">{form.avatarError}</p>
           {/if}
           {#if form?.avatarSuccess}
-            <p class="text-xs text-green-600">Photo updated</p>
+            <p class="text-xs text-status-done">Photo updated</p>
           {/if}
         </div>
       </form>
@@ -192,7 +192,7 @@
           </button>
         </div>
         {#if form?.updateSuccess}
-          <p class="text-xs text-green-600 mt-1">Name updated</p>
+          <p class="text-xs text-status-done mt-1">Name updated</p>
         {/if}
       {/if}
     </div>
