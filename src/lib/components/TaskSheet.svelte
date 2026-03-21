@@ -400,7 +400,7 @@
   >
     <SheetHeader class="px-0 pb-4 border-b border-border-divider">
       <div class="flex items-center justify-between">
-        <SheetTitle class="font-accent text-xl tracking-tight truncate max-w-[240px]">{task?.title ?? 'Task'}</SheetTitle>
+        <SheetTitle class="font-accent text-base tracking-tight text-foreground-muted truncate max-w-[240px]">Task details</SheetTitle>
         {#if saveState === 'saving'}
           <span class="save-badge save-badge--saving text-foreground-muted flex items-center gap-1" aria-label="Saving">
             <Loader class="size-3.5 animate-spin" /><span class="text-xs">Saving…</span>
@@ -498,7 +498,7 @@
 
         <!-- Title -->
         <div>
-          <label for="edit-title" class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Title</label>
+          <label for="edit-title" class="sr-only">Title</label>
           <input
             id="edit-title"
             name="title"
@@ -507,7 +507,8 @@
             bind:value={editTitle}
             required
             onblur={handleTitleBlur}
-            class="select-input mt-1 text-base font-medium"
+            placeholder="Task title..."
+            class="w-full bg-transparent border-none outline-none text-xl font-semibold font-accent tracking-tight text-foreground placeholder:text-foreground-muted focus-visible:outline-none py-1"
           />
         </div>
 
@@ -542,46 +543,50 @@
                 rows="4"
                 placeholder="Add context, links, or extra detail..."
                 onblur={handleNotesBlur}
-                class="select-input mt-1 resize-y min-h-[90px]"
+                class="select-input mt-1 resize-y min-h-[90px] text-sm leading-relaxed"
               ></textarea>
             </div>
           {/if}
         </div>
 
         <!-- Metadata zone (priority, status, due, reminder, recurrence) -->
-        <div class="border-t border-border-divider pt-5 space-y-4">
+        <div class="border-t border-border-divider pt-4 space-y-4">
 
-          <p class="section-header-bold">Details</p>
+          <div class="flex items-center gap-3 mb-1">
+            <span class="section-header-bold">Details</span>
+            <div class="flex-1 h-px bg-border-divider"></div>
+          </div>
 
           <!-- Priority + Status row -->
           <div class="flex gap-3">
             <div class="flex-1">
-              <label for="edit-priority" class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Priority</label>
-              <select
-                id="edit-priority"
-                name="priority"
-                bind:value={editPriority}
-                class="select-input mt-1 {PRIORITY_OPTIONS.find(p => p.level === editPriority)?.selectClass ?? ''}"
-              >
-                <option value={1}>P1 — Urgent</option>
-                <option value={2}>P2 — High</option>
-                <option value={3}>P3 — Medium</option>
-                <option value={4}>P4 — Low</option>
-              </select>
+              <label class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Priority</label>
+              <input type="hidden" name="priority" value={editPriority} />
+              <div class="segmented-control mt-1" role="group" aria-label="Priority">
+                {#each [[1,'P1'],[2,'P2'],[3,'P3'],[4,'P4']] as [val, lbl] (val)}
+                  <button
+                    type="button"
+                    class="segmented-control__btn segmented-control__btn--p{val} {editPriority === val ? 'segmented-control__btn--active' : ''}"
+                    onclick={() => { editPriority = val as 1|2|3|4; }}
+                    aria-pressed={editPriority === val}
+                    title={val === 1 ? 'Urgent' : val === 2 ? 'High' : val === 3 ? 'Medium' : 'Low'}
+                  >{lbl}</button>
+                {/each}
+              </div>
             </div>
             <div class="flex-1">
-              <label for="edit-status" class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Status</label>
-              <select
-                id="edit-status"
-                name="status"
-                bind:value={editStatus}
-                class="select-input mt-1 {STATUS_OPTIONS.find(s => s.value === editStatus)?.selectClass ?? ''}"
-              >
-                <option value="todo">Todo</option>
-                <option value="in_progress">In Progress</option>
-                <option value="done">Done</option>
-                <option value="canceled">Canceled</option>
-              </select>
+              <label class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Status</label>
+              <input type="hidden" name="status" value={editStatus} />
+              <div class="segmented-control mt-1" role="group" aria-label="Status">
+                {#each [['todo','Todo'],['in_progress','In Progress'],['done','Done'],['canceled','Canceled']] as [val, lbl] (val)}
+                  <button
+                    type="button"
+                    class="segmented-control__btn {editStatus === val ? 'segmented-control__btn--active' : ''}"
+                    onclick={() => { editStatus = val as 'todo'|'in_progress'|'done'|'canceled'; }}
+                    aria-pressed={editStatus === val}
+                  >{lbl}</button>
+                {/each}
+              </div>
             </div>
           </div>
 
@@ -623,7 +628,7 @@
                   transition:scale={{ duration: 120, start: 0.85 }}
                   type="button"
                   onclick={() => { showTime = true; }}
-                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
                   aria-label="Add a due time"
                 >+ Due time</button>
               {/if}
@@ -632,7 +637,7 @@
                   transition:scale={{ duration: 120, start: 0.85 }}
                   type="button"
                   onclick={() => { showReminder = true; }}
-                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
                   aria-label="Add a reminder"
                 >+ Reminder</button>
               {/if}
@@ -641,7 +646,7 @@
                   transition:scale={{ duration: 120, start: 0.85 }}
                   type="button"
                   onclick={() => { showTimeBlock = true; timeBlockDateOpen = true; }}
-                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
                   aria-label="Add a time block"
                 >+ Time Block</button>
               {/if}
@@ -650,7 +655,7 @@
                   transition:scale={{ duration: 120, start: 0.85 }}
                   type="button"
                   onclick={() => { showRecurring = true; editIsRecurring = true; }}
-                  class="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8"
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
                   aria-label="Make this task recurring"
                 >+ Recurring</button>
               {/if}
@@ -814,6 +819,7 @@
           aria-controls="checklist-body"
         >
           <span class="section-header-bold">Checklist</span>
+          <div class="flex-1 mx-2 h-px bg-border-divider"></div>
           <div class="flex items-center gap-2">
             {#if !checklistExpanded && totalCount > 0}
               <span class="text-xs {completedCount === totalCount ? 'text-status-done font-medium' : 'text-foreground-secondary'} {checklistJustFinished && completedCount === totalCount ? 'animate-[scale-in_0.2s_ease-out]' : ''}">

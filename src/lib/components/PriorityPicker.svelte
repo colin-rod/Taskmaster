@@ -24,9 +24,11 @@
 
 <Popover.Root bind:open>
   <Popover.Trigger {disabled}>
+    {@const p = PRIORITY_OPTIONS.find(p => p.level === value)}
     <span
-      class="text-xs font-medium px-1.5 py-0.5 rounded bg-surface-subtle cursor-pointer hover:bg-border transition-colors {PRIORITY_OPTIONS.find(p => p.level === value)?.color ?? 'text-foreground-secondary'}"
+      class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full bg-surface-subtle cursor-pointer hover:bg-border transition-colors {p?.color ?? 'text-foreground-secondary'}"
     >
+      <span class="inline-block w-1.5 h-1.5 rounded-full {p?.dot ?? 'bg-foreground-disabled'}"></span>
       {getPriorityLabel(value)}
     </span>
   </Popover.Trigger>

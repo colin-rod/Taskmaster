@@ -174,14 +174,14 @@
               </span>
             {/if}
             {#if task.is_recurring}
-              <span class="text-xs text-accent flex items-center gap-0.5 bg-accent/8 px-1.5 py-0.5 rounded-full" title={task.recurrence_rule ? describeRecurrence(task.recurrence_rule) : 'Recurring'}>
+              <span class="text-xs text-accent flex items-center gap-1 px-1 py-0.5 rounded-full" title={task.recurrence_rule ? describeRecurrence(task.recurrence_rule) : 'Recurring'}>
                 <Repeat2 class="w-3 h-3" aria-hidden="true" />
                 <span class="sr-only">Recurring</span>
               </span>
             {/if}
             {#if task.reminder_at}
               <span
-                class="text-xs text-status-doing flex items-center gap-0.5 bg-status-doing/10 px-1.5 py-0.5 rounded-full"
+                class="text-xs text-status-doing flex items-center gap-1 px-1 py-0.5 rounded-full"
                 title={new Date(task.reminder_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
               >
                 <Bell class="w-3 h-3" />
@@ -232,7 +232,8 @@
           <PriorityPicker taskId={task.id} value={task.priority} />
         {:else}
           {@const p = PRIORITY_OPTIONS.find(p => p.level === task.priority)}
-          <span class="text-xs font-medium px-1.5 py-0.5 rounded-full shrink-0 {p?.bg ?? 'bg-surface-subtle'} {p?.color ?? 'text-foreground-muted'}" aria-label="Priority {p?.desc ?? task.priority}">
+          <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full shrink-0 {p?.bg ?? 'bg-surface-subtle'} {p?.color ?? 'text-foreground-muted'}" aria-label="Priority {p?.desc ?? task.priority}">
+            <span class="inline-block w-1.5 h-1.5 rounded-full {p?.dot ?? 'bg-foreground-disabled'}"></span>
             P{task.priority}
           </span>
         {/if}
