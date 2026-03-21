@@ -92,6 +92,7 @@
       <div
         {...props}
         class="task-row-hover flex items-center gap-3 rounded-md border bg-surface px-4 py-4 group overflow-hidden"
+        class:is-completing-row={justCompleted}
         ondblclick={() => onselect(task)}
         onkeydown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) onselect(task); }}
       >
@@ -141,7 +142,7 @@
             <button
               type="submit"
               class="w-4.5 h-4.5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all
-                {optimisticStatus === 'done' ? 'bg-primary border-primary ring-2 ring-primary/25' : 'border-foreground-muted/60 hover:border-primary hover:scale-105'}
+                {optimisticStatus === 'done' ? 'bg-primary border-primary ring-2 ring-[hsl(var(--status-done)/0.2)]' : 'border-foreground-muted/60 hover:border-primary hover:scale-105'}
                 {toggling ? 'opacity-50' : ''}"
               class:is-completing={justCompleted}
               disabled={toggling}
