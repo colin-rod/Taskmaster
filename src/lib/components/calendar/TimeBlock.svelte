@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Task } from '$lib/types/index.js';
   import { formatTimeBlock } from '$lib/utils/dates.js';
+  import { getPriorityDotClass } from '$lib/utils/design-tokens.js';
   import { START_HOUR, ROW_HEIGHT_PX } from '$lib/constants/calendar.js';
 
   let {
@@ -10,13 +11,6 @@
     task: Task;
     onTaskClick: (task: Task) => void;
   } = $props();
-
-  const priorityDotClass: Record<number, string> = {
-    1: 'bg-destructive',
-    2: 'bg-orange-500',
-    3: 'bg-blue-500',
-    4: 'hidden',
-  };
 
   const position = $derived.by(() => {
     if (!task.start_at) return null;
@@ -42,7 +36,7 @@
   >
     <div class="flex items-center gap-1 min-w-0">
       <span
-        class="shrink-0 w-1.5 h-1.5 rounded-full {priorityDotClass[task.priority] ?? 'hidden'}"
+        class="shrink-0 w-1.5 h-1.5 rounded-full {getPriorityDotClass(task.priority)}"
       ></span>
       <span class="truncate font-medium leading-tight">{task.title}</span>
     </div>

@@ -1,6 +1,7 @@
 <script lang="ts">
   import type { Task } from '$lib/types/index.js';
   import { hasTime } from '$lib/utils/dates.js';
+  import { getPriorityDotClass } from '$lib/utils/design-tokens.js';
 
   let {
     task,
@@ -13,13 +14,6 @@
     showTime?: boolean;
     onTaskClick: (task: Task) => void;
   } = $props();
-
-  const priorityDotClass: Record<number, string> = {
-    1: 'bg-destructive',
-    2: 'bg-orange-500',
-    3: 'bg-blue-500',
-    4: 'hidden',
-  };
 
   const timeLabel = $derived.by(() => {
     if (role === 'start' && task.start_at) {
@@ -43,7 +37,7 @@
   onclick={() => onTaskClick(task)}
 >
   <span
-    class="shrink-0 w-1.5 h-1.5 rounded-full {priorityDotClass[task.priority] ?? 'hidden'}"
+    class="shrink-0 w-1.5 h-1.5 rounded-full {getPriorityDotClass(task.priority)}"
   ></span>
   <span class="truncate">{task.title}</span>
   {#if timeLabel && showTime}

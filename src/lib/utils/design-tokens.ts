@@ -110,6 +110,20 @@ export const PRIORITY_OPTIONS = [
 ] as const;
 
 /**
+ * Returns the Tailwind bg-color class for a priority dot indicator.
+ * Returns 'hidden' for P4 (lowest priority — dot not shown).
+ */
+export function getPriorityDotClass(priority: number): string {
+  const map: Record<number, string> = {
+    1: 'bg-destructive',
+    2: 'bg-orange-500',
+    3: 'bg-blue-500',
+    4: 'hidden',
+  };
+  return map[priority] ?? 'hidden';
+}
+
+/**
  * Status Options
  */
 export const STATUS_OPTIONS = [
