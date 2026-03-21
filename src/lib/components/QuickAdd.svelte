@@ -59,7 +59,8 @@
     };
   }}
 >
-  <div class="flex items-center gap-2">
+  <!-- Mobile: two-row layout / Desktop: single row -->
+  <div class="flex flex-col gap-2 md:flex-row md:items-center md:gap-2">
     <input
       id="quick-add-title"
       name="title"
@@ -68,7 +69,7 @@
       bind:value={title}
       placeholder="Add a task..."
       required
-      class="select-input flex-1"
+      class="select-input w-full md:flex-1"
       disabled={creating}
       onkeydown={(e: KeyboardEvent) => { if (e.key === 'Escape') onClose?.(); }}
     />
@@ -78,60 +79,64 @@
     <input type="hidden" name="is_recurring" value={isRecurring ? 'true' : ''} />
     <input type="hidden" name="recurrence_rule" value={recurrenceRule ? JSON.stringify(recurrenceRule) : ''} />
 
-    <!-- Date and time popovers -->
-    <DatePickerPopover bind:value={dueAt} mode="controlled" disabled={creating} />
-    <TimePickerPopover bind:value={dueAt} mode="controlled" disabled={creating} />
+    <div class="flex items-center justify-between gap-2">
+      <div class="flex items-center gap-2">
+        <!-- Date and time popovers -->
+        <DatePickerPopover bind:value={dueAt} mode="controlled" disabled={creating} />
+        <TimePickerPopover bind:value={dueAt} mode="controlled" disabled={creating} />
 
-    <!-- Repeat toggle -->
-    <button
-      type="button"
-      class="text-sm px-1.5 py-0.5 rounded transition-colors {showRecurrence ? 'text-primary font-medium' : 'text-foreground-secondary hover:text-foreground'}"
-      onclick={() => {
-        showRecurrence = !showRecurrence;
-        if (showRecurrence) {
-          isRecurring = true;
-        } else {
-          isRecurring = false;
-          recurrenceRule = null;
-        }
-      }}
-      disabled={creating}
-      title="Set recurrence"
-    >
-      ↻
-    </button>
-
-    <!-- Priority popover -->
-    <Popover.Root bind:open={priorityPopoverOpen}>
-      <Popover.Trigger disabled={creating}>
-        <span
-          class="text-xs font-medium px-1.5 py-0.5 rounded bg-surface-subtle cursor-pointer hover:bg-border transition-colors {currentPriority.color}"
+        <!-- Repeat toggle -->
+        <button
+          type="button"
+          class="text-sm px-1.5 py-0.5 rounded transition-colors {showRecurrence ? 'text-primary font-medium' : 'text-foreground-secondary hover:text-foreground'}"
+          onclick={() => {
+            showRecurrence = !showRecurrence;
+            if (showRecurrence) {
+              isRecurring = true;
+            } else {
+              isRecurring = false;
+              recurrenceRule = null;
+            }
+          }}
+          disabled={creating}
+          title="Set recurrence"
         >
-          {currentPriority.label}
-        </span>
-      </Popover.Trigger>
-      <Popover.Content class="w-36 p-1" align="start">
-        {#each PRIORITY_OPTIONS as p (p.level)}
-          <button
-            type="button"
-            class="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle transition-colors
-              {p.level === priority ? 'bg-surface-subtle font-medium' : ''}"
-            onclick={() => { priority = p.level; priorityPopoverOpen = false; }}
-          >
-            <span class="font-medium {p.color}">{p.label}</span>
-            <span class="text-foreground-secondary">{p.desc}</span>
-          </button>
-        {/each}
-      </Popover.Content>
-    </Popover.Root>
+          ↻
+        </button>
 
-    <button
-      type="submit"
-      class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
-      disabled={creating || !title.trim()}
-    >
-      {creating ? 'Adding...' : 'Add'}
-    </button>
+        <!-- Priority popover -->
+        <Popover.Root bind:open={priorityPopoverOpen}>
+          <Popover.Trigger disabled={creating}>
+            <span
+              class="text-xs font-medium px-1.5 py-0.5 rounded bg-surface-subtle cursor-pointer hover:bg-border transition-colors {currentPriority.color}"
+            >
+              {currentPriority.label}
+            </span>
+          </Popover.Trigger>
+          <Popover.Content class="w-36 p-1" align="start">
+            {#each PRIORITY_OPTIONS as p (p.level)}
+              <button
+                type="button"
+                class="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle transition-colors
+                  {p.level === priority ? 'bg-surface-subtle font-medium' : ''}"
+                onclick={() => { priority = p.level; priorityPopoverOpen = false; }}
+              >
+                <span class="font-medium {p.color}">{p.label}</span>
+                <span class="text-foreground-secondary">{p.desc}</span>
+              </button>
+            {/each}
+          </Popover.Content>
+        </Popover.Root>
+      </div>
+
+      <button
+        type="submit"
+        class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
+        disabled={creating || !title.trim()}
+      >
+        {creating ? 'Adding...' : 'Add'}
+      </button>
+    </div>
   </div>
 
   {#if showRecurrence}
