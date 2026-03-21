@@ -240,8 +240,11 @@
   });
 
   function handleTitleBlur() {
-    if (!isInitialized || !task || editTitle === task.title) return;
-    autoSave({ title: editTitle });
+    if (!isInitialized || !task) return;
+    const trimmed = editTitle.trim();
+    if (!trimmed) { editTitle = task.title; return; }
+    if (trimmed === task.title) return;
+    autoSave({ title: trimmed });
   }
 
   function handleNotesBlur() {
@@ -415,17 +418,21 @@
       <SheetDescription class="sr-only">{isViewer ? 'Viewing task. Read-only.' : 'Edit this task.'}</SheetDescription>
     </SheetHeader>
 
+    <div aria-live="polite" aria-atomic="true" class="sr-only">
+      {#if saveState === 'saving'}Saving…{:else if saveState === 'saved'}Saved{:else if saveState === 'error'}Save failed — please try again{/if}
+    </div>
+
     {#if task && isViewer}
       <!-- View-only mode for viewers -->
       <div class="space-y-4 mt-2">
         <div>
           <span class="section-header-bold mb-1.5">Title</span>
-          <p>{task.title}</p>
+          <p class="wrap-break-word">{task.title}</p>
         </div>
         {#if task.notes}
           <div>
             <span class="section-header-bold mb-1.5">Notes</span>
-            <p class="text-sm whitespace-pre-wrap">{task.notes}</p>
+            <p class="text-sm whitespace-pre-wrap wrap-break-word">{task.notes}</p>
           </div>
         {/if}
         <div class="border-t border-border-divider pt-4">
@@ -479,7 +486,7 @@
                       </svg>
                     {/if}
                   </div>
-                  <span class="text-sm {item.is_completed ? 'line-through text-foreground-muted' : ''}">{item.label}</span>
+                  <span class="text-sm wrap-break-word {item.is_completed ? 'line-through text-foreground-muted' : ''}">{item.label}</span>
                 </div>
               {/each}
             </div>
@@ -496,6 +503,7 @@
             id="edit-title"
             name="title"
             type="text"
+            maxlength="500"
             bind:value={editTitle}
             required
             onblur={handleTitleBlur}
@@ -529,6 +537,7 @@
                 id="edit-notes"
                 name="notes"
                 aria-label="Notes"
+                maxlength="10000"
                 bind:value={editNotes}
                 rows="4"
                 placeholder="Add context, links, or extra detail..."
@@ -971,6 +980,8 @@
                     <input
                       name="label"
                       type="text"
+                      maxlength="500"
+                      aria-label="Edit item label"
                       bind:value={editingLabel}
                       autofocus
                       class="w-full bg-transparent text-sm outline-none border-b border-primary focus:border-primary"
@@ -1063,6 +1074,7 @@
           <input
             name="label"
             type="text"
+            maxlength="500"
             bind:value={newItemLabel}
             placeholder="Add item..."
             aria-label="New checklist item"
