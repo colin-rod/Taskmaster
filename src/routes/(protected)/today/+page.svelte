@@ -82,8 +82,7 @@
       {#snippet illustration()}
         <div class="relative w-20 h-20 flex items-center justify-center" style="color: hsl(var(--primary))">
           <div
-            class="absolute w-16 h-16 rounded-full"
-            class="sun-pulse-anim"
+            class="absolute w-16 h-16 rounded-full sun-pulse-anim"
             style="background: hsl(var(--primary-tint));"
           ></div>
           <svg width="48" height="48" viewBox="0 0 48 48" fill="none" class="relative z-10">
