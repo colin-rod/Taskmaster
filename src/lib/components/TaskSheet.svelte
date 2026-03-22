@@ -5,6 +5,7 @@
   import {
     Sheet,
     SheetContent,
+    SheetClose,
     SheetHeader,
     SheetTitle,
     SheetDescription,
@@ -408,8 +409,9 @@
   <SheetContent
     side={isMd ? 'right' : 'bottom'}
     class={isMd ? 'h-full overflow-y-auto w-[440px] px-6 pt-6' : 'max-h-[92vh] overflow-y-auto rounded-t-2xl px-5 pt-4 pb-[env(safe-area-inset-bottom,0px)]'}
+    showClose={false}
   >
-    <SheetHeader class="px-0 pb-4 border-b border-border-divider">
+    <SheetHeader class="px-0 pt-0 pb-4 border-b border-border-divider">
       <div class="flex items-center justify-between gap-2">
         {#if task && !isViewer}
           <SheetTitle class="flex-1 min-w-0">
@@ -450,6 +452,10 @@
             <Loader class="size-3.5" /><span class="text-xs">Saving…</span>
           </span>
         {/if}
+        <SheetClose class="rounded-xs opacity-70 transition-opacity hover:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 ring-offset-background disabled:pointer-events-none">
+          <X class="size-4" />
+          <span class="sr-only">Close</span>
+        </SheetClose>
       </div>
       <SheetDescription class="sr-only">{isViewer ? 'Viewing' : 'Editing'}: {task?.title ?? 'task details'}</SheetDescription>
       {#if task}
