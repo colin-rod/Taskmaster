@@ -31,7 +31,7 @@
     { label: 'Today', href: '/today', icon: CalendarDays, countKey: 'today' as const },
     { label: 'Upcoming', href: '/upcoming', icon: CalendarRange, countKey: 'upcoming' as const },
     { label: 'Assigned to Me', href: '/assigned', icon: UserCheck, countKey: 'assigned' as const },
-    { label: 'Completed', href: '/completed', icon: CheckCheck, countKey: 'completed' as const },
+    { label: 'Completed', href: '/completed', icon: CheckCheck },
   ];
 
   function isActive(href: string, pathname: string): boolean {

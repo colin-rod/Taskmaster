@@ -154,7 +154,7 @@
   {:else}
     <div class="space-y-3">
       {#each activeTasks as task (task.id)}
-        <TaskRow {task} onselect={openTask} {userRole} members={data.list.members ?? []} />
+        <TaskRow {task} onselect={openTask} {userRole} members={data.list.members ?? []} listLabels={data.labels ?? []} />
       {/each}
     </div>
   {/if}
@@ -178,7 +178,7 @@
       {#if showCompleted}
         <div class="space-y-3 mt-2">
           {#each completedTasks as task (task.id)}
-            <TaskRow {task} onselect={openTask} {userRole} members={data.list.members ?? []} />
+            <TaskRow {task} onselect={openTask} {userRole} members={data.list.members ?? []} listLabels={data.labels ?? []} />
           {/each}
         </div>
       {/if}

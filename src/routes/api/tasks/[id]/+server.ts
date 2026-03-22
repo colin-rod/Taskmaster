@@ -1,4 +1,5 @@
 import { json } from '@sveltejs/kit';
+import { flattenTaskLabels } from '$lib/server/task-actions.js';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ params, locals }) => {
@@ -8,7 +9,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 
   const { data: task, error: err } = await locals.supabase
     .from('tasks')
-    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name, avatar_color), list:task_lists(id, name, color, owner_id, sort_order, created_at, updated_at)')
+    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name, avatar_color), list:task_lists(id, name, color, owner_id, sort_order, created_at, updated_at), task_labels(label:labels(*))')
     .eq('id', params.id)
     .single();
 
@@ -16,6 +17,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
     return json({ error: 'Task not found' }, { status: 404 });
   }
 
+  flattenTaskLabels([task]);
   return json({ task });
 };
 

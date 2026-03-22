@@ -62,6 +62,23 @@ export interface Task {
   list?: TaskList;
   checklist_items?: ChecklistItem[];
   assignee?: Profile;
+  labels?: Label[];
+}
+
+export interface Label {
+  id: string;
+  list_id: string;
+  name: string;
+  color: string;
+  created_by: string | null;
+  sort_order: number;
+  created_at: string;
+}
+
+export interface TaskLabel {
+  task_id: string;
+  label_id: string;
+  created_at: string;
 }
 
 export interface ChecklistItem {
@@ -104,6 +121,20 @@ export interface SearchResult {
   due_at: string | null;
   list: { name: string; color: string | null } | null;
 }
+
+// Label colors for auto-assignment
+export const LABEL_COLORS = [
+  '#EF4444', // red
+  '#F97316', // orange
+  '#EAB308', // yellow
+  '#22C55E', // green
+  '#14B8A6', // teal
+  '#06B6D4', // cyan
+  '#3B82F6', // blue
+  '#6366F1', // indigo
+  '#8B5CF6', // violet
+  '#EC4899', // pink
+] as const;
 
 // List colors for the color picker
 export const LIST_COLORS = [

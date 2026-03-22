@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
+import { TASK_SELECT, flattenTaskLabels } from '$lib/server/task-actions.js';
 import {
   parseDateParam,
   computeMonthGridRange,
@@ -27,7 +28,7 @@ export const load: PageServerLoad = async (event) => {
   const [{ data: dueTasks }, { data: startTasks }] = await Promise.all([
     supabase
       .from('tasks')
-      .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
+      .select(TASK_SELECT)
       .gte('due_at', start.toISOString())
       .lte('due_at', end.toISOString())
       .neq('status', 'done')
@@ -35,7 +36,7 @@ export const load: PageServerLoad = async (event) => {
       .order('due_at', { ascending: true }),
     supabase
       .from('tasks')
-      .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
+      .select(TASK_SELECT)
       .gte('start_at', start.toISOString())
       .lte('start_at', end.toISOString())
       .neq('status', 'done')
@@ -43,7 +44,10 @@ export const load: PageServerLoad = async (event) => {
       .order('start_at', { ascending: true }),
   ]);
 
-  const tasks = mergeTasks(dueTasks ?? [], startTasks ?? []);
+  const tasks = mergeTasks(
+    flattenTaskLabels(dueTasks ?? []),
+    flattenTaskLabels(startTasks ?? []),
+  );
 
   return {
     tasks,

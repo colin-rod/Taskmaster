@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
+import { TASK_SELECT, flattenTaskLabels } from '$lib/server/task-actions.js';
 
 export const load: PageServerLoad = async (event) => {
   const { locals: { supabase } } = event;
@@ -19,27 +20,27 @@ export const load: PageServerLoad = async (event) => {
   const [{ data: overdue }, { data: dueToday }, { data: upcoming }] = await Promise.all([
     supabase
       .from('tasks')
-      .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
+      .select(TASK_SELECT)
       .lt('due_at', startOfToday.toISOString())
       .order('due_at', { ascending: true }),
     supabase
       .from('tasks')
-      .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
+      .select(TASK_SELECT)
       .gte('due_at', startOfToday.toISOString())
       .lte('due_at', endOfToday.toISOString())
       .order('due_at', { ascending: true }),
     supabase
       .from('tasks')
-      .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
+      .select(TASK_SELECT)
       .gt('due_at', endOfToday.toISOString())
       .lte('due_at', sevenDaysOut.toISOString())
       .order('due_at', { ascending: true }),
   ]);
 
   return {
-    overdue: overdue ?? [],
-    dueToday: dueToday ?? [],
-    upcoming: upcoming ?? [],
+    overdue: flattenTaskLabels(overdue ?? []),
+    dueToday: flattenTaskLabels(dueToday ?? []),
+    upcoming: flattenTaskLabels(upcoming ?? []),
   };
 };
 

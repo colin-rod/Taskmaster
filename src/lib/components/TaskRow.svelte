@@ -4,9 +4,10 @@
   import { toast } from 'svelte-sonner';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
-  import type { Task, ListRole, Profile } from '$lib/types/index.js';
+  import type { Task, ListRole, Profile, Label } from '$lib/types/index.js';
   import { describeRecurrence } from '$lib/utils/recurrence.js';
   import { Repeat2, Ellipsis, Check, Bell } from '@lucide/svelte';
+  import LabelBadge from '$lib/components/LabelBadge.svelte';
   import InlineEditTitle from '$lib/components/InlineEditTitle.svelte';
   import PriorityPicker from '$lib/components/PriorityPicker.svelte';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
@@ -23,11 +24,13 @@
     onselect,
     userRole = 'owner' as ListRole,
     members = [],
+    listLabels = [],
   }: {
     task: Task;
     onselect: (task: Task) => void;
     userRole?: ListRole;
     members?: { user_id: string; profile?: Profile }[];
+    listLabels?: Label[];
   } = $props();
 
   const motionDuration = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 200;
@@ -81,6 +84,20 @@
 
   function deleteTaskFromContext() {
     deleteAlertOpen = true;
+  }
+
+  async function toggleLabel(labelId: string) {
+    const attached = (task.labels ?? []).some((l) => l.id === labelId);
+    const res = await fetch(`/api/tasks/${task.id}/labels`, {
+      method: attached ? 'DELETE' : 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label_id: labelId }),
+    });
+    if (!res.ok) {
+      toast.error('Failed to update labels');
+      return;
+    }
+    await invalidateAll();
   }
 </script>
 
@@ -165,6 +182,14 @@
             <span class="flex-1 min-w-0 {optimisticStatus === 'done' ? (justCompleted ? 'task-done-title' : 'line-through') + ' text-foreground-muted/70 text-[14px]' : 'font-[510] text-[15px] text-foreground tracking-[-0.01em]'}">
               <InlineEditTitle taskId={task.id} value={task.title} disabled={!canEdit} />
             </span>
+            {#if task.labels?.length}
+              {#each task.labels.slice(0, 3) as label (label.id)}
+                <LabelBadge {label} size="sm" />
+              {/each}
+              {#if task.labels.length > 3}
+                <span class="text-[10px] text-foreground-muted">+{task.labels.length - 3}</span>
+              {/if}
+            {/if}
           </div>
           <div class="flex items-center gap-2 mt-1 {optimisticStatus === 'done' ? 'opacity-60' : ''}">
             {#if canEdit}
@@ -329,6 +354,26 @@
           {/if}
         </ContextMenu.SubContent>
       </ContextMenu.Sub>
+
+      <!-- Labels -->
+      {#if listLabels.length > 0}
+        <ContextMenu.Sub>
+          <ContextMenu.SubTrigger>Labels</ContextMenu.SubTrigger>
+          <ContextMenu.SubContent>
+            {#each listLabels as label (label.id)}
+              <ContextMenu.Item onSelect={() => toggleLabel(label.id)}>
+                {#if (task.labels ?? []).some((l) => l.id === label.id)}
+                  <Check class="w-3 h-3 mr-2 shrink-0" />
+                {:else}
+                  <span class="w-3 h-3 mr-2 shrink-0 inline-block"></span>
+                {/if}
+                <span class="w-2 h-2 rounded-full mr-1.5 shrink-0" style="background: {label.color};"></span>
+                {label.name}
+              </ContextMenu.Item>
+            {/each}
+          </ContextMenu.SubContent>
+        </ContextMenu.Sub>
+      {/if}
 
       <ContextMenu.Separator />
 

@@ -22,6 +22,8 @@
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
   import EmptyState from '$lib/components/EmptyState.svelte';
   import AssigneePicker from '$lib/components/AssigneePicker.svelte';
+  import LabelPicker from '$lib/components/LabelPicker.svelte';
+  import LabelBadge from '$lib/components/LabelBadge.svelte';
 
   let {
     task = $bindable<Task | null>(null),
@@ -76,6 +78,7 @@
   let showTimeBlock     = $state(false);
   let showRecurring     = $state(false);
   let showChecklist     = $state(false);
+  let showLabels        = $state(false);
 
   // Pill visibility (derived)
   let showTimePill      = $derived(editDueAt !== '' && !showTime);
@@ -83,8 +86,9 @@
   let showTimeBlockPill = $derived(!showTimeBlock && editDueAt !== '');
   let showRecurringPill = $derived(!showRecurring && editDueAt !== '');
   let showChecklistPill = $derived(!showChecklist);
+  let showLabelsPill    = $derived(!showLabels && !!task?.list_id);
   let showNotesPill     = $derived(!notesExpanded);
-  let showPillRow       = $derived(showNotesPill || showTimePill || showReminderPill || showTimeBlockPill || showRecurringPill || showChecklistPill);
+  let showPillRow       = $derived(showNotesPill || showTimePill || showReminderPill || showTimeBlockPill || showRecurringPill || showChecklistPill || showLabelsPill);
 
   let prevCompleted = $state(0);
   let checklistJustFinished = $state(false);
@@ -199,6 +203,7 @@
         showTimeBlock     = editStartAt !== '';
         showRecurring     = editIsRecurring;
         showChecklist     = (task.checklist_items?.length ?? 0) > 0;
+        showLabels        = (task.labels?.length ?? 0) > 0;
         initializedTaskId = task.id;
       }
       // Reset save state when switching tasks
@@ -669,6 +674,15 @@
                   aria-label="Add a checklist"
                 >+ Checklist</button>
               {/if}
+              {#if showLabelsPill}
+                <button
+                  transition:scale={{ duration: 120, start: 0.85 }}
+                  type="button"
+                  onclick={() => { showLabels = true; }}
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
+                  aria-label="Add labels"
+                >+ Labels</button>
+              {/if}
             </div>
           {/if}
 
@@ -820,6 +834,36 @@
             <AssigneePicker taskId={task.id} assignee={taskAssignee} {members} disabled={isViewer} />
           </div>
         </div>
+      {/if}
+
+      <!-- Labels Section -->
+      {#if showLabels && task.list_id}
+      <div class="mt-4 pt-4 border-t border-border-divider" transition:slide={{ duration: 180, easing: cubicOut }}>
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Labels</span>
+          {#if !isViewer && (task.labels?.length ?? 0) === 0}
+            <button
+              type="button"
+              class="text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle flex items-center justify-center min-w-11 min-h-11"
+              aria-label="Remove labels section"
+              onclick={() => { showLabels = false; }}
+            ><X class="size-3.5" /></button>
+          {/if}
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+          {#each task.labels ?? [] as label (label.id)}
+            <LabelBadge {label} size="md" />
+          {/each}
+          {#if !isViewer}
+            <LabelPicker
+              taskId={task.id}
+              listId={task.list_id}
+              currentLabels={task.labels ?? []}
+              disabled={isViewer}
+            />
+          {/if}
+        </div>
+      </div>
       {/if}
 
       <!-- Checklist Section -->

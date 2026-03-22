@@ -2,17 +2,18 @@ import { fail } from '@sveltejs/kit';
 
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
+import { TASK_SELECT, flattenTaskLabels } from '$lib/server/task-actions.js';
 
 export const load: PageServerLoad = async (event) => {
   const { locals: { supabase } } = event;
   event.depends('app:tasks');
   const { data: tasks } = await supabase
     .from('tasks')
-    .select('*, checklist_items(*)')
+    .select(TASK_SELECT)
     .is('list_id', null)
     .order('created_at', { ascending: false });
 
-  return { tasks: tasks ?? [] };
+  return { tasks: flattenTaskLabels(tasks ?? []) };
 };
 
 export const actions: Actions = {

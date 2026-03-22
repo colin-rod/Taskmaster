@@ -1,8 +1,23 @@
 import { fail } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { RecurrenceRule } from '$lib/types/index.js';
+import type { RecurrenceRule, Task } from '$lib/types/index.js';
 import { computeNextDue } from '$lib/utils/recurrence.js';
 import { buildDueAt } from '$lib/utils/dates.js';
+
+// =============================================================================
+// Task Select Helpers
+// =============================================================================
+
+export const TASK_SELECT = '*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name), task_labels(label:labels(*))';
+
+export function flattenTaskLabels<T extends Record<string, unknown>>(tasks: T[]): T[] {
+  for (const task of tasks) {
+    const tl = task.task_labels as { label: unknown }[] | undefined;
+    (task as Record<string, unknown>).labels = tl?.map((r) => r.label).filter(Boolean) ?? [];
+    delete task.task_labels;
+  }
+  return tasks;
+}
 
 // =============================================================================
 // Role Map Helper

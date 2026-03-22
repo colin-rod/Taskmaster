@@ -2,6 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
+import { TASK_SELECT, flattenTaskLabels } from '$lib/server/task-actions.js';
 import * as memberActions from '$lib/server/member-actions.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
@@ -17,12 +18,18 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
 
   const { data: tasks } = await supabase
     .from('tasks')
-    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
+    .select(TASK_SELECT)
     .eq('list_id', params.id)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false });
 
-  return { list, tasks: tasks ?? [] };
+  const { data: labels } = await supabase
+    .from('labels')
+    .select('*')
+    .eq('list_id', params.id)
+    .order('sort_order', { ascending: true });
+
+  return { list, tasks: flattenTaskLabels(tasks ?? []), labels: labels ?? [] };
 };
 
 export const actions: Actions = {
