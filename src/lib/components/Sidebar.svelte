@@ -97,7 +97,7 @@
     {/if}
     {#each smartFilters as filter}
       {@const active = isActive(filter.href, $page.url.pathname)}
-      {@const count = filterCounts[filter.countKey]}
+      {@const count = filter.countKey ? filterCounts[filter.countKey] : 0}
       {@const isOverdue = filter.countKey === 'overdue'}
       {#if !isOverdue || count > 0 || active}
         <a

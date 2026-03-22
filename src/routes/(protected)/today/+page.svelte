@@ -10,16 +10,18 @@
   import { groupByDay } from '$lib/utils/tasks.js';
   import { createOnboardingStore } from '$lib/stores/onboarding.js';
   import { browser } from '$app/environment';
-  import { get } from 'svelte/store';
 
   let { data }: { data: PageData } = $props();
 
   // Onboarding checklist state
-  const onboardingStore = createOnboardingStore(data.profileId);
-  let onboarding = $state(get(onboardingStore));
+  const onboardingStore = $derived(createOnboardingStore(data.profileId));
+  let onboarding = $state({ dismissed: false, visitedCalendar: false });
 
   // Keep local state in sync with store
-  onboardingStore.subscribe((val) => { onboarding = val; });
+  $effect(() => {
+    const unsub = onboardingStore.subscribe((val) => { onboarding = val; });
+    return unsub;
+  });
 
   // Gate: auto-dismiss for existing users who already have tasks
   $effect(() => {

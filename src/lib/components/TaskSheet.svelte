@@ -561,9 +561,9 @@
           <!-- Priority + Status rows -->
           <div class="flex flex-col gap-3">
             <div>
-              <label class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Priority</label>
+              <span id="priority-label" class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Priority</span>
               <input type="hidden" name="priority" value={editPriority} />
-              <div class="segmented-control mt-1" role="group" aria-label="Priority">
+              <div class="segmented-control mt-1" role="group" aria-labelledby="priority-label">
                 {#each [[1,'P1'],[2,'P2'],[3,'P3'],[4,'P4']] as [val, lbl] (val)}
                   <button
                     type="button"
@@ -576,9 +576,9 @@
               </div>
             </div>
             <div>
-              <label class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Status</label>
+              <span id="status-label" class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Status</span>
               <input type="hidden" name="status" value={editStatus} />
-              <div class="segmented-control mt-1" role="group" aria-label="Status">
+              <div class="segmented-control mt-1" role="group" aria-labelledby="status-label">
                 {#each [['todo','Todo'],['in_progress','In Progress'],['done','Done'],['canceled','Canceled']] as [val, lbl] (val)}
                   <button
                     type="button"

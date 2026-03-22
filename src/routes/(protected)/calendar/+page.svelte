@@ -20,7 +20,7 @@
   let { data }: { data: PageData } = $props();
 
   // Mark calendar as visited for onboarding checklist
-  const onboardingStore = createOnboardingStore(data.profileId);
+  const onboardingStore = $derived(createOnboardingStore(data.profileId));
   $effect(() => {
     onboardingStore.update((s) => ({ ...s, visitedCalendar: true }));
   });

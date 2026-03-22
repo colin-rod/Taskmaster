@@ -184,6 +184,7 @@
                     type="button"
                     class="w-5 h-5 rounded-full border-2 transition-transform {editColor === color ? 'border-foreground scale-110' : 'border-transparent'}"
                     style="background: {color};"
+                    aria-label="Select color {color}"
                     onclick={() => { editColor = color; }}
                   ></button>
                 {/each}
