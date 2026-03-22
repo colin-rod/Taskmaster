@@ -17,7 +17,7 @@
   let sheetOpen = $state(false);
 
   type SortKey = 'created_desc' | 'created_asc' | 'due_asc' | 'due_desc' | 'priority_asc' | 'priority_desc';
-  type DueFilter = 'overdue' | 'today' | 'no_date' | null;
+  type DueFilter = 'overdue' | 'today' | 'this_week' | 'no_date' | null;
 
   let sortKey = $state<SortKey>('due_asc');
   let filterPriority = $state<number | null>(null);
@@ -27,6 +27,7 @@
 
   const todayStartMs = $derived.by(() => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); });
   const todayEndMs = $derived.by(() => { const d = new Date(); d.setHours(23, 59, 59, 999); return d.getTime(); });
+  const weekEndMs = $derived.by(() => { const d = new Date(); d.setDate(d.getDate() + 7); d.setHours(23, 59, 59, 999); return d.getTime(); });
 
   const displayedTasks = $derived.by(() => {
     let tasks = [...activeTasks];
@@ -38,6 +39,8 @@
       tasks = tasks.filter(t => t.due_at && new Date(t.due_at).getTime() < todayStartMs);
     else if (filterDue === 'today')
       tasks = tasks.filter(t => { if (!t.due_at) return false; const ms = new Date(t.due_at).getTime(); return ms >= todayStartMs && ms <= todayEndMs; });
+    else if (filterDue === 'this_week')
+      tasks = tasks.filter(t => { if (!t.due_at) return false; const ms = new Date(t.due_at).getTime(); return ms > todayEndMs && ms <= weekEndMs; });
     else if (filterDue === 'no_date')
       tasks = tasks.filter(t => !t.due_at);
 
@@ -91,6 +94,7 @@
   const dueFilters: { value: DueFilter; label: string }[] = [
     { value: 'overdue', label: 'Overdue' },
     { value: 'today', label: 'Today' },
+    { value: 'this_week', label: 'This week' },
     { value: 'no_date', label: 'No date' },
   ];
 
@@ -115,6 +119,7 @@
   const dueActiveClasses: Record<string, string> = {
     overdue: 'bg-red-50 text-red-700 border-red-200',
     today: 'bg-primary-tint text-primary border-primary',
+    this_week: 'bg-blue-50 text-blue-600 border-blue-200',
     no_date: 'bg-surface-subtle text-foreground-secondary border-border',
   };
 </script>
