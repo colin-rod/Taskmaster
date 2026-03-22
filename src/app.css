@@ -137,6 +137,16 @@
   .text-metadata {
     color: hsl(var(--foreground-secondary));
   }
+
+  /* Safe area padding for bottom tab bar content */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Bottom padding that clears the fixed tab bar + iOS home indicator */
+  .pb-tab-safe {
+    padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+  }
 }
 
 @keyframes scale-in {

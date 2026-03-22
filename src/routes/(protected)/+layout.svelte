@@ -108,7 +108,7 @@
     </div>
 
     <!-- Main content -->
-    <main class="flex-1 overflow-y-auto px-4 py-6 pb-20 md:pb-6 md:px-8">
+    <main class="flex-1 overflow-y-auto px-4 py-6 pb-tab-safe md:pb-6 md:px-8">
       <div class="max-w-4xl mx-auto">
         {@render children()}
       </div>
