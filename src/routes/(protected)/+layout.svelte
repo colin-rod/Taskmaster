@@ -38,8 +38,15 @@
   <!-- Header -->
   <header class="sticky top-0 z-40 border-b bg-background px-4 py-3.5 [box-shadow:var(--shadow-header)]">
     <div class="flex items-center gap-4">
-      <h1 class="font-accent shrink-0 flex items-center leading-none"
+      <h1 class="font-accent shrink-0 flex items-center gap-2 leading-none"
           style="font-size: 1.375rem; font-weight: 800; letter-spacing: -0.03em; font-style: italic;">
+        <svg viewBox="0 0 512 512" class="w-7 h-7 shrink-0 rounded-lg" aria-hidden="true">
+          <defs><linearGradient id="icon-bg" x1="0" y1="0" x2="0.5" y2="1"><stop offset="0%" stop-color="#D04A12"/><stop offset="100%" stop-color="#9E2B07"/></linearGradient></defs>
+          <rect width="512" height="512" rx="112" ry="112" fill="url(#icon-bg)"/>
+          <rect x="120" y="110" width="272" height="48" rx="8" fill="#fff"/>
+          <rect x="232" y="110" width="48" height="260" rx="8" fill="#fff"/>
+          <polyline points="178,340 248,400 378,260" fill="none" stroke="#fff" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
         Taskmaster
       </h1>
       <div class="hidden md:flex items-center gap-1 min-w-0 ml-auto">
