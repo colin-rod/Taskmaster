@@ -15,31 +15,41 @@ export const load: PageServerLoad = async (event) => {
   sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
   sevenDaysOut.setHours(23, 59, 59, 999);
 
-  // Fetch overdue, due-today, and upcoming in parallel
-  const [{ data: overdue }, { data: dueToday }, { data: upcoming }] = await Promise.all([
+  // Fetch overdue, due-today, upcoming, and completed-today in parallel
+  const [{ data: overdue }, { data: dueToday }, { data: upcoming }, { data: completedToday }] = await Promise.all([
     supabase
       .from('tasks')
       .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
       .lt('due_at', startOfToday.toISOString())
+      .not('status', 'in', '("done","canceled")')
       .order('due_at', { ascending: true }),
     supabase
       .from('tasks')
       .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
       .gte('due_at', startOfToday.toISOString())
       .lte('due_at', endOfToday.toISOString())
+      .not('status', 'in', '("done","canceled")')
       .order('due_at', { ascending: true }),
     supabase
       .from('tasks')
       .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
       .gt('due_at', endOfToday.toISOString())
       .lte('due_at', sevenDaysOut.toISOString())
+      .not('status', 'in', '("done","canceled")')
       .order('due_at', { ascending: true }),
+    supabase
+      .from('tasks')
+      .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
+      .gte('completed_at', startOfToday.toISOString())
+      .lte('completed_at', endOfToday.toISOString())
+      .order('completed_at', { ascending: false }),
   ]);
 
   return {
     overdue: overdue ?? [],
     dueToday: dueToday ?? [],
     upcoming: upcoming ?? [],
+    completedToday: completedToday ?? [],
   };
 };
 
