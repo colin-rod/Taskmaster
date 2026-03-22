@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"TaskSheet\" /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\)/*/+page.svelte)",
+      "Bash(head -50 \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/lists/[id]/+page.server.ts\")",
+      "Bash(ls /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\))",
+      "Bash(ls /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\)/lists)",
+      "Bash(ls /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\)/lists/[id])",
+      "Bash(ls -la \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/lists/[id]/\")"
+    ]
+  }
+}
