@@ -17,7 +17,7 @@ export const load: PageServerLoad = async (event) => {
   sevenDaysOut.setHours(23, 59, 59, 999);
 
   // Fetch overdue, due-today, upcoming, and completed-today in parallel
-  const [{ data: overdue }, { data: dueToday }, { data: upcoming }, { data: completedToday }] = await Promise.all([
+  const [{ data: overdue, error: e1 }, { data: dueToday, error: e2 }, { data: upcoming, error: e3 }, { data: completedToday, error: e4 }] = await Promise.all([
     supabase
       .from('tasks')
       .select(TASK_SELECT)
@@ -45,6 +45,10 @@ export const load: PageServerLoad = async (event) => {
       .lte('completed_at', endOfToday.toISOString())
       .order('completed_at', { ascending: false }),
   ]);
+
+  for (const [label, err] of [['overdue', e1], ['dueToday', e2], ['upcoming', e3], ['completedToday', e4]] as const) {
+    if (err) console.error(`[today:${label}] Task query failed:`, err.message);
+  }
 
   return {
     overdue: flattenTaskLabels(overdue ?? []),

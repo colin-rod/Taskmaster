@@ -15,13 +15,14 @@ export const load: PageServerLoad = async (event) => {
   sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
   sevenDaysOut.setHours(23, 59, 59, 999);
 
-  const { data: tasks } = await supabase
+  const { data: tasks, error } = await supabase
     .from('tasks')
     .select(TASK_SELECT)
     .gt('due_at', endOfToday.toISOString())
     .lte('due_at', sevenDaysOut.toISOString())
     .order('due_at', { ascending: true });
 
+  if (error) console.error('[upcoming] Task query failed:', error.message);
   return { tasks: flattenTaskLabels(tasks ?? []) };
 };
 

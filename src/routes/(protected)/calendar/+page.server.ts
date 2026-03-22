@@ -25,7 +25,7 @@ export const load: PageServerLoad = async (event) => {
       ? computeDayRange(anchor)
       : computeMonthGridRange(anchor);
 
-  const [{ data: dueTasks }, { data: startTasks }] = await Promise.all([
+  const [{ data: dueTasks, error: e1 }, { data: startTasks, error: e2 }] = await Promise.all([
     supabase
       .from('tasks')
       .select(TASK_SELECT)
@@ -43,6 +43,9 @@ export const load: PageServerLoad = async (event) => {
       .neq('status', 'canceled')
       .order('start_at', { ascending: true }),
   ]);
+
+  if (e1) console.error('[calendar:due] Task query failed:', e1.message);
+  if (e2) console.error('[calendar:start] Task query failed:', e2.message);
 
   const tasks = mergeTasks(
     flattenTaskLabels(dueTasks ?? []),

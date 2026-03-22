@@ -16,12 +16,14 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
     error(404, 'List not found');
   }
 
-  const { data: tasks } = await supabase
+  const { data: tasks, error: taskError } = await supabase
     .from('tasks')
     .select(TASK_SELECT)
     .eq('list_id', params.id)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false });
+
+  if (taskError) console.error('[list] Task query failed:', taskError.message);
 
   const { data: labels } = await supabase
     .from('labels')

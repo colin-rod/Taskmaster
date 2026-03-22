@@ -7,12 +7,13 @@ import { TASK_SELECT, flattenTaskLabels } from '$lib/server/task-actions.js';
 export const load: PageServerLoad = async (event) => {
   const { locals: { supabase } } = event;
   event.depends('app:tasks');
-  const { data: tasks } = await supabase
+  const { data: tasks, error } = await supabase
     .from('tasks')
     .select(TASK_SELECT)
     .is('list_id', null)
     .order('created_at', { ascending: false });
 
+  if (error) console.error('[inbox] Task query failed:', error.message);
   return { tasks: flattenTaskLabels(tasks ?? []) };
 };
 
