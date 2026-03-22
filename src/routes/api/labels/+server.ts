@@ -8,15 +8,19 @@ export const GET: RequestHandler = async ({ url, locals }) => {
   }
 
   const listId = url.searchParams.get('list_id');
-  if (!listId) {
-    return json({ error: 'list_id is required' }, { status: 400 });
-  }
 
-  const { data: labels, error } = await locals.supabase
+  let query = locals.supabase
     .from('labels')
     .select('*')
-    .eq('list_id', listId)
     .order('sort_order', { ascending: true });
+
+  if (listId) {
+    query = query.eq('list_id', listId);
+  } else {
+    query = query.is('list_id', null).eq('created_by', locals.profileId);
+  }
+
+  const { data: labels, error } = await query;
 
   if (error) {
     return json({ error: error.message }, { status: 500 });
@@ -39,17 +43,20 @@ export const POST: RequestHandler = async ({ request, locals }) => {
 
   const { list_id, name, color } = body;
 
-  if (!list_id || !name?.trim()) {
-    return json({ error: 'list_id and name are required' }, { status: 400 });
+  if (!name?.trim()) {
+    return json({ error: 'name is required' }, { status: 400 });
   }
 
   // Auto-assign color if not provided
   let finalColor = color;
   if (!finalColor) {
-    const { data: existing } = await locals.supabase
-      .from('labels')
-      .select('color')
-      .eq('list_id', list_id);
+    let colorQuery = locals.supabase.from('labels').select('color');
+    if (list_id) {
+      colorQuery = colorQuery.eq('list_id', list_id);
+    } else {
+      colorQuery = colorQuery.is('list_id', null).eq('created_by', locals.profileId);
+    }
+    const { data: existing } = await colorQuery;
 
     const usedCounts = new Map<string, number>();
     for (const c of LABEL_COLORS) {
@@ -73,7 +80,7 @@ export const POST: RequestHandler = async ({ request, locals }) => {
   const { data: label, error } = await locals.supabase
     .from('labels')
     .insert({
-      list_id,
+      list_id: list_id ?? null,
       name: name.trim(),
       color: finalColor,
       created_by: locals.profileId,

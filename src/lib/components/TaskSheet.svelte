@@ -87,7 +87,7 @@
   let showTimeBlockPill = $derived(!showTimeBlock && editDueAt !== '');
   let showRecurringPill = $derived(!showRecurring && editDueAt !== '');
   let showChecklistPill = $derived(!showChecklist);
-  let showLabelsPill    = $derived(!showLabels && !!task?.list_id);
+  let showLabelsPill    = $derived(!showLabels);
   let showNotesPill     = $derived(!notesExpanded);
   let showPillRow       = $derived(showNotesPill || showTimePill || showReminderPill || showTimeBlockPill || showRecurringPill || showChecklistPill || showLabelsPill);
 
@@ -840,7 +840,7 @@
       {/if}
 
       <!-- Labels Section -->
-      {#if showLabels && task.list_id}
+      {#if showLabels}
       <div class="mt-4 pt-4 border-t border-border-divider" transition:slide={{ duration: 180, easing: cubicOut }}>
         <div class="flex items-center justify-between mb-3">
           <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Labels</span>

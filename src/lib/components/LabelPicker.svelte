@@ -8,12 +8,12 @@
 
   let {
     taskId,
-    listId,
+    listId = null,
     currentLabels = [],
     disabled = false,
   }: {
     taskId: string;
-    listId: string;
+    listId?: string | null;
     currentLabels: Label[];
     disabled?: boolean;
   } = $props();
@@ -37,7 +37,7 @@
   async function fetchLabels() {
     loading = true;
     try {
-      const res = await fetch(`/api/labels?list_id=${listId}`);
+      const res = await fetch(listId ? `/api/labels?list_id=${listId}` : '/api/labels');
       if (res.ok) {
         const data = await res.json();
         allLabels = data.labels;
@@ -76,7 +76,7 @@
       const res = await fetch('/api/labels', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ list_id: listId, name }),
+        body: JSON.stringify(listId ? { list_id: listId, name } : { name }),
       });
       if (!res.ok) {
         toast.error('Failed to create label');

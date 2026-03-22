@@ -67,7 +67,7 @@ export interface Task {
 
 export interface Label {
   id: string;
-  list_id: string;
+  list_id: string | null;
   name: string;
   color: string;
   created_by: string | null;
