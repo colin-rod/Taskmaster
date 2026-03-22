@@ -409,7 +409,7 @@
     side={isMd ? 'right' : 'bottom'}
     class={isMd ? 'h-full overflow-y-auto w-[440px] px-6 pt-6' : 'max-h-[92vh] overflow-y-auto rounded-t-2xl px-5 pt-4 pb-[env(safe-area-inset-bottom,0px)]'}
   >
-    <SheetHeader class="px-0 pb-4 border-b border-border-divider">
+    <SheetHeader class="px-0 pb-4">
       <div class="flex items-center justify-between gap-2">
         {#if task && !isViewer}
           <SheetTitle class="flex-1 min-w-0">
@@ -545,14 +545,11 @@
         <!-- Metadata zone (priority, status, due, reminder, recurrence) -->
         <div class="border-t border-border-divider pt-4 space-y-4">
 
-          <div class="flex items-center gap-3 mb-1">
-            <h3 class="section-header-bold">Details</h3>
-            <div class="flex-1 h-px bg-border-divider"></div>
-          </div>
+          <h3 class="section-header-bold mb-1">Details</h3>
 
-          <!-- Priority + Status row -->
-          <div class="flex gap-3">
-            <div class="flex-1">
+          <!-- Priority + Status rows -->
+          <div class="flex flex-col gap-3">
+            <div>
               <label class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Priority</label>
               <input type="hidden" name="priority" value={editPriority} />
               <div class="segmented-control mt-1" role="group" aria-label="Priority">
@@ -567,7 +564,7 @@
                 {/each}
               </div>
             </div>
-            <div class="flex-1">
+            <div>
               <label class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Status</label>
               <input type="hidden" name="status" value={editStatus} />
               <div class="segmented-control mt-1" role="group" aria-label="Status">
