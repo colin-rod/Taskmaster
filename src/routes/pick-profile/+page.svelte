@@ -22,6 +22,13 @@
 
 <div class="container max-w-lg mx-auto px-4 py-8 md:py-16">
   <div class="mb-8 text-center">
+    <svg viewBox="0 0 512 512" class="w-14 h-14 mx-auto mb-3 rounded-2xl" aria-hidden="true">
+      <defs><linearGradient id="icon-bg" x1="0" y1="0" x2="0.5" y2="1"><stop offset="0%" stop-color="#D04A12"/><stop offset="100%" stop-color="#9E2B07"/></linearGradient></defs>
+      <rect width="512" height="512" rx="112" ry="112" fill="url(#icon-bg)"/>
+      <rect x="120" y="110" width="272" height="48" rx="8" fill="#fff"/>
+      <rect x="232" y="110" width="48" height="260" rx="8" fill="#fff"/>
+      <polyline points="178,340 248,400 378,260" fill="none" stroke="#fff" stroke-width="48" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
     <h1 class="font-accent text-page-title">Taskmaster</h1>
     <p class="text-muted-foreground">Who's checking in?</p>
   </div>

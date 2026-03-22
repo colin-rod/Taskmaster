@@ -5,12 +5,9 @@
       <stop offset="100%" stop-color="#9E2B07"/>
     </linearGradient>
   </defs>
-  <!-- Rounded square background -->
   <rect width="512" height="512" rx="112" ry="112" fill="url(#bg)"/>
-  <!-- Bold "T" letter -->
   <rect x="120" y="110" width="272" height="48" rx="8" fill="#ffffff"/>
   <rect x="232" y="110" width="48" height="260" rx="8" fill="#ffffff"/>
-  <!-- Checkmark overlapping bottom of T -->
   <polyline
     points="178,340 248,400 378,260"
     fill="none"
