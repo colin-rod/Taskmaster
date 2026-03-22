@@ -5,7 +5,6 @@
   import { Tag, Check, Pencil, Trash2 } from '@lucide/svelte';
   import type { Label } from '$lib/types/index.js';
   import { LABEL_COLORS } from '$lib/types/index.js';
-  import LabelBadge from '$lib/components/LabelBadge.svelte';
 
   let {
     taskId,

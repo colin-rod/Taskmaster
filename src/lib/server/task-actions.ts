@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
-import type { RecurrenceRule, Task } from '$lib/types/index.js';
+import type { RecurrenceRule } from '$lib/types/index.js';
 import { computeNextDue } from '$lib/utils/recurrence.js';
 import { buildDueAt } from '$lib/utils/dates.js';
 
