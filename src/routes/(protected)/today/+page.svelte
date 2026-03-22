@@ -51,15 +51,11 @@
     sheetOpen = true;
   }
 
-  let activeOverdue = $derived(data.overdue.filter((t) => t.status !== 'done' && t.status !== 'canceled'));
-  let activeDueToday = $derived(data.dueToday.filter((t) => t.status !== 'done' && t.status !== 'canceled'));
-  let activeUpcoming = $derived(data.upcoming.filter((t) => t.status !== 'done' && t.status !== 'canceled'));
+  let activeOverdue = $derived(data.overdue);
+  let activeDueToday = $derived(data.dueToday);
+  let activeUpcoming = $derived(data.upcoming);
 
-  let completedTasks = $derived([
-    ...data.overdue.filter((t) => t.status === 'done' || t.status === 'canceled'),
-    ...data.dueToday.filter((t) => t.status === 'done' || t.status === 'canceled'),
-    ...data.upcoming.filter((t) => t.status === 'done' || t.status === 'canceled'),
-  ]);
+  let completedTasks = $derived(data.completedToday);
 
   let upcomingGroups = $derived(groupByDay(activeUpcoming));
   let hasTodayTasks = $derived(activeOverdue.length > 0 || activeDueToday.length > 0);

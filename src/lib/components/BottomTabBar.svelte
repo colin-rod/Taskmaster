@@ -17,7 +17,7 @@
   }
 </script>
 
-<div class="fixed bottom-0 inset-x-0 z-50 border-t bg-surface md:hidden">
+<div class="fixed bottom-0 inset-x-0 z-50 border-t bg-surface md:hidden pb-safe">
   <nav class="flex items-center justify-around h-14 px-2">
     <!-- Inbox tab -->
     <a
