@@ -18,7 +18,11 @@
       "Bash(git add:*)",
       "Bash(find /Users/colinrodrigues/Taskmaster -name schema.sql -o -name *schema*)",
       "Bash(git -C /Users/colinrodrigues/Taskmaster log --all --full-history --reverse -- \"supabase/migrations/*.sql\")",
-      "Bash(grep -E \"\\\\.\\(svelte|ts|tsx\\)$\")"
+      "Bash(grep -E \"\\\\.\\(svelte|ts|tsx\\)$\")",
+      "Bash(cat '/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/+layout.svelte')",
+      "Bash(find /Users/colinrodrigues/Taskmaster -type f \\\\\\(-name *.sql -o -name *schema* -o -name *migration* \\\\\\))",
+      "Bash(find /Users/colinrodrigues/Taskmaster/supabase/migrations -name \"*.sql\" -exec basename {})",
+      "Bash(find /Users/colinrodrigues/Taskmaster -name config.json -o -name supabase.json -o -name *.schema.sql)"
     ]
   }
 }

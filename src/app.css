@@ -150,7 +150,7 @@
 
   /* Top padding for iOS Dynamic Island / status bar */
   .pt-safe {
-    padding-top: env(safe-area-inset-top);
+    padding-top: calc(0.875rem + env(safe-area-inset-top));
   }
 }
 

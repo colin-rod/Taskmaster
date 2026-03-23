@@ -25,7 +25,7 @@
   let justAdded = $state(false);
   let addedTimeout: ReturnType<typeof setTimeout>;
   let priorityPopoverOpen = $state(false);
-  let showRecurrence = $state(false);
+  let recurrencePopoverOpen = $state(false);
   let isRecurring = $state(false);
   let recurrenceRule = $state<RecurrenceRule | null>(null);
 
@@ -46,7 +46,7 @@
         dueAt = null;
         priority = 4;
         priorityPopoverOpen = false;
-        showRecurrence = false;
+        recurrencePopoverOpen = false;
         isRecurring = false;
         recurrenceRule = null;
         toast.success('Task added');
@@ -85,24 +85,25 @@
         <DatePickerPopover bind:value={dueAt} mode="controlled" disabled={creating} />
         <TimePickerPopover bind:value={dueAt} mode="controlled" disabled={creating} />
 
-        <!-- Repeat toggle -->
-        <button
-          type="button"
-          class="text-sm px-1.5 py-0.5 rounded transition-colors {showRecurrence ? 'text-primary font-medium' : 'text-foreground-secondary hover:text-foreground'}"
-          onclick={() => {
-            showRecurrence = !showRecurrence;
-            if (showRecurrence) {
-              isRecurring = true;
-            } else {
-              isRecurring = false;
-              recurrenceRule = null;
-            }
-          }}
-          disabled={creating}
-          title="Set recurrence"
-        >
-          ↻
-        </button>
+        <!-- Repeat popover -->
+        <Popover.Root bind:open={recurrencePopoverOpen}>
+          <Popover.Trigger disabled={creating}>
+            <button
+              type="button"
+              class="text-sm px-1.5 py-0.5 rounded transition-colors {isRecurring ? 'text-primary font-medium' : 'text-foreground-secondary hover:text-foreground'}"
+              title="Set recurrence"
+            >
+              ↻
+            </button>
+          </Popover.Trigger>
+          <Popover.Content class="w-72 p-4" align="start">
+            <RecurrenceEditor
+              bind:isRecurring
+              bind:recurrenceRule
+              onclose={() => { recurrencePopoverOpen = false; isRecurring = false; recurrenceRule = null; }}
+            />
+          </Popover.Content>
+        </Popover.Root>
 
         <!-- Priority popover -->
         <Popover.Root bind:open={priorityPopoverOpen}>
@@ -139,7 +140,4 @@
     </div>
   </div>
 
-  {#if showRecurrence}
-    <RecurrenceEditor bind:isRecurring bind:recurrenceRule onclose={() => { showRecurrence = false; isRecurring = false; recurrenceRule = null; }} />
-  {/if}
 </form>

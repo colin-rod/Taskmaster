@@ -11,14 +11,14 @@
     listId = null,
     currentLabels = [],
     disabled = false,
+    open = $bindable(false),
   }: {
     taskId: string;
     listId?: string | null;
     currentLabels: Label[];
     disabled?: boolean;
+    open?: boolean;
   } = $props();
-
-  let open = $state(false);
   let allLabels = $state<Label[]>([]);
   let search = $state('');
   let editingId = $state<string | null>(null);

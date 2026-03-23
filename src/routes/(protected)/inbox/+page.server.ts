@@ -5,16 +5,28 @@ import * as taskActions from '$lib/server/task-actions.js';
 import { TASK_SELECT, flattenTaskLabels } from '$lib/server/task-actions.js';
 
 export const load: PageServerLoad = async (event) => {
-  const { locals: { supabase } } = event;
+  const { locals: { supabase, profileId } } = event;
   event.depends('app:tasks');
-  const { data: tasks, error } = await supabase
-    .from('tasks')
-    .select(TASK_SELECT)
-    .is('list_id', null)
-    .order('created_at', { ascending: false });
+  const [{ data: tasks, error }, { data: listMemberships }] = await Promise.all([
+    supabase
+      .from('tasks')
+      .select(TASK_SELECT)
+      .is('list_id', null)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('task_list_members')
+      .select('role, list:task_lists(id, name, color, icon, owner_id, sort_order, created_at, updated_at)')
+      .eq('user_id', profileId!)
+      .in('role', ['owner', 'editor']),
+  ]);
 
   if (error) console.error('[inbox] Task query failed:', error.message);
-  return { tasks: flattenTaskLabels(tasks ?? []) };
+  const lists = (listMemberships ?? [])
+    .map((m) => m.list)
+    .filter(Boolean)
+    .sort((a, b) => (a as { sort_order: number }).sort_order - (b as { sort_order: number }).sort_order);
+
+  return { tasks: flattenTaskLabels(tasks ?? []), lists };
 };
 
 export const actions: Actions = {

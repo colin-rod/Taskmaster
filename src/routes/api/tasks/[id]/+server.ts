@@ -21,7 +21,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
   return json({ task });
 };
 
-const ALLOWED_FIELDS = new Set(['title', 'priority', 'due_at', 'reminder_at', 'assigned_to_user_id', 'status', 'notes', 'is_recurring', 'recurrence_rule', 'start_at', 'duration_minutes', 'progress_current', 'progress_total']);
+const ALLOWED_FIELDS = new Set(['title', 'priority', 'due_at', 'reminder_at', 'assigned_to_user_id', 'status', 'notes', 'is_recurring', 'recurrence_rule', 'start_at', 'duration_minutes', 'progress_current', 'progress_total', 'list_id']);
 
 export const PATCH: RequestHandler = async ({ params, request, locals }) => {
   if (!locals.profileId) {
@@ -161,10 +161,76 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
     }
   }
 
+  if ('list_id' in updates) {
+    const listId = updates.list_id;
+    if (listId !== null && (typeof listId !== 'string' || !/^[0-9a-f-]{36}$/i.test(listId))) {
+      return json({ error: 'list_id must be a valid UUID or null' }, { status: 400 });
+    }
+  }
+
   const { error } = await locals.supabase
     .from('tasks')
     .update(updates)
     .eq('id', id);
+
+  // After moving to a new list, clean up invalid assignee and labels
+  if (!error && 'list_id' in updates) {
+    const newListId = updates.list_id as string | null;
+
+    // Fetch current task to get assignee and labels
+    const { data: task } = await locals.supabase
+      .from('tasks')
+      .select('assigned_to_user_id')
+      .eq('id', id)
+      .single();
+
+    if (task?.assigned_to_user_id && newListId) {
+      // Check if assignee is a member of the new list
+      const { data: membership } = await locals.supabase
+        .from('task_list_members')
+        .select('user_id')
+        .eq('list_id', newListId)
+        .eq('user_id', task.assigned_to_user_id)
+        .maybeSingle();
+
+      if (!membership) {
+        await locals.supabase
+          .from('tasks')
+          .update({ assigned_to_user_id: null })
+          .eq('id', id);
+      }
+    } else if (task?.assigned_to_user_id && !newListId) {
+      // Moving to inbox — clear assignee
+      await locals.supabase
+        .from('tasks')
+        .update({ assigned_to_user_id: null })
+        .eq('id', id);
+    }
+
+    // Remove labels scoped to a different list (labels with list_id that doesn't match the new list)
+    const { data: taskLabels } = await locals.supabase
+      .from('task_labels')
+      .select('label_id, label:labels(list_id)')
+      .eq('task_id', id);
+
+    if (taskLabels) {
+      const invalidLabelIds = taskLabels
+        .filter((tl) => {
+          const labelListId = (tl.label as { list_id: string | null } | null)?.list_id ?? null;
+          // Keep labels with no list (personal) or matching the new list
+          return labelListId !== null && labelListId !== newListId;
+        })
+        .map((tl) => tl.label_id);
+
+      if (invalidLabelIds.length > 0) {
+        await locals.supabase
+          .from('task_labels')
+          .delete()
+          .eq('task_id', id)
+          .in('label_id', invalidLabelIds);
+      }
+    }
+  }
 
   if (error) {
     return json({ error: error.message }, { status: 500 });

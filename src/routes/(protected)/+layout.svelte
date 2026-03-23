@@ -8,6 +8,7 @@
   import CreateListDialog from '$lib/components/CreateListDialog.svelte';
   import QuickAdd from '$lib/components/QuickAdd.svelte';
   import TaskSheet from '$lib/components/TaskSheet.svelte';
+  import * as Sheet from '$lib/components/ui/sheet/index.js';
   import type { Task } from '$lib/types/index.js';
 
   const { children, data } = $props();
@@ -17,6 +18,7 @@
   let showCreateListDialog = $state(false);
   let searchOpen = $state(false);
   let quickAddOpen = $state(false);
+  let fabSheetOpen = $state(false);
 
   let selectedTask = $state<Task | null>(null);
   let sheetOpen = $state(false);
@@ -36,7 +38,7 @@
 
 <div class="h-screen flex flex-col">
   <!-- Header -->
-  <header class="sticky top-0 z-40 border-b bg-background px-4 pb-3.5 pt-safe [box-shadow:var(--shadow-header)]">
+  <header class="sticky top-0 z-40 border-b bg-background px-4 py-3.5 pt-safe [box-shadow:var(--shadow-header)]">
     <div class="flex items-center gap-4">
       <h1 class="font-accent shrink-0 flex items-center gap-2 leading-none"
           style="font-size: 1.375rem; font-weight: 800; letter-spacing: -0.03em; font-style: italic;">
@@ -52,7 +54,14 @@
       <div class="hidden md:flex items-center gap-1 min-w-0 ml-auto">
         <div class="flex items-center">
           {#if quickAddOpen}
-            <div class="w-full max-w-md">
+            <div
+              class="w-full max-w-md"
+              onfocusout={(e) => {
+                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
+                  quickAddOpen = false;
+                }
+              }}
+            >
               <QuickAdd action="/inbox?/createTask" compact onClose={() => { quickAddOpen = false; }} />
             </div>
           {:else}
@@ -115,6 +124,29 @@
     </main>
   </div>
 </div>
+
+<!-- Desktop FAB: bottom-right, hidden on mobile -->
+<button
+  type="button"
+  class="hidden md:flex fixed bottom-6 right-6 z-50 w-14 h-14 items-center justify-center
+         rounded-full bg-primary text-primary-foreground shadow-level-2
+         hover:bg-primary-hover transition-colors cursor-pointer"
+  onclick={() => { fabSheetOpen = true; }}
+  aria-label="Add task"
+>
+  <Plus class="w-6 h-6" />
+</button>
+
+<Sheet.Root bind:open={fabSheetOpen}>
+  <Sheet.Content side="bottom" class="rounded-t-lg px-4 pb-8 pt-4">
+    <Sheet.Header>
+      <Sheet.Title>Quick Add Task</Sheet.Title>
+    </Sheet.Header>
+    <div class="mt-2">
+      <QuickAdd action="/inbox?/createTask" onClose={() => { fabSheetOpen = false; }} />
+    </div>
+  </Sheet.Content>
+</Sheet.Root>
 
 <BottomTabBar />
 <CreateListDialog bind:open={showCreateListDialog} />

@@ -241,7 +241,7 @@
     <div class="space-y-2">
       {#each displayedTasks as task (task.id)}
         <div in:fly={{ y: -8, duration: motionDuration, easing: cubicOut }}>
-          <TaskRow {task} onselect={openTask} userRole="owner" />
+          <TaskRow {task} onselect={openTask} userRole="owner" lists={data.lists} />
         </div>
       {/each}
     </div>
