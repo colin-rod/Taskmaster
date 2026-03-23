@@ -21,7 +21,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
   return json({ task });
 };
 
-const ALLOWED_FIELDS = new Set(['title', 'priority', 'due_at', 'reminder_at', 'assigned_to_user_id', 'status', 'notes', 'is_recurring', 'recurrence_rule', 'start_at', 'duration_minutes']);
+const ALLOWED_FIELDS = new Set(['title', 'priority', 'due_at', 'reminder_at', 'assigned_to_user_id', 'status', 'notes', 'is_recurring', 'recurrence_rule', 'start_at', 'duration_minutes', 'progress_current', 'progress_total']);
 
 export const PATCH: RequestHandler = async ({ params, request, locals }) => {
   if (!locals.profileId) {
@@ -102,6 +102,48 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
         return json({ error: 'duration_minutes must be a positive integer or null' }, { status: 400 });
       }
       updates.duration_minutes = dm;
+    }
+  }
+
+  if ('progress_current' in updates) {
+    if (updates.progress_current !== null) {
+      const pc = Number(updates.progress_current);
+      if (!Number.isInteger(pc) || pc < 0) {
+        return json({ error: 'progress_current must be a non-negative integer or null' }, { status: 400 });
+      }
+      updates.progress_current = pc;
+    }
+  }
+
+  if ('progress_total' in updates) {
+    if (updates.progress_total !== null) {
+      const pt = Number(updates.progress_total);
+      if (!Number.isInteger(pt) || pt < 0) {
+        return json({ error: 'progress_total must be a non-negative integer or null' }, { status: 400 });
+      }
+      updates.progress_total = pt;
+    }
+  }
+
+  // Auto-complete when progress_current reaches progress_total
+  if (!('status' in updates)) {
+    // We may need to look at current task values if only one side is being updated
+    const currentVal = updates.progress_current;
+    const totalVal = updates.progress_total;
+    if (currentVal !== undefined && totalVal !== undefined && currentVal !== null && totalVal !== null && (currentVal as number) >= (totalVal as number) && (totalVal as number) > 0) {
+      updates.status = 'done';
+      updates.completed_at = new Date().toISOString();
+    } else if (currentVal !== undefined && totalVal === undefined) {
+      // Only current was updated — fetch the task to check total
+      const { data: existing } = await locals.supabase
+        .from('tasks')
+        .select('progress_total, status')
+        .eq('id', id)
+        .single();
+      if (existing && existing.progress_total != null && currentVal !== null && (currentVal as number) >= existing.progress_total && existing.progress_total > 0 && existing.status !== 'done') {
+        updates.status = 'done';
+        updates.completed_at = new Date().toISOString();
+      }
     }
   }
 

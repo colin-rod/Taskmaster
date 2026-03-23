@@ -55,6 +55,8 @@ export interface Task {
   last_completed_at: string | null;
   completed_at: string | null;
   assigned_to_user_id: string | null;
+  progress_current: number | null;
+  progress_total: number | null;
   sort_order: number;
   created_at: string;
   updated_at: string;

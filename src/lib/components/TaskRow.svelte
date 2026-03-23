@@ -6,7 +6,7 @@
   import { cubicOut } from 'svelte/easing';
   import type { Task, ListRole, Profile, Label } from '$lib/types/index.js';
   import { describeRecurrence } from '$lib/utils/recurrence.js';
-  import { Repeat2, Ellipsis, Check, Bell, CircleDot } from '@lucide/svelte';
+  import { Repeat2, Ellipsis, Check, Bell, CircleDot, BarChart2 } from '@lucide/svelte';
   import LabelBadge from '$lib/components/LabelBadge.svelte';
   import InlineEditTitle from '$lib/components/InlineEditTitle.svelte';
   import PriorityPicker from '$lib/components/PriorityPicker.svelte';
@@ -51,6 +51,8 @@
   let deleteForm = $state<HTMLFormElement | undefined>(undefined);
   let deleteAlertOpen = $state(false);
   let deleted = $state(false);
+  let progressPopoverOpen = $state(false);
+  let progressInputValue = $state(0);
 
   async function patchTask(fields: Record<string, unknown>) {
     const res = await fetch(`/api/tasks/${task.id}`, {
@@ -256,6 +258,48 @@
                 </Popover.Content>
               </Popover.Root>
             {/if}
+            {#if task.progress_total != null}
+              <Popover.Root bind:open={progressPopoverOpen}>
+                <Popover.Trigger>
+                  <button
+                    type="button"
+                    onclick={() => { progressInputValue = task.progress_current ?? 0; progressPopoverOpen = true; }}
+                    class="text-xs flex items-center gap-1 px-1.5 py-0.5 rounded-full cursor-pointer {(task.progress_current ?? 0) >= task.progress_total! && task.progress_total! > 0 ? 'bg-status-done/10 text-status-done' : 'bg-background text-foreground-muted/80 border border-border/50'}"
+                    aria-label="Progress: {task.progress_current ?? 0} of {task.progress_total}"
+                  >
+                    <BarChart2 class="w-3 h-3" aria-hidden="true" />
+                    {task.progress_current ?? 0}/{task.progress_total}
+                  </button>
+                </Popover.Trigger>
+                <Popover.Content class="w-52 p-3" align="start" side="top" sideOffset={6}>
+                  <p class="text-xs text-foreground-muted mb-2">Update progress (total: {task.progress_total})</p>
+                  <div class="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min="0"
+                      bind:value={progressInputValue}
+                      class="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-primary/60"
+                      onclick={(e) => e.stopPropagation()}
+                      onkeydown={(e) => {
+                        if (e.key === 'Enter') {
+                          progressPopoverOpen = false;
+                          patchTask({ progress_current: Math.max(0, progressInputValue) });
+                        }
+                      }}
+                    />
+                    <button
+                      type="button"
+                      class="text-xs font-medium text-primary hover:text-primary-hover"
+                      onclick={(e) => {
+                        e.stopPropagation();
+                        progressPopoverOpen = false;
+                        patchTask({ progress_current: Math.max(0, progressInputValue) });
+                      }}
+                    >Save</button>
+                  </div>
+                </Popover.Content>
+              </Popover.Root>
+            {/if}
             <AssigneePicker
               taskId={task.id}
               assignee={task.assignee}
@@ -263,6 +307,12 @@
               disabled={!canEdit}
             />
           </div>
+          {#if task.progress_total != null && task.progress_total > 0}
+            {@const pct = Math.min(100, Math.round(((task.progress_current ?? 0) / task.progress_total) * 100))}
+            <div class="mt-1.5 h-1 w-full rounded-full bg-border/40 overflow-hidden">
+              <div class="h-full rounded-full bg-primary/60 transition-all duration-300" style="width: {pct}%"></div>
+            </div>
+          {/if}
         </div>
 
         <!-- Priority badge -->

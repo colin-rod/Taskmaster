@@ -17,7 +17,7 @@
   import TimeInput from '$lib/components/TimeInput.svelte';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
   import DurationPicker from '$lib/components/DurationPicker.svelte';
-  import { Plus, Loader, Check, AlertCircle, X } from '@lucide/svelte';
+  import { Plus, Loader, Check, AlertCircle, X, BarChart2 } from '@lucide/svelte';
   import { slide, scale, fly, fade } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -80,6 +80,10 @@
   let showRecurring     = $state(false);
   let showChecklist     = $state(false);
   let showLabels        = $state(false);
+  let showProgress      = $state(false);
+
+  let editProgressCurrent = $state<number | null>(null);
+  let editProgressTotal   = $state<number | null>(null);
 
   // Pill visibility (derived)
   let showTimePill      = $derived(editDueAt !== '' && !showTime);
@@ -89,7 +93,8 @@
   let showChecklistPill = $derived(!showChecklist);
   let showLabelsPill    = $derived(!showLabels);
   let showNotesPill     = $derived(!notesExpanded);
-  let showPillRow       = $derived(showNotesPill || showTimePill || showReminderPill || showTimeBlockPill || showRecurringPill || showChecklistPill || showLabelsPill);
+  let showProgressPill  = $derived(!showProgress);
+  let showPillRow       = $derived(showNotesPill || showTimePill || showReminderPill || showTimeBlockPill || showRecurringPill || showChecklistPill || showLabelsPill || showProgressPill);
 
   let prevCompleted = $state(0);
   let checklistJustFinished = $state(false);
@@ -191,6 +196,8 @@
       editDurationMinutes = task.duration_minutes ?? null;
       editIsRecurring = task.is_recurring;
       editRecurrenceRule = task.recurrence_rule;
+      editProgressCurrent = task.progress_current ?? null;
+      editProgressTotal   = task.progress_total ?? null;
       newItemLabel = '';
       prevPriority = task.priority;
       prevStatus = task.status;
@@ -205,6 +212,7 @@
         showRecurring     = editIsRecurring;
         showChecklist     = (task.checklist_items?.length ?? 0) > 0;
         showLabels        = (task.labels?.length ?? 0) > 0;
+        showProgress      = task.progress_total != null;
         initializedTaskId = task.id;
       }
       // Reset save state when switching tasks
@@ -686,6 +694,15 @@
                   aria-label="Add labels"
                 >+ Labels</button>
               {/if}
+              {#if showProgressPill}
+                <button
+                  transition:scale={{ duration: 120, start: 0.85 }}
+                  type="button"
+                  onclick={() => { showProgress = true; editProgressTotal = editProgressTotal ?? 0; }}
+                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
+                  aria-label="Track progress for this task"
+                ><BarChart2 class="w-3 h-3" />+ Progress</button>
+              {/if}
             </div>
           {/if}
 
@@ -1144,6 +1161,77 @@
           {/if}
         </form>
 
+      </div>
+      {/if}
+
+      <!-- Progress Section -->
+      {#if showProgress}
+      <div class="mt-4 pt-4 border-t border-border-divider" transition:slide={{ duration: 180, easing: cubicOut }}>
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary flex items-center gap-1.5">
+            <BarChart2 class="w-3.5 h-3.5" />Progress
+          </span>
+          {#if !isViewer}
+            <button
+              type="button"
+              class="text-xs text-foreground-muted hover:text-destructive transition-colors"
+              onclick={() => {
+                showProgress = false;
+                editProgressCurrent = null;
+                editProgressTotal = null;
+                autoSave({ progress_current: null, progress_total: null });
+              }}
+            >Remove</button>
+          {/if}
+        </div>
+        {#if editProgressTotal != null && editProgressTotal > 0}
+          {@const pct = Math.min(100, Math.round(((editProgressCurrent ?? 0) / editProgressTotal) * 100))}
+          <div class="mb-3">
+            <div class="flex justify-between text-xs text-foreground-muted mb-1">
+              <span>{editProgressCurrent ?? 0} / {editProgressTotal}</span>
+              <span>{pct}%</span>
+            </div>
+            <div class="h-1.5 w-full rounded-full bg-border/40 overflow-hidden">
+              <div class="h-full rounded-full bg-primary/70 transition-all duration-300" style="width: {pct}%"></div>
+            </div>
+          </div>
+        {/if}
+        {#if !isViewer}
+          <div class="flex items-center gap-3">
+            <div class="flex-1">
+              <label class="text-xs text-foreground-muted block mb-1">Current</label>
+              <input
+                type="number"
+                min="0"
+                value={editProgressCurrent ?? 0}
+                class="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/20 transition-all"
+                oninput={(e) => {
+                  const val = parseInt(e.currentTarget.value, 10);
+                  editProgressCurrent = isNaN(val) ? 0 : Math.max(0, val);
+                  autoSave({ progress_current: editProgressCurrent, progress_total: editProgressTotal });
+                }}
+                disabled={isViewer}
+              />
+            </div>
+            <div class="text-foreground-muted text-sm pt-5">/</div>
+            <div class="flex-1">
+              <label class="text-xs text-foreground-muted block mb-1">Total</label>
+              <input
+                type="number"
+                min="1"
+                value={editProgressTotal ?? ''}
+                placeholder="e.g. 3000"
+                class="w-full rounded-md border border-border bg-surface px-3 py-2 text-sm outline-none focus:border-primary/60 focus:ring-1 focus:ring-primary/20 transition-all"
+                oninput={(e) => {
+                  const val = parseInt(e.currentTarget.value, 10);
+                  editProgressTotal = isNaN(val) ? null : Math.max(1, val);
+                  autoSave({ progress_current: editProgressCurrent ?? 0, progress_total: editProgressTotal });
+                }}
+                disabled={isViewer}
+              />
+            </div>
+          </div>
+        {/if}
       </div>
       {/if}
 
