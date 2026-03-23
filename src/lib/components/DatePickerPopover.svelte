@@ -2,7 +2,7 @@
   import * as Popover from '$lib/components/ui/popover/index.js';
   import { hasTime, toDateString, formatDateOnly } from '$lib/utils/dates.js';
   import { patchTask } from '$lib/utils/api.js';
-  import { CalendarDays } from 'lucide-svelte';
+  import { CalendarDays } from '@lucide/svelte';
 
   let {
     taskId = undefined,
