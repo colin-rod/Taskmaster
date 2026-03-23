@@ -76,7 +76,7 @@
   function handleCustomDate(e: Event) {
     const input = e.target as HTMLInputElement;
     if (input.value) {
-      const newDate = new Date(input.value + 'T12:00:00');
+      const newDate = new Date(input.value + 'T12:00:00Z');
       // Preserve existing time if set
       if (value && hasTime(value)) {
         const existing = new Date(value);

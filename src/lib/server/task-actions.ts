@@ -84,21 +84,26 @@ export async function toggleChecklistItem(formData: FormData, supabase: Supabase
 
   if (error) return fail(500, { error: error.message });
 
-  // Auto-complete: if all items are now completed, mark the task as done
+  // Auto-set status based on checklist progress
   if (newCompleted) {
     const { data: items } = await supabase
       .from('checklist_items')
       .select('is_completed')
       .eq('task_id', task_id);
 
-    if (items && items.length > 0 && items.every((item) => item.is_completed)) {
-      // Check if this is a recurring task
-      const { data: task } = await supabase
-        .from('tasks')
-        .select('is_recurring, recurrence_rule, due_at')
-        .eq('id', task_id)
-        .single();
+    const { data: task } = await supabase
+      .from('tasks')
+      .select('status, is_recurring, recurrence_rule, due_at')
+      .eq('id', task_id)
+      .single();
 
+    // Auto set to in_progress when an item is checked (if currently todo)
+    if (task?.status === 'todo') {
+      await supabase.from('tasks').update({ status: 'in_progress' }).eq('id', task_id);
+    }
+
+    // Auto-complete: if all items are now completed, mark the task as done
+    if (items && items.length > 0 && items.every((item) => item.is_completed)) {
       if (task?.is_recurring && task.recurrence_rule) {
         const result = await rollForwardRecurringTask(task_id, task, supabase);
         if (result.rolled) return { success: true, rolled: true };

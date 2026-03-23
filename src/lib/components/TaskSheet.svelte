@@ -1169,6 +1169,7 @@
               <form
                 method="POST"
                 action="?/deleteTask"
+                class="w-full"
                 use:enhance={() => {
                   deleting = true;
                   deleteAlertOpen = false;
@@ -1190,7 +1191,7 @@
                 <input type="hidden" name="id" value={task.id} />
                 <button
                   type="submit"
-                  class="inline-flex items-center justify-center rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive/90 disabled:opacity-50"
+                  class="inline-flex w-full items-center justify-center rounded-md bg-destructive px-4 py-2 text-sm font-medium text-white hover:bg-destructive/90 disabled:opacity-50"
                   disabled={deleting}
                 >
                   Delete

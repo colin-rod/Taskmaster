@@ -4,14 +4,14 @@ export function hasTime(due_at: string): boolean {
 
 export function buildDueAt(dateStr: string, timeStr: string): string | null {
   if (!dateStr) return null;
-  if (!timeStr) return toDateString(new Date(dateStr + 'T12:00:00'));
+  if (!timeStr) return `${dateStr}T12:00:00.000Z`;
   return new Date(dateStr + 'T' + timeStr + ':00').toISOString();
 }
 
 export function toDateString(date: Date): string {
-  const yyyy = date.getFullYear();
-  const mm = String(date.getMonth() + 1).padStart(2, '0');
-  const dd = String(date.getDate()).padStart(2, '0');
+  const yyyy = date.getUTCFullYear();
+  const mm = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const dd = String(date.getUTCDate()).padStart(2, '0');
   return `${yyyy}-${mm}-${dd}T12:00:00.000Z`;
 }
 

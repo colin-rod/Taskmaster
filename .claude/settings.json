@@ -15,7 +15,9 @@
       "Bash(cat \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/lists/[id]/+page.svelte\")",
       "Bash(git diff:*)",
       "Bash(wc -l \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/inbox/+page.svelte\")",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(find /Users/colinrodrigues/Taskmaster -name schema.sql -o -name *schema*)",
+      "Bash(git -C /Users/colinrodrigues/Taskmaster log --all --full-history --reverse -- \"supabase/migrations/*.sql\")"
     ]
   }
 }
