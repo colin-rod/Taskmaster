@@ -2,6 +2,7 @@
   import * as Popover from '$lib/components/ui/popover/index.js';
   import { hasTime, toDateString, formatDateOnly } from '$lib/utils/dates.js';
   import { patchTask } from '$lib/utils/api.js';
+  import { CalendarDays } from 'lucide-svelte';
 
   let {
     taskId = undefined,
@@ -93,13 +94,14 @@
   <Popover.Trigger {disabled}>
     <button
       type="button"
-      class={triggerClass || `text-xs cursor-pointer hover:underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm ${isOverdue(value) ? 'text-destructive' : 'text-foreground-secondary'}`}
+      class={triggerClass || `flex items-center gap-1 text-xs cursor-pointer hover:underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm ${isOverdue(value) ? 'text-destructive' : 'text-foreground-secondary'}`}
       aria-label="Set due date: {value ? formatDateOnly(value) : placeholder}"
     >
+      <CalendarDays class="size-3 shrink-0" />
       {value ? formatDateOnly(value) : placeholder}
     </button>
   </Popover.Trigger>
-  <Popover.Content class="w-48 p-1" align="start">
+  <Popover.Content class="w-56 p-1" align="start">
     <button
       type="button"
       class="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle transition-colors"

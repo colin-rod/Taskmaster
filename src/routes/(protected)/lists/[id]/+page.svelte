@@ -10,6 +10,7 @@
   import * as Popover from '$lib/components/ui/popover/index.js';
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
+  import QuickAdd from '$lib/components/QuickAdd.svelte';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -138,6 +139,10 @@
         <span>{(data.list.members ?? []).length}</span>
       </button>
     {/if}
+  </div>
+
+  <div class="mb-6">
+    <QuickAdd action="?/createTask" />
   </div>
 
   {#if form?.error}

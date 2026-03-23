@@ -6,7 +6,7 @@
   import { cubicOut } from 'svelte/easing';
   import type { Task, ListRole, Profile, Label } from '$lib/types/index.js';
   import { describeRecurrence } from '$lib/utils/recurrence.js';
-  import { Repeat2, Ellipsis, Check, Bell } from '@lucide/svelte';
+  import { Repeat2, Ellipsis, Check, Bell, CircleDot } from '@lucide/svelte';
   import LabelBadge from '$lib/components/LabelBadge.svelte';
   import InlineEditTitle from '$lib/components/InlineEditTitle.svelte';
   import PriorityPicker from '$lib/components/PriorityPicker.svelte';
@@ -110,6 +110,7 @@
         {...props}
         class="task-row-hover flex items-center gap-3 rounded-md border bg-surface px-4 py-4 group overflow-hidden"
         class:is-completing-row={justCompleted}
+        class:task-row-in-progress={optimisticStatus === 'in_progress'}
         tabindex="0"
         role="button"
         ondblclick={() => onselect(task)}
@@ -119,7 +120,7 @@
         {#if userRole === 'viewer'}
           <div
             class="w-4.5 h-4.5 rounded-full border-[1.5px] flex items-center justify-center shrink-0
-              {task.status === 'done' ? 'bg-primary border-primary' : 'border-foreground-muted/60'}"
+              {task.status === 'done' ? 'bg-primary border-primary' : task.status === 'in_progress' ? 'border-status-doing' : 'border-foreground-muted/60'}"
           >
             {#if task.status === 'done'}
               <svg class="w-3 h-3 text-primary-foreground" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
@@ -161,7 +162,7 @@
             <button
               type="submit"
               class="w-4.5 h-4.5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all
-                {optimisticStatus === 'done' ? 'bg-primary border-primary ring-2 ring-[hsl(var(--status-done)/0.2)]' : 'border-foreground-muted/60 hover:border-primary hover:scale-105'}
+                {optimisticStatus === 'done' ? 'bg-primary border-primary ring-2 ring-[hsl(var(--status-done)/0.2)]' : optimisticStatus === 'in_progress' ? 'border-status-doing hover:border-primary hover:scale-105' : 'border-foreground-muted/60 hover:border-primary hover:scale-105'}
                 {toggling ? 'opacity-50' : ''}"
               class:is-completing={justCompleted}
               disabled={toggling}
@@ -192,6 +193,15 @@
             {/if}
           </div>
           <div class="flex items-center gap-2 mt-1 {optimisticStatus === 'done' ? 'opacity-60' : ''}">
+            {#if optimisticStatus === 'in_progress'}
+              <span
+                class="text-xs text-status-doing flex items-center gap-1 px-1 py-0.5 rounded-full"
+                aria-label="In progress"
+                title="In progress"
+              >
+                <CircleDot class="w-3 h-3" aria-hidden="true" />
+              </span>
+            {/if}
             {#if canEdit}
               <DatePickerPopover taskId={task.id} value={task.due_at} />
               <TimePickerPopover taskId={task.id} value={task.due_at} />

@@ -147,6 +147,11 @@
   .pb-tab-safe {
     padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
   }
+
+  /* Top padding for iOS Dynamic Island / status bar */
+  .pt-safe {
+    padding-top: env(safe-area-inset-top);
+  }
 }
 
 @keyframes scale-in {
@@ -312,6 +317,17 @@
     background-color: hsl(var(--primary-tint));
     box-shadow: 0 1px 3px rgba(0,0,0,0.04), 0 4px 12px rgba(0,0,0,0.08);
     transform: translateY(-1px);
+  }
+
+  /* In-progress task row — persistent left accent bar in status-doing color */
+  .task-row-in-progress::before {
+    background-color: hsl(var(--status-doing));
+    opacity: 1;
+  }
+  .task-row-in-progress:hover::before,
+  .task-row-in-progress:focus-within::before {
+    background-color: hsl(var(--primary));
+    opacity: 1;
   }
 
   /* Sidebar active indicator bar */

@@ -6,7 +6,16 @@
       "Bash(ls /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\))",
       "Bash(ls /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\)/lists)",
       "Bash(ls /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\)/lists/[id])",
-      "Bash(ls -la \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/lists/[id]/\")"
+      "Bash(ls -la \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/lists/[id]/\")",
+      "Bash(find /Users/colinrodrigues/Taskmaster -type f \\\\\\(-name *schema* -o -name *migration* -o -name *.sql \\\\\\))",
+      "Bash(grep -l \"CREATE TABLE.*tasks\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*.sql)",
+      "Bash(grep -r \"in_progress\\\\|in-progress\" /Users/colinrodrigues/Taskmaster/src --include=*.svelte --include=*.ts)",
+      "Bash(ls -la /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\)/*/)",
+      "Bash(cat \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/inbox/+page.svelte\")",
+      "Bash(cat \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/lists/[id]/+page.svelte\")",
+      "Bash(git diff:*)",
+      "Bash(wc -l \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/inbox/+page.svelte\")",
+      "Bash(git add:*)"
     ]
   }
 }

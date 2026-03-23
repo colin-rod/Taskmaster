@@ -36,7 +36,7 @@
 
 <div class="h-screen flex flex-col">
   <!-- Header -->
-  <header class="sticky top-0 z-40 border-b bg-background px-4 py-3.5 [box-shadow:var(--shadow-header)]">
+  <header class="sticky top-0 z-40 border-b bg-background px-4 pb-3.5 pt-safe [box-shadow:var(--shadow-header)]">
     <div class="flex items-center gap-4">
       <h1 class="font-accent shrink-0 flex items-center gap-2 leading-none"
           style="font-size: 1.375rem; font-weight: 800; letter-spacing: -0.03em; font-style: italic;">
