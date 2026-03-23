@@ -3,6 +3,7 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
 import { TASK_SELECT, flattenTaskLabels } from '$lib/server/task-actions.js';
+import type { TaskList } from '$lib/types/index.js';
 
 export const load: PageServerLoad = async (event) => {
   const { locals: { supabase, profileId } } = event;
@@ -21,10 +22,10 @@ export const load: PageServerLoad = async (event) => {
   ]);
 
   if (error) console.error('[inbox] Task query failed:', error.message);
-  const lists = (listMemberships ?? [])
+  const lists = ((listMemberships ?? [])
     .map((m) => m.list)
-    .filter(Boolean)
-    .sort((a, b) => (a as { sort_order: number }).sort_order - (b as { sort_order: number }).sort_order);
+    .filter(Boolean) as unknown as TaskList[])
+    .sort((a, b) => a.sort_order - b.sort_order);
 
   return { tasks: flattenTaskLabels(tasks ?? []), lists };
 };

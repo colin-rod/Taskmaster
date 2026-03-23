@@ -216,7 +216,7 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
     if (taskLabels) {
       const invalidLabelIds = taskLabels
         .filter((tl) => {
-          const labelListId = (tl.label as { list_id: string | null } | null)?.list_id ?? null;
+          const labelListId = (tl.label as unknown as { list_id: string | null } | null)?.list_id ?? null;
           // Keep labels with no list (personal) or matching the new list
           return labelListId !== null && labelListId !== newListId;
         })

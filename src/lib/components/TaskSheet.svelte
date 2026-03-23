@@ -1199,8 +1199,9 @@
         {#if !isViewer}
           <div class="flex items-center gap-3">
             <div class="flex-1">
-              <label class="text-xs text-foreground-muted block mb-1">Current</label>
+              <label for="progress-current" class="text-xs text-foreground-muted block mb-1">Current</label>
               <input
+                id="progress-current"
                 type="number"
                 min="0"
                 value={editProgressCurrent ?? 0}
@@ -1215,8 +1216,9 @@
             </div>
             <div class="text-foreground-muted text-sm pt-5">/</div>
             <div class="flex-1">
-              <label class="text-xs text-foreground-muted block mb-1">Total</label>
+              <label for="progress-total" class="text-xs text-foreground-muted block mb-1">Total</label>
               <input
+                id="progress-total"
                 type="number"
                 min="1"
                 value={editProgressTotal ?? ''}
