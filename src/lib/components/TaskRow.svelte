@@ -64,8 +64,6 @@
   let progressPopoverOpen = $state(false);
   let progressInputValue = $state(0);
   let reminderPopoverOpen = $state(false);
-  let reminderDateValue = $state<string | null>(null);
-  $effect(() => { reminderDateValue = task.reminder_at; });
   let labelPickerOpen = $state(false);
 
   async function patchTask(fields: Record<string, unknown>) {
