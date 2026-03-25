@@ -182,7 +182,7 @@
     {#if view === 'month'}
       <MonthGrid days={calendarDays} onTaskClick={openTask} onDayClick={drillToWeek} />
     {:else if view === 'day'}
-      <WeekGrid days={calendarDays} onTaskClick={openTask} showTime={true} />
+      <WeekGrid days={calendarDays} onTaskClick={openTask} />
     {:else}
       <WeekGrid days={calendarDays} onTaskClick={openTask} />
     {/if}

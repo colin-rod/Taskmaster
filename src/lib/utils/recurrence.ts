@@ -12,7 +12,7 @@ export function computeNextDue(currentDue: Date, rule: RecurrenceRule): Date | n
 
 	switch (rule.frequency) {
 		case 'daily':
-			next.setDate(next.getDate() + rule.interval);
+			next.setUTCDate(next.getUTCDate() + rule.interval);
 			break;
 
 		case 'weekly':
@@ -20,7 +20,7 @@ export function computeNextDue(currentDue: Date, rule: RecurrenceRule): Date | n
 				const result = computeNextWeekday(currentDue, rule.byweekday, rule.interval);
 				next.setTime(result.getTime());
 			} else {
-				next.setDate(next.getDate() + 7 * rule.interval);
+				next.setUTCDate(next.getUTCDate() + 7 * rule.interval);
 			}
 			break;
 
@@ -29,11 +29,8 @@ export function computeNextDue(currentDue: Date, rule: RecurrenceRule): Date | n
 			break;
 	}
 
-	// Apply time_of_day if set
-	if (rule.time_of_day) {
-		const [hours, minutes] = rule.time_of_day.split(':').map(Number);
-		next.setHours(hours, minutes, 0, 0);
-	}
+	// Normalize to midnight UTC
+	next.setUTCHours(0, 0, 0, 0);
 
 	// Check end condition
 	if (isRecurrenceExpired(rule, next)) {
@@ -48,10 +45,10 @@ export function computeNextDue(currentDue: Date, rule: RecurrenceRule): Date | n
  * byweekday uses 0=Mon..6=Sun. JS getDay() uses 0=Sun..6=Sat.
  */
 function computeNextWeekday(currentDue: Date, byweekday: number[], interval: number): Date {
-	// Convert our 0=Mon..6=Sun to JS 0=Sun..6=Sat
+	// Convert JS UTC day (0=Sun..6=Sat) to our weekday (0=Mon..6=Sun)
 	const fromJsDay = (d: number) => (d + 6) % 7;
 
-	const currentJsDay = currentDue.getDay();
+	const currentJsDay = currentDue.getUTCDay();
 	const currentWeekday = fromJsDay(currentJsDay);
 
 	// Sort weekdays
@@ -68,7 +65,7 @@ function computeNextWeekday(currentDue: Date, byweekday: number[], interval: num
 		if (nextInWeek !== undefined) {
 			const daysAhead = nextInWeek - currentWeekday;
 			const result = new Date(currentDue);
-			result.setDate(result.getDate() + daysAhead);
+			result.setUTCDate(result.getUTCDate() + daysAhead);
 			return result;
 		}
 	}
@@ -79,7 +76,7 @@ function computeNextWeekday(currentDue: Date, byweekday: number[], interval: num
 	const daysToFirstMatch = daysToNextWeekStart + sorted[0];
 
 	const result = new Date(currentDue);
-	result.setDate(result.getDate() + daysToFirstMatch);
+	result.setUTCDate(result.getUTCDate() + daysToFirstMatch);
 	return result;
 }
 
@@ -89,11 +86,11 @@ function computeNextWeekday(currentDue: Date, byweekday: number[], interval: num
  */
 function addMonthsClamped(date: Date, months: number): Date {
 	const result = new Date(date);
-	const originalDay = date.getDate();
+	const originalDay = date.getUTCDate();
 
-	result.setMonth(result.getMonth() + months, 1); // Set to 1st to avoid overflow
-	const lastDayOfMonth = new Date(result.getFullYear(), result.getMonth() + 1, 0).getDate();
-	result.setDate(Math.min(originalDay, lastDayOfMonth));
+	result.setUTCMonth(result.getUTCMonth() + months, 1); // Set to 1st to avoid overflow
+	const lastDayOfMonth = new Date(Date.UTC(result.getUTCFullYear(), result.getUTCMonth() + 1, 0)).getUTCDate();
+	result.setUTCDate(Math.min(originalDay, lastDayOfMonth));
 
 	return result;
 }
@@ -104,7 +101,7 @@ function addMonthsClamped(date: Date, months: number): Date {
 export function isRecurrenceExpired(rule: RecurrenceRule, nextDue: Date): boolean {
 	if (!rule.ends || rule.ends.type === 'never') return false;
 	if (rule.ends.type === 'on_date') {
-		const endDate = new Date(rule.ends.date + 'T23:59:59.999');
+		const endDate = new Date(rule.ends.date + 'T23:59:59.999Z');
 		return nextDue > endDate;
 	}
 	if (rule.ends.type === 'after_n_occurrences') {
@@ -139,10 +136,6 @@ export function describeRecurrence(rule: RecurrenceRule): string {
 	if (rule.frequency === 'weekly' && rule.byweekday && rule.byweekday.length > 0) {
 		const dayNames = [...rule.byweekday].sort((a, b) => a - b).map((d) => DAY_NAMES[d]);
 		parts.push(`on ${dayNames.join(', ')}`);
-	}
-
-	if (rule.time_of_day) {
-		parts.push(`at ${rule.time_of_day}`);
 	}
 
 	if (rule.ends?.type === 'on_date') {

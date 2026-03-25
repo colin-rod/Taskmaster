@@ -8,7 +8,6 @@ import {
   computeMonthGridRange,
   computeWeekRange,
   computeDayRange,
-  mergeTasks,
 } from '$lib/utils/calendar.js';
 
 export const load: PageServerLoad = async (event) => {
@@ -25,32 +24,18 @@ export const load: PageServerLoad = async (event) => {
       ? computeDayRange(anchor)
       : computeMonthGridRange(anchor);
 
-  const [{ data: dueTasks, error: e1 }, { data: startTasks, error: e2 }] = await Promise.all([
-    supabase
-      .from('tasks')
-      .select(TASK_SELECT)
-      .gte('due_at', start.toISOString())
-      .lte('due_at', end.toISOString())
-      .neq('status', 'done')
-      .neq('status', 'canceled')
-      .order('due_at', { ascending: true }),
-    supabase
-      .from('tasks')
-      .select(TASK_SELECT)
-      .gte('start_at', start.toISOString())
-      .lte('start_at', end.toISOString())
-      .neq('status', 'done')
-      .neq('status', 'canceled')
-      .order('start_at', { ascending: true }),
-  ]);
+  const { data: dueTasks, error: e1 } = await supabase
+    .from('tasks')
+    .select(TASK_SELECT)
+    .gte('due_at', start.toISOString())
+    .lte('due_at', end.toISOString())
+    .neq('status', 'done')
+    .neq('status', 'canceled')
+    .order('due_at', { ascending: true });
 
   if (e1) console.error('[calendar:due] Task query failed:', e1.message);
-  if (e2) console.error('[calendar:start] Task query failed:', e2.message);
 
-  const tasks = mergeTasks(
-    flattenTaskLabels(dueTasks ?? []),
-    flattenTaskLabels(startTasks ?? []),
-  );
+  const tasks = flattenTaskLabels(dueTasks ?? []);
 
   return {
     tasks,

@@ -2,7 +2,6 @@ import { fail } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { RecurrenceRule } from '$lib/types/index.js';
 import { computeNextDue } from '$lib/utils/recurrence.js';
-import { buildDueAt } from '$lib/utils/dates.js';
 
 // =============================================================================
 // Task Select Helpers
@@ -186,6 +185,9 @@ async function rollForwardRecurringTask(
     return { rolled: false };
   }
 
+  // Normalize to midnight UTC (computeNextDue already does this, but be explicit)
+  nextDue.setUTCHours(0, 0, 0, 0);
+
   // Build updated rule (increment occurrences_completed if after_n_occurrences)
   let updatedRule: RecurrenceRule = task.recurrence_rule;
   if (task.recurrence_rule.ends?.type === 'after_n_occurrences') {
@@ -267,8 +269,7 @@ export async function updateTask(formData: FormData, supabase: SupabaseClient) {
   const notes = formData.get('notes')?.toString() || null;
   const priority = Number(formData.get('priority') || 4);
   const due_at_raw = formData.get('due_at')?.toString() || '';
-  const due_time = formData.get('due_time')?.toString() || '';
-  const due_at = buildDueAt(due_at_raw, due_time);
+  const due_at = due_at_raw ? `${due_at_raw}T00:00:00.000Z` : null;
   const status = formData.get('status')?.toString() || 'todo';
   const is_recurring = formData.get('is_recurring') === 'true';
   const recurrence_rule_raw = formData.get('recurrence_rule')?.toString();

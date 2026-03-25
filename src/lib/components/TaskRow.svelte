@@ -12,9 +12,8 @@
   import InlineEditTitle from '$lib/components/InlineEditTitle.svelte';
   import PriorityPicker from '$lib/components/PriorityPicker.svelte';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
-  import TimePickerPopover from '$lib/components/TimePickerPopover.svelte';
   import AssigneePicker from '$lib/components/AssigneePicker.svelte';
-  import { hasTime, formatDateOnly, formatTimeOnly } from '$lib/utils/dates.js';
+  import { formatDateOnly } from '$lib/utils/dates.js';
   import { PRIORITY_OPTIONS, getDueDateClass } from '$lib/utils/design-tokens.js';
   import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -86,14 +85,9 @@
 
   function quickDate(daysFromNow: number): string {
     const d = new Date();
-    d.setDate(d.getDate() + daysFromNow);
-    d.setHours(23, 59, 0, 0);
+    d.setUTCDate(d.getUTCDate() + daysFromNow);
+    d.setUTCHours(0, 0, 0, 0);
     return d.toISOString();
-  }
-
-  function offsetFromDueAt(minutes: number): string | null {
-    if (!task.due_at) return null;
-    return new Date(new Date(task.due_at).getTime() - minutes * 60000).toISOString();
   }
 
   function deleteTaskFromContext() {
@@ -250,10 +244,9 @@
             {/if}
             {#if canEdit}
               <DatePickerPopover taskId={task.id} value={task.due_at} />
-              <TimePickerPopover taskId={task.id} value={task.due_at} />
             {:else if task.due_at}
               <span class="text-xs {getDueDateClass(task.due_at) || 'text-foreground-secondary'}">
-                {formatDateOnly(task.due_at)}{hasTime(task.due_at) ? ', ' + formatTimeOnly(task.due_at) : ''}
+                {formatDateOnly(task.due_at)}
               </span>
             {/if}
             {#if task.is_recurring}
@@ -276,67 +269,26 @@
                         : 'text-transparent group-hover:text-foreground-muted/40 hover:text-foreground-muted!'}"
                     aria-label={task.reminder_at ? 'Edit reminder' : 'Set reminder'}
                     title={task.reminder_at
-                      ? new Date(task.reminder_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })
+                      ? formatDateOnly(task.reminder_at)
                       : 'Set reminder'}
                   >
                     <Bell class="w-3 h-3" aria-hidden="true" />
                   </button>
                 </Popover.Trigger>
-                <Popover.Content class="w-56 p-3 space-y-2" align="start" side="top" sideOffset={6}>
+                <Popover.Content class="w-52 p-3 space-y-2" align="start" side="top" sideOffset={6}>
                   <p class="text-xs font-medium text-foreground-muted">Reminder</p>
-                  {#if task.due_at}
-                    <div class="flex flex-col gap-1">
-                      <p class="text-[10px] text-foreground-muted/70 uppercase tracking-wide">Before due date</p>
-                      <div class="flex gap-1">
-                        {#each [[10, '10 min'], [60, '1 hr'], [1440, '1 day']] as [mins, label]}
-                          <button
-                            type="button"
-                            class="flex-1 text-xs py-1 px-1.5 rounded border border-border hover:border-primary hover:text-primary transition-colors"
-                            onclick={(e) => {
-                              e.stopPropagation();
-                              reminderPopoverOpen = false;
-                              patchTask({ reminder_at: offsetFromDueAt(mins as number) });
-                            }}
-                          >{label}</button>
-                        {/each}
-                      </div>
-                    </div>
-                  {/if}
-                  <div class="flex flex-col gap-1">
-                    <p class="text-[10px] text-foreground-muted/70 uppercase tracking-wide">Custom date & time</p>
-                    <div class="flex gap-1 items-center">
-                      <input
-                        type="date"
-                        aria-label="Reminder date"
-                        class="flex-1 text-xs rounded border border-border bg-surface px-2 py-1 outline-none focus:border-primary/60"
-                        value={task.reminder_at ? new Date(task.reminder_at).toLocaleDateString('en-CA') : ''}
-                        onclick={(e) => e.stopPropagation()}
-                        onchange={(e) => {
-                          const dateVal = e.currentTarget.value;
-                          if (!dateVal) return;
-                          const existing = task.reminder_at ? new Date(task.reminder_at) : new Date();
-                          const [y, mo, d] = dateVal.split('-').map(Number);
-                          existing.setFullYear(y, mo - 1, d);
-                          patchTask({ reminder_at: existing.toISOString() });
-                        }}
-                      />
-                      <input
-                        type="time"
-                        aria-label="Reminder time"
-                        class="text-xs rounded border border-border bg-surface px-2 py-1 outline-none focus:border-primary/60"
-                        value={task.reminder_at ? new Date(task.reminder_at).toTimeString().slice(0, 5) : ''}
-                        onclick={(e) => e.stopPropagation()}
-                        onchange={(e) => {
-                          const timeVal = e.currentTarget.value;
-                          if (!timeVal || !task.reminder_at) return;
-                          const d = new Date(task.reminder_at);
-                          const [h, m] = timeVal.split(':').map(Number);
-                          d.setHours(h, m, 0, 0);
-                          patchTask({ reminder_at: d.toISOString() });
-                        }}
-                      />
-                    </div>
-                  </div>
+                  <input
+                    type="date"
+                    aria-label="Reminder date"
+                    class="w-full text-xs rounded border border-border bg-surface px-2 py-1 outline-none focus:border-primary/60"
+                    value={task.reminder_at ? task.reminder_at.slice(0, 10) : ''}
+                    onclick={(e) => e.stopPropagation()}
+                    onchange={(e) => {
+                      const dateVal = e.currentTarget.value;
+                      if (!dateVal) return;
+                      patchTask({ reminder_at: `${dateVal}T00:00:00.000Z` });
+                    }}
+                  />
                   {#if task.reminder_at}
                     <button
                       type="button"
@@ -354,7 +306,7 @@
               <span
                 class="text-xs text-status-doing flex items-center gap-1 px-1 py-0.5 rounded-full"
                 aria-label="Reminder set"
-                title={new Date(task.reminder_at).toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                title={formatDateOnly(task.reminder_at)}
               >
                 <Bell class="w-3 h-3" aria-hidden="true" />
               </span>
@@ -569,7 +521,7 @@
               onclick={(e) => e.stopPropagation()}
               onchange={(e) => {
                 const val = e.currentTarget.value;
-                if (val) patchTask({ due_at: new Date(val + 'T23:59:00').toISOString() });
+                if (val) patchTask({ due_at: `${val}T00:00:00.000Z` });
               }}
             />
           </div>
@@ -580,11 +532,9 @@
       <ContextMenu.Sub>
         <ContextMenu.SubTrigger>Set Reminder</ContextMenu.SubTrigger>
         <ContextMenu.SubContent>
-          {#if task.due_at}
-            <ContextMenu.Item onSelect={() => patchTask({ reminder_at: offsetFromDueAt(10) })}>10 min</ContextMenu.Item>
-            <ContextMenu.Item onSelect={() => patchTask({ reminder_at: offsetFromDueAt(60) })}>1 hr</ContextMenu.Item>
-            <ContextMenu.Item onSelect={() => patchTask({ reminder_at: offsetFromDueAt(1440) })}>1 day</ContextMenu.Item>
-          {/if}
+          <ContextMenu.Item onSelect={() => patchTask({ reminder_at: quickDate(0) })}>Today</ContextMenu.Item>
+          <ContextMenu.Item onSelect={() => patchTask({ reminder_at: quickDate(1) })}>Tomorrow</ContextMenu.Item>
+          <ContextMenu.Item onSelect={() => patchTask({ reminder_at: quickDate(7) })}>Next week</ContextMenu.Item>
           {#if task.reminder_at}
             <ContextMenu.Item onSelect={() => patchTask({ reminder_at: null })}>Clear reminder</ContextMenu.Item>
           {/if}

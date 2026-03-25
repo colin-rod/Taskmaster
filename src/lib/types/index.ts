@@ -47,8 +47,6 @@ export interface Task {
   priority: TaskPriority;
   due_at: string | null;
   reminder_at: string | null;
-  start_at: string | null;
-  duration_minutes: number | null;
   timezone: string | null;
   is_recurring: boolean;
   recurrence_rule: RecurrenceRule | null;
@@ -97,7 +95,6 @@ export interface RecurrenceRule {
   frequency: 'daily' | 'weekly' | 'monthly';
   interval: number;
   byweekday?: number[]; // 0=Mon..6=Sun
-  time_of_day?: string; // "HH:MM"
   schedule_type?: 'due_date' | 'completion_date'; // defaults to 'due_date'
   ends?:
     | { type: 'never' }

@@ -12,11 +12,8 @@
   } from '$lib/components/ui/sheet/index.js';
   import type { Task, RecurrenceRule, ListRole, TaskListMember } from '$lib/types/index.js';
   import { formatStatus, PRIORITY_OPTIONS, STATUS_OPTIONS, getDueDateClass } from '$lib/utils/design-tokens.js';
-  import { hasTime, buildDueAt, formatTimeBlock } from '$lib/utils/dates.js';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
-  import TimeInput from '$lib/components/TimeInput.svelte';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
-  import DurationPicker from '$lib/components/DurationPicker.svelte';
   import { Plus, Loader, Check, AlertCircle, X, BarChart2 } from '@lucide/svelte';
   import { slide, scale, fly, fade } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
@@ -51,7 +48,6 @@
   let editNotes = $state('');
   let editPriority = $state(4);
   let editDueAt = $state('');
-  let editDueTime = $state('');
   let editStatus = $state('todo');
   let deleting = $state(false);
   let deleteAlertOpen = $state(false);
@@ -63,20 +59,13 @@
   let dragOverId = $state<string | null>(null);
   let preDragOrder = $state<string[]>([]);
   let reorderFormEl = $state<HTMLFormElement | null>(null);
-  let reminderDate = $state('');   // YYYY-MM-DD ISO string (for DatePickerPopover)
-  let reminderTime = $state('');   // HH:MM
-  let editStartAt = $state('');
-  let editStartTime = $state('');
-  let editDurationMinutes = $state<number | null>(null);
-  let timeBlockDateOpen = $state(false);
+  let reminderDate = $state('');   // ISO date string (for DatePickerPopover)
   let editIsRecurring = $state(false);
   let editRecurrenceRule = $state<RecurrenceRule | null>(null);
 
   // Progressive disclosure state
   let notesExpanded     = $state(false);
-  let showTime          = $state(false);
   let showReminder      = $state(false);
-  let showTimeBlock     = $state(false);
   let showRecurring     = $state(false);
   let showChecklist     = $state(false);
   let showLabels        = $state(false);
@@ -86,15 +75,13 @@
   let editProgressTotal   = $state<number | null>(null);
 
   // Pill visibility (derived)
-  let showTimePill      = $derived(editDueAt !== '' && !showTime);
   let showReminderPill  = $derived(!showReminder && editDueAt !== '');
-  let showTimeBlockPill = $derived(!showTimeBlock && editDueAt !== '');
   let showRecurringPill = $derived(!showRecurring && editDueAt !== '');
   let showChecklistPill = $derived(!showChecklist);
   let showLabelsPill    = $derived(!showLabels);
   let showNotesPill     = $derived(!notesExpanded);
   let showProgressPill  = $derived(!showProgress);
-  let showPillRow       = $derived(showNotesPill || showTimePill || showReminderPill || showTimeBlockPill || showRecurringPill || showChecklistPill || showLabelsPill || showProgressPill);
+  let showPillRow       = $derived(showNotesPill || showReminderPill || showRecurringPill || showChecklistPill || showLabelsPill || showProgressPill);
 
   let prevCompleted = $state(0);
   let checklistJustFinished = $state(false);
@@ -166,34 +153,9 @@
       editTitle = task.title;
       editNotes = task.notes || '';
       editPriority = task.priority;
-      if (task.due_at) {
-        const d = new Date(task.due_at);
-        editDueAt = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        editDueTime = hasTime(task.due_at)
-          ? `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
-          : '';
-      } else {
-        editDueAt = '';
-        editDueTime = '';
-      }
+      editDueAt = task.due_at ? task.due_at.slice(0, 10) : '';
       editStatus = task.status;
-      if (task.reminder_at) {
-        const r = new Date(task.reminder_at);
-        reminderDate = `${r.getFullYear()}-${String(r.getMonth() + 1).padStart(2, '0')}-${String(r.getDate()).padStart(2, '0')}T12:00:00.000Z`;
-        reminderTime = `${String(r.getHours()).padStart(2, '0')}:${String(r.getMinutes()).padStart(2, '0')}`;
-      } else {
-        reminderDate = '';
-        reminderTime = '';
-      }
-      if (task.start_at) {
-        const s = new Date(task.start_at);
-        editStartAt = `${s.getFullYear()}-${String(s.getMonth() + 1).padStart(2, '0')}-${String(s.getDate()).padStart(2, '0')}`;
-        editStartTime = `${String(s.getHours()).padStart(2, '0')}:${String(s.getMinutes()).padStart(2, '0')}`;
-      } else {
-        editStartAt = '';
-        editStartTime = '';
-      }
-      editDurationMinutes = task.duration_minutes ?? null;
+      reminderDate = task.reminder_at ?? '';
       editIsRecurring = task.is_recurring;
       editRecurrenceRule = task.recurrence_rule;
       editProgressCurrent = task.progress_current ?? null;
@@ -206,9 +168,7 @@
       // Progressive disclosure: auto-expand fields that have values, but only when switching to a new task
       if (task.id !== initializedTaskId) {
         notesExpanded     = !!(task.notes && task.notes.trim() !== '');
-        showTime          = editDueAt !== '' && editDueTime !== '';
         showReminder      = reminderDate !== '';
-        showTimeBlock     = editStartAt !== '';
         showRecurring     = editIsRecurring;
         showChecklist     = (task.checklist_items?.length ?? 0) > 0;
         showLabels        = (task.labels?.length ?? 0) > 0;
@@ -264,6 +224,7 @@
     if (isInitialized && !editIsRecurring) showRecurring = false;
   });
 
+
   function handleTitleBlur() {
     if (!isInitialized || !task) return;
     const trimmed = editTitle.trim();
@@ -279,70 +240,16 @@
 
   function handleDueBlur() {
     if (!isInitialized || !task) return;
-    const newDueAt = buildDueAt(editDueAt, editDueTime) ?? null;
+    const newDueAt = editDueAt ? `${editDueAt}T00:00:00.000Z` : null;
     const currentDueAt = task.due_at ?? null;
     if (newDueAt !== currentDueAt) autoSave({ due_at: newDueAt });
   }
 
   function handleReminderBlur() {
     if (!isInitialized || !task) return;
-    let newVal: string | null = null;
-    if (reminderDate) {
-      const d = new Date(reminderDate);
-      if (reminderTime) {
-        const [hh, mm] = reminderTime.split(':').map(Number);
-        d.setHours(hh, mm, 0, 0);
-      }
-      newVal = d.toISOString();
-    }
+    const newVal = reminderDate ? reminderDate : null;
     const currentVal = task.reminder_at ?? null;
     if (newVal !== currentVal) autoSave({ reminder_at: newVal });
-  }
-
-  function handleStartAtBlur() {
-    if (!isInitialized || !task) return;
-    const newStartAt = editStartAt
-      ? new Date(editStartAt + 'T' + (editStartTime || '12:00') + ':00').toISOString()
-      : null;
-    if (newStartAt !== (task.start_at ?? null)) autoSave({ start_at: newStartAt });
-  }
-
-  function handleDurationBlur() {
-    if (!isInitialized || !task) return;
-    if (editDurationMinutes !== (task.duration_minutes ?? null))
-      autoSave({ duration_minutes: editDurationMinutes });
-  }
-
-  // Writable date value for DatePickerPopover (ISO format)
-  let timeBlockDateValue = $state<string | null>(null);
-
-  // Sync editStartAt → timeBlockDateValue
-  $effect(() => {
-    timeBlockDateValue = editStartAt
-      ? new Date(editStartAt + 'T12:00:00').toISOString()
-      : null;
-  });
-
-  function handleTimeBlockDateChange() {
-    if (timeBlockDateValue) {
-      const d = new Date(timeBlockDateValue);
-      editStartAt = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-    } else {
-      editStartAt = '';
-      editStartTime = '';
-    }
-    handleStartAtBlur();
-  }
-
-  function setReminderPreset(minutesBefore: number) {
-    if (!editDueAt) return;
-    const dueIso = buildDueAt(editDueAt, editDueTime);
-    if (!dueIso) return;
-    const dueDate = new Date(dueIso);
-    dueDate.setMinutes(dueDate.getMinutes() - minutesBefore);
-    reminderDate = `${dueDate.getFullYear()}-${String(dueDate.getMonth() + 1).padStart(2, '0')}-${String(dueDate.getDate()).padStart(2, '0')}T12:00:00.000Z`;
-    reminderTime = `${String(dueDate.getHours()).padStart(2, '0')}:${String(dueDate.getMinutes()).padStart(2, '0')}`;
-    autoSave({ reminder_at: dueDate.toISOString() });
   }
 
   let checklistItems = $derived(
@@ -530,12 +437,6 @@
                 <p class="text-sm">{new Date(task.due_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
               </div>
             {/if}
-            {#if task.start_at}
-              <div>
-                <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary block mb-1.5">Time block</span>
-                <p class="text-sm">{formatTimeBlock(task.start_at, task.duration_minutes) ?? ''}</p>
-              </div>
-            {/if}
           </div>
         </div>
         {#if (task.checklist_items ?? []).length > 0}
@@ -617,15 +518,9 @@
                 bind:value={editDueAt}
                 mode="controlled"
                 disabled={isViewer}
-                onchange={() => { if (!editDueAt) { editDueTime = ''; } handleDueBlur(); }}
+                onchange={handleDueBlur}
               />
             </div>
-            {#if editDueAt && showTime}
-              <label for="edit-due-time" class="text-sm font-semibold tracking-wide text-foreground mt-3 block">
-                Time <span class="text-foreground-muted font-normal">(optional)</span>
-              </label>
-              <TimeInput id="edit-due-time" bind:value={editDueTime} disabled={isViewer} onchange={handleDueBlur} />
-            {/if}
           </div>
 
           <!-- Progressive disclosure pills -->
@@ -640,15 +535,6 @@
                   aria-label="Add notes"
                 >+ Notes</button>
               {/if}
-              {#if showTimePill}
-                <button
-                  transition:scale={{ duration: 120, start: 0.85 }}
-                  type="button"
-                  onclick={() => { showTime = true; }}
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
-                  aria-label="Add a due time"
-                >+ Due time</button>
-              {/if}
               {#if showReminderPill}
                 <button
                   transition:scale={{ duration: 120, start: 0.85 }}
@@ -657,15 +543,6 @@
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
                   aria-label="Add a reminder"
                 >+ Reminder</button>
-              {/if}
-              {#if showTimeBlockPill}
-                <button
-                  transition:scale={{ duration: 120, start: 0.85 }}
-                  type="button"
-                  onclick={() => { showTimeBlock = true; timeBlockDateOpen = true; }}
-                  class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
-                  aria-label="Add a time block"
-                >+ Time Block</button>
               {/if}
               {#if showRecurringPill}
                 <button
@@ -746,91 +623,18 @@
                     aria-label="Remove reminder"
                     onclick={() => {
                       if (reminderDate) autoSave({ reminder_at: null });
-                      reminderDate = ''; reminderTime = ''; showReminder = false;
+                      reminderDate = ''; showReminder = false;
                     }}
                   ><X class="size-3.5" /></button>
                 {/if}
               </div>
-              <div class="flex items-center gap-2 mt-1">
+              <div class="mt-1">
                 <DatePickerPopover
                   bind:value={reminderDate}
                   mode="controlled"
                   disabled={isViewer}
                   onchange={handleReminderBlur}
                 />
-                <TimeInput
-                  id="edit-reminder-time"
-                  bind:value={reminderTime}
-                  disabled={isViewer || !reminderDate}
-                  onchange={handleReminderBlur}
-                />
-              </div>
-              {#if editDueAt}
-                <p class="text-xs text-foreground-muted mt-2 mb-1">Relative to due date:</p>
-                <div class="flex gap-2 flex-wrap">
-                  <button
-                    type="button"
-                    class="text-xs px-3 py-1 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8 font-medium"
-                    aria-label="Set reminder 10 minutes before due date"
-                    onclick={() => setReminderPreset(10)}
-                  >10 min</button>
-                  <button
-                    type="button"
-                    class="text-xs px-3 py-1 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8 font-medium"
-                    aria-label="Set reminder 1 hour before due date"
-                    onclick={() => setReminderPreset(60)}
-                  >1 hr</button>
-                  <button
-                    type="button"
-                    class="text-xs px-3 py-1 rounded-full border border-border bg-surface text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/30 transition-colors min-h-8 font-medium"
-                    aria-label="Set reminder 1 day before due date"
-                    onclick={() => setReminderPreset(1440)}
-                  >1 day</button>
-                </div>
-              {/if}
-            </div>
-          {/if}
-
-          <!-- Time Block -->
-          {#if showTimeBlock}
-            <div transition:slide={{ duration: 180, easing: cubicOut }}>
-              <div class="flex items-center justify-between">
-                <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Time block</span>
-                {#if !isViewer}
-                  <button
-                    type="button"
-                    class="text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle flex items-center justify-center min-w-11 min-h-11"
-                    aria-label="Remove time block"
-                    onclick={() => { editStartAt = ''; editStartTime = ''; editDurationMinutes = null; showTimeBlock = false; autoSave({ start_at: null, duration_minutes: null }); }}
-                  ><X class="size-3.5" /></button>
-                {/if}
-              </div>
-              <div class="flex items-center gap-1 mt-1 px-3 py-2 rounded-md border {editStartAt ? 'bg-accent/5 border-accent/20' : 'bg-surface border-border'}">
-                <DatePickerPopover
-                  bind:value={timeBlockDateValue}
-                  bind:open={timeBlockDateOpen}
-                  mode="controlled"
-                  disabled={isViewer}
-                  placeholder="+ Date"
-                  triggerClass="text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm whitespace-nowrap {timeBlockDateValue ? 'text-foreground' : 'text-foreground-muted'}"
-                  onchange={handleTimeBlockDateChange}
-                />
-                {#if editStartAt}
-                  <span class="text-foreground-muted text-sm">&middot;</span>
-                  <TimeInput
-                    id="edit-start-time"
-                    bind:value={editStartTime}
-                    disabled={isViewer}
-                    onchange={handleStartAtBlur}
-                    triggerClass="text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded-sm whitespace-nowrap"
-                  />
-                  <span class="text-foreground-muted text-sm">&middot;</span>
-                  <DurationPicker
-                    bind:value={editDurationMinutes}
-                    disabled={isViewer}
-                    onchange={handleDurationBlur}
-                  />
-                {/if}
               </div>
             </div>
           {/if}

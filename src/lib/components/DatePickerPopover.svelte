@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as Popover from '$lib/components/ui/popover/index.js';
-  import { hasTime, toDateString, formatDateOnly } from '$lib/utils/dates.js';
+  import { toDateString, formatDateOnly } from '$lib/utils/dates.js';
   import { patchTask } from '$lib/utils/api.js';
   import { CalendarDays } from '@lucide/svelte';
 
@@ -52,12 +52,6 @@
   function quickDate(offset: number): string {
     const d = new Date();
     d.setDate(d.getDate() + offset);
-    // Preserve existing time if one is set
-    if (value && hasTime(value)) {
-      const existing = new Date(value);
-      d.setHours(existing.getHours(), existing.getMinutes(), 0, 0);
-      return d.toISOString();
-    }
     return toDateString(d);
   }
 
@@ -76,15 +70,8 @@
   function handleCustomDate(e: Event) {
     const input = e.target as HTMLInputElement;
     if (input.value) {
-      const newDate = new Date(input.value + 'T12:00:00Z');
-      // Preserve existing time if set
-      if (value && hasTime(value)) {
-        const existing = new Date(value);
-        newDate.setHours(existing.getHours(), existing.getMinutes(), 0, 0);
-        setDate(newDate.toISOString());
-      } else {
-        setDate(toDateString(newDate));
-      }
+      const newDate = new Date(input.value + 'T00:00:00Z');
+      setDate(toDateString(newDate));
     }
   }
 

@@ -4,7 +4,6 @@
   import * as Popover from '$lib/components/ui/popover/index.js';
   import { PRIORITY_OPTIONS } from '$lib/utils/design-tokens.js';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
-  import TimePickerPopover from '$lib/components/TimePickerPopover.svelte';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
   import type { RecurrenceRule } from '$lib/types/index.js';
 
@@ -81,9 +80,8 @@
 
     <div class="flex items-center justify-between gap-2">
       <div class="flex items-center gap-2">
-        <!-- Date and time popovers -->
+        <!-- Date picker -->
         <DatePickerPopover bind:value={dueAt} mode="controlled" disabled={creating} />
-        <TimePickerPopover bind:value={dueAt} mode="controlled" disabled={creating} />
 
         <!-- Repeat popover -->
         <Popover.Root bind:open={recurrencePopoverOpen}>

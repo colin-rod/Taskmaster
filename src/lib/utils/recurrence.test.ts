@@ -2,9 +2,9 @@ import { describe, it, expect } from 'vitest';
 import { computeNextDue, isRecurrenceExpired, describeRecurrence } from './recurrence.js';
 import type { RecurrenceRule } from '$lib/types/index.js';
 
-// Helper to create dates at midnight local time
+// Helper to create dates at midnight UTC
 function d(dateStr: string): Date {
-	return new Date(dateStr + 'T12:00:00');
+	return new Date(dateStr + 'T00:00:00.000Z');
 }
 
 describe('computeNextDue', () => {
@@ -12,22 +12,22 @@ describe('computeNextDue', () => {
 		it('advances by 1 day with interval=1', () => {
 			const rule: RecurrenceRule = { frequency: 'daily', interval: 1 };
 			const result = computeNextDue(d('2026-03-10'), rule)!;
-			expect(result.getFullYear()).toBe(2026);
-			expect(result.getMonth()).toBe(2); // March
-			expect(result.getDate()).toBe(11);
+			expect(result.getUTCFullYear()).toBe(2026);
+			expect(result.getUTCMonth()).toBe(2); // March
+			expect(result.getUTCDate()).toBe(11);
 		});
 
 		it('advances by N days with interval=N', () => {
 			const rule: RecurrenceRule = { frequency: 'daily', interval: 3 };
 			const result = computeNextDue(d('2026-03-10'), rule)!;
-			expect(result.getDate()).toBe(13);
+			expect(result.getUTCDate()).toBe(13);
 		});
 
 		it('crosses month boundary', () => {
 			const rule: RecurrenceRule = { frequency: 'daily', interval: 1 };
 			const result = computeNextDue(d('2026-03-31'), rule)!;
-			expect(result.getMonth()).toBe(3); // April
-			expect(result.getDate()).toBe(1);
+			expect(result.getUTCMonth()).toBe(3); // April
+			expect(result.getUTCDate()).toBe(1);
 		});
 	});
 
@@ -35,13 +35,13 @@ describe('computeNextDue', () => {
 		it('advances by 7 days with interval=1', () => {
 			const rule: RecurrenceRule = { frequency: 'weekly', interval: 1 };
 			const result = computeNextDue(d('2026-03-10'), rule)!;
-			expect(result.getDate()).toBe(17);
+			expect(result.getUTCDate()).toBe(17);
 		});
 
 		it('advances by 14 days with interval=2', () => {
 			const rule: RecurrenceRule = { frequency: 'weekly', interval: 2 };
 			const result = computeNextDue(d('2026-03-10'), rule)!;
-			expect(result.getDate()).toBe(24);
+			expect(result.getUTCDate()).toBe(24);
 		});
 	});
 
@@ -51,21 +51,21 @@ describe('computeNextDue', () => {
 			// Tuesday due, rule says Mon(0), Thu(3) → next is Thursday
 			const rule: RecurrenceRule = { frequency: 'weekly', interval: 1, byweekday: [0, 3] };
 			const result = computeNextDue(d('2026-03-10'), rule)!;
-			expect(result.getDate()).toBe(12); // Thursday Mar 12
+			expect(result.getUTCDate()).toBe(12); // Thursday Mar 12
 		});
 
 		it('wraps to first day of next week when no days left', () => {
 			// Tuesday due, rule says Mon(0) only → next Monday
 			const rule: RecurrenceRule = { frequency: 'weekly', interval: 1, byweekday: [0] };
 			const result = computeNextDue(d('2026-03-10'), rule)!;
-			expect(result.getDate()).toBe(16); // Monday Mar 16
+			expect(result.getUTCDate()).toBe(16); // Monday Mar 16
 		});
 
 		it('skips weeks with interval=2', () => {
 			// Friday (2026-03-13 is a Friday, weekday=4), rule: Fri every 2 weeks
 			const rule: RecurrenceRule = { frequency: 'weekly', interval: 2, byweekday: [4] };
 			const result = computeNextDue(d('2026-03-13'), rule)!;
-			expect(result.getDate()).toBe(27); // Friday Mar 27
+			expect(result.getUTCDate()).toBe(27); // Friday Mar 27
 		});
 
 		it('interval=2 from non-scheduled day jumps full interval', () => {
@@ -73,15 +73,15 @@ describe('computeNextDue', () => {
 			// Should NOT return this Sunday (Mar 22) — must respect the 2-week interval
 			const rule: RecurrenceRule = { frequency: 'weekly', interval: 2, byweekday: [6] };
 			const result = computeNextDue(d('2026-03-19'), rule)!;
-			expect(result.getMonth()).toBe(3); // April
-			expect(result.getDate()).toBe(5); // Sunday Apr 5
+			expect(result.getUTCMonth()).toBe(3); // April
+			expect(result.getUTCDate()).toBe(5); // Sunday Apr 5
 		});
 
 		it('handles multiple days across week boundary', () => {
 			// Saturday (2026-03-14, weekday=5), rule: Mon(0), Wed(2) → next Mon
 			const rule: RecurrenceRule = { frequency: 'weekly', interval: 1, byweekday: [0, 2] };
 			const result = computeNextDue(d('2026-03-14'), rule)!;
-			expect(result.getDate()).toBe(16); // Monday Mar 16
+			expect(result.getUTCDate()).toBe(16); // Monday Mar 16
 		});
 	});
 
@@ -89,69 +89,52 @@ describe('computeNextDue', () => {
 		it('advances by 1 month', () => {
 			const rule: RecurrenceRule = { frequency: 'monthly', interval: 1 };
 			const result = computeNextDue(d('2026-01-15'), rule)!;
-			expect(result.getMonth()).toBe(1); // February
-			expect(result.getDate()).toBe(15);
+			expect(result.getUTCMonth()).toBe(1); // February
+			expect(result.getUTCDate()).toBe(15);
 		});
 
 		it('advances by 2 months', () => {
 			const rule: RecurrenceRule = { frequency: 'monthly', interval: 2 };
 			const result = computeNextDue(d('2026-01-15'), rule)!;
-			expect(result.getMonth()).toBe(2); // March
-			expect(result.getDate()).toBe(15);
+			expect(result.getUTCMonth()).toBe(2); // March
+			expect(result.getUTCDate()).toBe(15);
 		});
 
 		it('clamps Jan 31 to Feb 28 in non-leap year', () => {
 			const rule: RecurrenceRule = { frequency: 'monthly', interval: 1 };
 			// 2026 is not a leap year
 			const result = computeNextDue(d('2026-01-31'), rule)!;
-			expect(result.getMonth()).toBe(1);
-			expect(result.getDate()).toBe(28);
+			expect(result.getUTCMonth()).toBe(1);
+			expect(result.getUTCDate()).toBe(28);
 		});
 
 		it('clamps Jan 31 to Feb 29 in leap year', () => {
 			const rule: RecurrenceRule = { frequency: 'monthly', interval: 1 };
 			// 2028 is a leap year
 			const result = computeNextDue(d('2028-01-31'), rule)!;
-			expect(result.getMonth()).toBe(1);
-			expect(result.getDate()).toBe(29);
+			expect(result.getUTCMonth()).toBe(1);
+			expect(result.getUTCDate()).toBe(29);
 		});
 
 		it('clamps Mar 31 to Apr 30', () => {
 			const rule: RecurrenceRule = { frequency: 'monthly', interval: 1 };
 			const result = computeNextDue(d('2026-03-31'), rule)!;
-			expect(result.getMonth()).toBe(3); // April
-			expect(result.getDate()).toBe(30);
+			expect(result.getUTCMonth()).toBe(3); // April
+			expect(result.getUTCDate()).toBe(30);
 		});
 
 		it('handles Jan 29 to Feb 28 in non-leap year', () => {
 			const rule: RecurrenceRule = { frequency: 'monthly', interval: 1 };
 			const result = computeNextDue(d('2026-01-29'), rule)!;
-			expect(result.getMonth()).toBe(1);
-			expect(result.getDate()).toBe(28);
+			expect(result.getUTCMonth()).toBe(1);
+			expect(result.getUTCDate()).toBe(28);
 		});
 
 		it('interval=2 from Jan 31 to Mar 31', () => {
 			const rule: RecurrenceRule = { frequency: 'monthly', interval: 2 };
 			const result = computeNextDue(d('2026-01-31'), rule)!;
-			expect(result.getMonth()).toBe(2); // March
-			expect(result.getDate()).toBe(31);
-		});
-	});
-
-	describe('time_of_day', () => {
-		it('sets time when specified', () => {
-			const rule: RecurrenceRule = { frequency: 'daily', interval: 1, time_of_day: '09:00' };
-			const result = computeNextDue(d('2026-03-10'), rule)!;
-			expect(result.getHours()).toBe(9);
-			expect(result.getMinutes()).toBe(0);
-		});
-
-		it('preserves original time when not specified', () => {
-			const rule: RecurrenceRule = { frequency: 'daily', interval: 1 };
-			const base = new Date('2026-03-10T14:30:00');
-			const result = computeNextDue(base, rule)!;
-			expect(result.getHours()).toBe(14);
-			expect(result.getMinutes()).toBe(30);
+			expect(result.getUTCMonth()).toBe(2); // March
+			expect(result.getUTCDate()).toBe(31);
 		});
 	});
 
@@ -219,35 +202,31 @@ describe('computeNextDue', () => {
 			// US DST spring forward 2026: March 8
 			// Due on March 7 → next is March 8 (still a valid date)
 			const rule: RecurrenceRule = { frequency: 'daily', interval: 1 };
-			const base = new Date(2026, 2, 7, 10, 0); // March 7, 10:00 local
-			const result = computeNextDue(base, rule)!;
-			expect(result.getDate()).toBe(8);
-			expect(result.getMonth()).toBe(2);
+			const result = computeNextDue(d('2026-03-07'), rule)!;
+			expect(result.getUTCDate()).toBe(8);
+			expect(result.getUTCMonth()).toBe(2);
 		});
 
 		it('fall back: daily recurrence preserves wall-clock day', () => {
 			// US DST fall back 2026: November 1
 			const rule: RecurrenceRule = { frequency: 'daily', interval: 1 };
-			const base = new Date(2026, 10, 1, 2, 30); // Nov 1, 02:30 local
-			const result = computeNextDue(base, rule)!;
-			expect(result.getDate()).toBe(2);
-			expect(result.getMonth()).toBe(10);
+			const result = computeNextDue(d('2026-11-01'), rule)!;
+			expect(result.getUTCDate()).toBe(2);
+			expect(result.getUTCMonth()).toBe(10);
 		});
 
 		it('weekly recurrence across DST boundary', () => {
 			const rule: RecurrenceRule = { frequency: 'weekly', interval: 1 };
-			const base = new Date(2026, 2, 7, 10, 0); // March 7 (Sat)
-			const result = computeNextDue(base, rule)!;
-			expect(result.getDate()).toBe(14);
+			const result = computeNextDue(d('2026-03-07'), rule)!;
+			expect(result.getUTCDate()).toBe(14);
 		});
 
 		it('monthly recurrence across DST boundary', () => {
 			// Feb → March crosses DST
 			const rule: RecurrenceRule = { frequency: 'monthly', interval: 1 };
-			const base = new Date(2026, 1, 15, 10, 0); // Feb 15
-			const result = computeNextDue(base, rule)!;
-			expect(result.getMonth()).toBe(2); // March
-			expect(result.getDate()).toBe(15);
+			const result = computeNextDue(d('2026-02-15'), rule)!;
+			expect(result.getUTCMonth()).toBe(2); // March
+			expect(result.getUTCDate()).toBe(15);
 		});
 	});
 });
@@ -269,7 +248,7 @@ describe('isRecurrenceExpired', () => {
 			interval: 1,
 			ends: { type: 'on_date', date: '2026-03-10' },
 		};
-		expect(isRecurrenceExpired(rule, new Date('2026-03-11T00:00:00'))).toBe(true);
+		expect(isRecurrenceExpired(rule, new Date('2026-03-11T00:00:00Z'))).toBe(true);
 	});
 
 	it('returns false when next due is before end date', () => {
@@ -278,7 +257,7 @@ describe('isRecurrenceExpired', () => {
 			interval: 1,
 			ends: { type: 'on_date', date: '2026-03-15' },
 		};
-		expect(isRecurrenceExpired(rule, new Date('2026-03-11T00:00:00'))).toBe(false);
+		expect(isRecurrenceExpired(rule, new Date('2026-03-11T00:00:00Z'))).toBe(false);
 	});
 
 	it('after_n_occurrences: returns false when occurrences_completed < count', () => {
@@ -342,12 +321,6 @@ describe('describeRecurrence', () => {
 		expect(describeRecurrence({ frequency: 'monthly', interval: 2 })).toBe('Every 2 months');
 	});
 
-	it('with time_of_day', () => {
-		expect(
-			describeRecurrence({ frequency: 'daily', interval: 1, time_of_day: '09:00' })
-		).toBe('Daily at 09:00');
-	});
-
 	it('with end date', () => {
 		expect(
 			describeRecurrence({
@@ -394,15 +367,14 @@ describe('describeRecurrence', () => {
 		).toBe('Daily for 1 more time');
 	});
 
-	it('after_n_occurrences: combined with days and time', () => {
+	it('after_n_occurrences: combined with days', () => {
 		expect(
 			describeRecurrence({
 				frequency: 'weekly',
 				interval: 1,
 				byweekday: [0, 4],
-				time_of_day: '09:00',
 				ends: { type: 'after_n_occurrences', count: 10, occurrences_completed: 7 },
 			})
-		).toBe('Weekly on Mon, Fri at 09:00 for 3 more times');
+		).toBe('Weekly on Mon, Fri for 3 more times');
 	});
 });

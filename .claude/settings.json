@@ -22,7 +22,10 @@
       "Bash(cat '/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/+layout.svelte')",
       "Bash(find /Users/colinrodrigues/Taskmaster -type f \\\\\\(-name *.sql -o -name *schema* -o -name *migration* \\\\\\))",
       "Bash(find /Users/colinrodrigues/Taskmaster/supabase/migrations -name \"*.sql\" -exec basename {})",
-      "Bash(find /Users/colinrodrigues/Taskmaster -name config.json -o -name supabase.json -o -name *.schema.sql)"
+      "Bash(find /Users/colinrodrigues/Taskmaster -name config.json -o -name supabase.json -o -name *.schema.sql)",
+      "Bash(grep -h \"due_at\\\\|reminder_at\\\\|start_at\\\\|duration\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*.sql)",
+      "Bash(grep -l \"CREATE TABLE\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*.sql)",
+      "Read(//Users/colinrodrigues/.claude/plans/**)"
     ]
   }
 }
