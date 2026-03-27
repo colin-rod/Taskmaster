@@ -528,18 +528,20 @@
         </ContextMenu.SubContent>
       </ContextMenu.Sub>
 
-      <!-- Reminder -->
-      <ContextMenu.Sub>
-        <ContextMenu.SubTrigger>Set Reminder</ContextMenu.SubTrigger>
-        <ContextMenu.SubContent>
-          <ContextMenu.Item onSelect={() => patchTask({ reminder_at: quickDate(0) })}>Today</ContextMenu.Item>
-          <ContextMenu.Item onSelect={() => patchTask({ reminder_at: quickDate(1) })}>Tomorrow</ContextMenu.Item>
-          <ContextMenu.Item onSelect={() => patchTask({ reminder_at: quickDate(7) })}>Next week</ContextMenu.Item>
-          {#if task.reminder_at}
-            <ContextMenu.Item onSelect={() => patchTask({ reminder_at: null })}>Clear reminder</ContextMenu.Item>
-          {/if}
-        </ContextMenu.SubContent>
-      </ContextMenu.Sub>
+      <!-- Reminder (only show when task has a due date) -->
+      {#if task.due_at}
+        <ContextMenu.Sub>
+          <ContextMenu.SubTrigger>Set Reminder</ContextMenu.SubTrigger>
+          <ContextMenu.SubContent>
+            <ContextMenu.Item onSelect={() => patchTask({ reminder_at: quickDate(0) })}>Today</ContextMenu.Item>
+            <ContextMenu.Item onSelect={() => patchTask({ reminder_at: quickDate(1) })}>Tomorrow</ContextMenu.Item>
+            <ContextMenu.Item onSelect={() => patchTask({ reminder_at: quickDate(7) })}>Next week</ContextMenu.Item>
+            {#if task.reminder_at}
+              <ContextMenu.Item onSelect={() => patchTask({ reminder_at: null })}>Clear reminder</ContextMenu.Item>
+            {/if}
+          </ContextMenu.SubContent>
+        </ContextMenu.Sub>
+      {/if}
 
       <!-- Labels -->
       {#if listLabels.length > 0}

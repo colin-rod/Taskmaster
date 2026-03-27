@@ -11,6 +11,8 @@
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
   import QuickAdd from '$lib/components/QuickAdd.svelte';
+  import SortFilterAccordion from '$lib/components/SortFilterAccordion.svelte';
+  import { createSortFilterState } from '$lib/stores/sort-filter.svelte.js';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -32,6 +34,8 @@
   let activeTasks = $derived(data.tasks.filter((t) => t.status !== 'done' && t.status !== 'canceled'));
   let completedTasks = $derived(data.tasks.filter((t) => t.status === 'done' || t.status === 'canceled'));
   let showCompleted = $state(false);
+
+  const sf = createSortFilterState(() => activeTasks);
   const ListIcon = $derived(getListIcon(data.list.icon));
 
   // svelte-ignore state_referenced_locally
@@ -142,8 +146,12 @@
   </div>
 
   <div class="mb-6">
-    <QuickAdd action="?/createTask" />
+    <QuickAdd action="?/createTask" listId={data.list.id} />
   </div>
+
+  {#if activeTasks.length > 0}
+    <SortFilterAccordion filters={sf} />
+  {/if}
 
   {#if form?.error}
     <div class="mb-4 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
@@ -158,7 +166,7 @@
     </div>
   {:else}
     <div class="space-y-3">
-      {#each activeTasks as task (task.id)}
+      {#each sf.displayedTasks as task (task.id)}
         <TaskRow {task} onselect={openTask} {userRole} members={data.list.members ?? []} listLabels={data.labels ?? []} />
       {/each}
     </div>

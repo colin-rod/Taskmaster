@@ -8,6 +8,9 @@
   import TaskListSection from '$lib/components/TaskListSection.svelte';
   import GettingStartedChecklist from '$lib/components/GettingStartedChecklist.svelte';
   import { groupByDay } from '$lib/utils/tasks.js';
+  import SortFilterAccordion from '$lib/components/SortFilterAccordion.svelte';
+  import { createSortFilterState } from '$lib/stores/sort-filter.svelte.js';
+  import { filterTasks, sortTasks } from '$lib/utils/sort-filter.js';
   import { createOnboardingStore } from '$lib/stores/onboarding.js';
   import { browser } from '$app/environment';
 
@@ -53,9 +56,12 @@
     sheetOpen = true;
   }
 
-  let activeOverdue = $derived(data.overdue);
-  let activeDueToday = $derived(data.dueToday);
-  let activeUpcoming = $derived(data.upcoming);
+  let allActiveTasks = $derived([...data.overdue, ...data.dueToday, ...data.upcoming]);
+  const sf = createSortFilterState(() => allActiveTasks);
+
+  let activeOverdue = $derived(filterTasks(sortTasks(data.overdue, sf.sortKey), sf.filterPriority, sf.filterDue));
+  let activeDueToday = $derived(filterTasks(sortTasks(data.dueToday, sf.sortKey), sf.filterPriority, sf.filterDue));
+  let activeUpcoming = $derived(filterTasks(sortTasks(data.upcoming, sf.sortKey), sf.filterPriority, sf.filterDue));
 
   let completedTasks = $derived(data.completedToday);
 
@@ -73,6 +79,10 @@
       visitedCalendar={onboarding.visitedCalendar}
       onDismiss={dismissChecklist}
     />
+  {/if}
+
+  {#if allActiveTasks.length > 0}
+    <SortFilterAccordion filters={sf} />
   {/if}
 
   {#if !hasTodayTasks && upcomingGroups.length === 0 && completedTasks.length === 0}

@@ -25,7 +25,10 @@
       "Bash(find /Users/colinrodrigues/Taskmaster -name config.json -o -name supabase.json -o -name *.schema.sql)",
       "Bash(grep -h \"due_at\\\\|reminder_at\\\\|start_at\\\\|duration\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*.sql)",
       "Bash(grep -l \"CREATE TABLE\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*.sql)",
-      "Read(//Users/colinrodrigues/.claude/plans/**)"
+      "Read(//Users/colinrodrigues/.claude/plans/**)",
+      "Bash(head -100 \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/today/+page.server.ts\")",
+      "WebFetch(domain:joonote.com)",
+      "Bash(grep -n \"listLabels\\\\|labels\" /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\)/lists/[id]/+page.svelte)"
     ]
   }
 }

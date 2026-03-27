@@ -5,6 +5,8 @@
   import TaskSheet from '$lib/components/TaskSheet.svelte';
   import CompletedTasksSection from '$lib/components/CompletedTasksSection.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
+  import SortFilterAccordion from '$lib/components/SortFilterAccordion.svelte';
+  import { createSortFilterState } from '$lib/stores/sort-filter.svelte.js';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
 
@@ -29,10 +31,16 @@
 
   let activeTasks = $derived(data.tasks.filter((t) => t.status !== 'done' && t.status !== 'canceled'));
   let completedTasks = $derived(data.tasks.filter((t) => t.status === 'done' || t.status === 'canceled'));
+
+  const sf = createSortFilterState(() => activeTasks);
 </script>
 
 <div>
   <h1 class="text-page-title font-accent page-title-accent mb-8">Assigned to Me</h1>
+
+  {#if activeTasks.length > 0}
+    <SortFilterAccordion filters={sf} />
+  {/if}
 
   {#if activeTasks.length === 0 && completedTasks.length === 0}
     <EmptyState title="No open assignments." subtitle="Nothing's been sent your way yet.">
@@ -49,7 +57,7 @@
     </EmptyState>
   {:else}
     <div class="space-y-2">
-      {#each activeTasks as task (task.id)}
+      {#each sf.displayedTasks as task (task.id)}
         <div in:fly={{ y: -8, duration: motionDuration, easing: cubicOut }}>
           <TaskRow {task} onselect={openTask} userRole={taskRole(task)} />
         </div>

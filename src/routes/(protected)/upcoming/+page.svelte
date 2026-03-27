@@ -5,6 +5,8 @@
   import CompletedTasksSection from '$lib/components/CompletedTasksSection.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
   import TaskListSection from '$lib/components/TaskListSection.svelte';
+  import SortFilterAccordion from '$lib/components/SortFilterAccordion.svelte';
+  import { createSortFilterState } from '$lib/stores/sort-filter.svelte.js';
   import { groupByDay } from '$lib/utils/tasks.js';
 
   let { data }: { data: PageData } = $props();
@@ -27,11 +29,16 @@
   let activeTasks = $derived(data.tasks.filter((t) => t.status !== 'done' && t.status !== 'canceled'));
   let completedTasks = $derived(data.tasks.filter((t) => t.status === 'done' || t.status === 'canceled'));
 
-  let dayGroups = $derived(groupByDay(activeTasks));
+  const sf = createSortFilterState(() => activeTasks);
+  let dayGroups = $derived(groupByDay(sf.displayedTasks));
 </script>
 
 <div>
   <h1 class="text-page-title font-accent page-title-accent mb-8">Upcoming</h1>
+
+  {#if activeTasks.length > 0}
+    <SortFilterAccordion filters={sf} />
+  {/if}
 
   {#if dayGroups.length === 0 && completedTasks.length === 0}
     <EmptyState title="Nothing on the horizon." subtitle="The next 7 days are yours.">

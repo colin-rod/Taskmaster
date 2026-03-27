@@ -44,21 +44,24 @@ export const actions: Actions = {
       try { recurrence_rule = JSON.parse(recurrence_rule_raw); } catch { /* ignore */ }
     }
 
+    const reminder_at = formData.get('reminder_at')?.toString() || null;
+
     if (!title) return fail(400, { error: 'Task title is required' });
 
-    const { error } = await supabase.from('tasks').insert({
+    const { data: newTask, error } = await supabase.from('tasks').insert({
       title,
       list_id: null,
       owner_id: profileId!,
       due_at,
+      reminder_at,
       status: 'todo',
       priority,
       is_recurring,
       recurrence_rule,
-    });
+    }).select('id').single();
 
     if (error) return fail(500, { error: error.message });
-    return { success: true };
+    return { success: true, taskId: newTask.id };
   },
 
   toggleTask: async ({ request, locals: { supabase } }) => {
