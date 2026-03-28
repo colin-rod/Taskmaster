@@ -9,7 +9,6 @@
 		DUE_ACTIVE_CLASSES,
 		type SortKey
 	} from '$lib/utils/sort-filter.js';
-	import * as Collapsible from '$lib/components/ui/collapsible/index.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import { ChevronDown, SlidersHorizontal, X } from '@lucide/svelte';
 	import { slide } from 'svelte/transition';
