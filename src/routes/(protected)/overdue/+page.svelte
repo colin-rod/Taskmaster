@@ -36,9 +36,7 @@
 </script>
 
 <div>
-  <h1 class="text-page-title font-accent page-title-accent mb-8">
-    Overdue{#if activeTasks.length > 0}<span class="text-destructive"> ({activeTasks.length})</span>{/if}
-  </h1>
+  <h1 class="text-page-title font-accent page-title-accent mb-8">Overdue</h1>
 
   {#if activeTasks.length > 0}
     <SortFilterAccordion filters={sf} />
