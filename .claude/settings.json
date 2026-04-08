@@ -28,7 +28,13 @@
       "Read(//Users/colinrodrigues/.claude/plans/**)",
       "Bash(head -100 \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/today/+page.server.ts\")",
       "WebFetch(domain:joonote.com)",
-      "Bash(grep -n \"listLabels\\\\|labels\" /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\)/lists/[id]/+page.svelte)"
+      "Bash(grep -n \"listLabels\\\\|labels\" /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\)/lists/[id]/+page.svelte)",
+      "Bash(cat /Users/colinrodrigues/Taskmaster/supabase/migrations/*)",
+      "Bash(xargs -I {} cat /Users/colinrodrigues/Taskmaster/supabase/migrations/{})",
+      "Bash(grep -l \"CREATE TABLE tasks\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*)",
+      "Bash(grep -r \"progress_current\\\\|progress_total\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*.sql)",
+      "Bash(grep -l \"tasks\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*.sql)",
+      "Bash(xargs -I {} basename {})"
     ]
   }
 }

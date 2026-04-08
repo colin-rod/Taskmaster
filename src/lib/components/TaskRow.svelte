@@ -6,7 +6,7 @@
   import { cubicOut } from 'svelte/easing';
   import type { Task, ListRole, Profile, Label, TaskList } from '$lib/types/index.js';
   import { describeRecurrence } from '$lib/utils/recurrence.js';
-  import { Repeat2, Ellipsis, Check, Bell, CircleDot, BarChart2 } from '@lucide/svelte';
+  import { Repeat2, Ellipsis, Check, Bell, CircleDot, BarChart2, Pencil } from '@lucide/svelte';
   import LabelBadge from '$lib/components/LabelBadge.svelte';
   import LabelPicker from '$lib/components/LabelPicker.svelte';
   import InlineEditTitle from '$lib/components/InlineEditTitle.svelte';
@@ -62,6 +62,7 @@
   let deleted = $state(false);
   let progressPopoverOpen = $state(false);
   let progressInputValue = $state(0);
+  let progressShowLeft = $state(false);
   let reminderPopoverOpen = $state(false);
   let labelPickerOpen = $state(false);
 
@@ -385,18 +386,32 @@
             {/if}
 
             {#if task.progress_total != null}
+              {@const isComplete = (task.progress_current ?? 0) >= task.progress_total! && task.progress_total! > 0}
+              {@const badgeClasses = isComplete ? 'bg-status-done/10 text-status-done' : 'bg-background text-foreground-muted/80 border border-border/50'}
+              {@const displayValue = progressShowLeft ? (task.progress_total! - (task.progress_current ?? 0)) : (task.progress_current ?? 0)}
               <Popover.Root bind:open={progressPopoverOpen}>
-                <Popover.Trigger>
+                <div class="flex items-center">
                   <button
                     type="button"
-                    onclick={() => { progressInputValue = task.progress_current ?? 0; progressPopoverOpen = true; }}
-                    class="text-xs flex items-center gap-1 px-1.5 py-0.5 rounded-full cursor-pointer {(task.progress_current ?? 0) >= task.progress_total! && task.progress_total! > 0 ? 'bg-status-done/10 text-status-done' : 'bg-background text-foreground-muted/80 border border-border/50'}"
-                    aria-label="Progress: {task.progress_current ?? 0} of {task.progress_total}"
+                    onclick={() => { progressShowLeft = !progressShowLeft; }}
+                    class="text-xs flex items-center gap-1 px-1.5 py-0.5 rounded-l-full cursor-pointer {badgeClasses} border-r-0"
+                    aria-label="{progressShowLeft ? 'Remaining' : 'Progress'}: {displayValue} of {task.progress_total}"
+                    title={progressShowLeft ? 'Showing remaining — tap to show done' : 'Showing done — tap to show remaining'}
                   >
                     <BarChart2 class="w-3 h-3" aria-hidden="true" />
-                    {task.progress_current ?? 0}/{task.progress_total}
+                    {displayValue}/{task.progress_total}{#if progressShowLeft}<span class="text-[9px] opacity-60 ml-0.5">left</span>{/if}
                   </button>
-                </Popover.Trigger>
+                  <Popover.Trigger>
+                    <button
+                      type="button"
+                      onclick={() => { progressInputValue = task.progress_current ?? 0; }}
+                      class="text-xs px-1 py-0.5 rounded-r-full cursor-pointer {badgeClasses} border-l-0"
+                      aria-label="Edit progress"
+                    >
+                      <Pencil class="w-2.5 h-2.5" />
+                    </button>
+                  </Popover.Trigger>
+                </div>
                 <Popover.Content class="w-52 p-3" align="start" side="top" sideOffset={6}>
                   <p class="text-xs text-foreground-muted mb-2">Update progress (total: {task.progress_total})</p>
                   <div class="flex items-center gap-2">
@@ -436,7 +451,11 @@
           {#if task.progress_total != null && task.progress_total > 0}
             {@const pct = Math.min(100, Math.round(((task.progress_current ?? 0) / task.progress_total) * 100))}
             <div class="mt-1.5 h-1 w-full rounded-full bg-border/40 overflow-hidden">
-              <div class="h-full rounded-full bg-primary/60 transition-all duration-300" style="width: {pct}%"></div>
+              {#if progressShowLeft}
+                <div class="h-full rounded-full bg-amber-400/60 transition-all duration-300 ml-auto" style="width: {100 - pct}%"></div>
+              {:else}
+                <div class="h-full rounded-full bg-primary/60 transition-all duration-300" style="width: {pct}%"></div>
+              {/if}
             </div>
           {/if}
         </div>

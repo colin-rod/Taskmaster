@@ -1,6 +1,7 @@
 <script lang="ts">
   import { tick } from 'svelte';
   import { enhance } from '$app/forms';
+  import { invalidate } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import {
     Sheet,
@@ -126,6 +127,7 @@
       });
       if (res.ok) {
         if (requestId === latestSaveRequestId) { saveState = 'saved'; queueSaveStateIdleReset(); }
+        await invalidate('app:tasks');
       } else {
         if (requestId === latestSaveRequestId) saveState = 'error';
         toast.error('Failed to save');
