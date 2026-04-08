@@ -116,7 +116,7 @@
     {#snippet child({ props })}
       <div
         {...props}
-        class="task-row-hover flex items-center gap-3 rounded-md border bg-surface px-4 py-4 group overflow-hidden"
+        class="task-row-hover flex items-center gap-3 rounded-md border bg-surface px-4 py-2.5 group overflow-hidden"
         class:is-completing-row={justCompleted}
         class:task-row-in-progress={optimisticStatus === 'in_progress'}
         tabindex="0"
