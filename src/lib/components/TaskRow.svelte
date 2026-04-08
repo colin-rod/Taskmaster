@@ -194,11 +194,11 @@
         {/if}
 
         <!-- Task content — inline editable fields -->
-        <div class="flex-1 min-w-0">
-          <div class="flex items-center gap-2">
-            <span class="flex-1 min-w-0 {optimisticStatus === 'done' ? (justCompleted ? 'task-done-title' : 'line-through') + ' text-foreground-muted/70 text-[14px]' : 'font-[510] text-[15px] text-foreground tracking-[-0.01em]'}">
+        <div class="flex-1 min-w-0 overflow-hidden">
+          <div class="flex items-center gap-2 min-w-0">
+            <div class="flex-1 min-w-0 overflow-hidden {optimisticStatus === 'done' ? (justCompleted ? 'task-done-title' : 'line-through') + ' text-foreground-muted/70 text-[14px]' : 'font-[510] text-[15px] text-foreground tracking-[-0.01em]'}">
               <InlineEditTitle taskId={task.id} value={task.title} disabled={!canEdit} />
-            </span>
+            </div>
             <!-- Labels — badges open the picker for editors, static for viewers -->
             {#if canEdit}
               <div class="relative flex items-center">
