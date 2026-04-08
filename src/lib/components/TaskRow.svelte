@@ -13,7 +13,7 @@
   import PriorityPicker from '$lib/components/PriorityPicker.svelte';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
   import AssigneePicker from '$lib/components/AssigneePicker.svelte';
-  import { formatDateOnly } from '$lib/utils/dates.js';
+  import { formatDateOnly, formatShortDate } from '$lib/utils/dates.js';
   import { PRIORITY_OPTIONS, getDueDateClass } from '$lib/utils/design-tokens.js';
   import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -86,6 +86,13 @@
   function quickDate(daysFromNow: number): string {
     const d = new Date();
     d.setUTCDate(d.getUTCDate() + daysFromNow);
+    d.setUTCHours(0, 0, 0, 0);
+    return d.toISOString();
+  }
+
+  function quickDateNextMonth(): string {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1);
     d.setUTCHours(0, 0, 0, 0);
     return d.toISOString();
   }
@@ -508,8 +515,30 @@
         <ContextMenu.SubTrigger>Set Due Date</ContextMenu.SubTrigger>
         <ContextMenu.SubContent>
           <ContextMenu.Item onSelect={() => patchTask({ due_at: quickDate(0) })}>Today</ContextMenu.Item>
-          <ContextMenu.Item onSelect={() => patchTask({ due_at: quickDate(1) })}>Tomorrow</ContextMenu.Item>
-          <ContextMenu.Item onSelect={() => patchTask({ due_at: quickDate(7) })}>Next week</ContextMenu.Item>
+          <ContextMenu.Item onSelect={() => patchTask({ due_at: quickDate(1) })}>
+            <span class="flex items-center justify-between w-full gap-4">
+              <span>Tomorrow</span>
+              <span class="text-foreground-secondary text-xs">{formatShortDate(quickDate(1))}</span>
+            </span>
+          </ContextMenu.Item>
+          <ContextMenu.Item onSelect={() => patchTask({ due_at: quickDate(7) })}>
+            <span class="flex items-center justify-between w-full gap-4">
+              <span>Next week</span>
+              <span class="text-foreground-secondary text-xs">{formatShortDate(quickDate(7))}</span>
+            </span>
+          </ContextMenu.Item>
+          <ContextMenu.Item onSelect={() => patchTask({ due_at: quickDate(14) })}>
+            <span class="flex items-center justify-between w-full gap-4">
+              <span>In two weeks</span>
+              <span class="text-foreground-secondary text-xs">{formatShortDate(quickDate(14))}</span>
+            </span>
+          </ContextMenu.Item>
+          <ContextMenu.Item onSelect={() => patchTask({ due_at: quickDateNextMonth() })}>
+            <span class="flex items-center justify-between w-full gap-4">
+              <span>Next month</span>
+              <span class="text-foreground-secondary text-xs">{formatShortDate(quickDateNextMonth())}</span>
+            </span>
+          </ContextMenu.Item>
           {#if task.due_at}
             <ContextMenu.Item onSelect={() => patchTask({ due_at: null })}>Remove date</ContextMenu.Item>
           {/if}
