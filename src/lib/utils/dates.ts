@@ -25,3 +25,8 @@ export function formatDateOnly(due_at: string | null): string {
 export function formatDisplay(due_at: string | null): string {
   return formatDateOnly(due_at);
 }
+
+export function formatShortDate(due_at: string): string {
+  const date = new Date(due_at);
+  return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', timeZone: 'UTC' });
+}

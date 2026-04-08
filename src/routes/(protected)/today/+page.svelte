@@ -70,7 +70,7 @@
 </script>
 
 <div>
-  <h1 class="text-page-title font-accent page-title-accent mb-8">Today</h1>
+  <h1 class="text-page-title font-accent page-title-accent mb-4">Today</h1>
 
   {#if !onboarding.dismissed}
     <GettingStartedChecklist
@@ -120,14 +120,14 @@
   <!-- Upcoming section (combined Home view) -->
   {#if upcomingGroups.length > 0}
     <div class="mt-2">
-      <div class="flex items-baseline gap-3 mb-4">
+      <div class="flex items-baseline gap-3 mb-3">
         <h2 class="text-section-header font-accent text-foreground-secondary" style="font-optical-sizing: auto;">Coming Up</h2>
         <div class="flex-1 h-px bg-border-divider"></div>
       </div>
       {#each upcomingGroups as group (group.isoDate)}
-        <div class="mb-4">
+        <div class="mb-3">
           <h3 class="text-xs font-semibold tracking-wide uppercase text-foreground-muted/70 mb-2.5">{group.label}</h3>
-          <div class="space-y-2">
+          <div class="space-y-1.5">
             {#each group.tasks as task (task.id)}
               <TaskRow {task} onselect={openTask} userRole={taskRole(task)} />
             {/each}
