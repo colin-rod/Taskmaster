@@ -8,7 +8,8 @@
   import { createSortFilterState } from '$lib/stores/sort-filter.svelte.js';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
-  import { CalendarDays } from '@lucide/svelte';
+  import { CalendarDays, Layers } from '@lucide/svelte';
+  import { getListIcon } from '$lib/utils/icons.js';
 
   const motionDuration = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 200;
 
@@ -16,10 +17,31 @@
 
   let selectedTask = $state<Task | null>(null);
   let sheetOpen = $state(false);
+  let showListTasks = $state(false);
 
-  let activeTasks = $derived(data.tasks.filter((t) => t.status !== 'done' && t.status !== 'canceled'));
+  let activeTasks = $derived(
+    data.tasks.filter(
+      (t) => t.status !== 'done' && t.status !== 'canceled' && (showListTasks || t.list_id === null)
+    )
+  );
 
   const sf = createSortFilterState(() => activeTasks);
+
+  let groupedSections = $derived(() => {
+    const inboxTasks = sf.displayedTasks.filter((t) => t.list_id === null);
+    const listTaskMap = new Map<string, typeof sf.displayedTasks>();
+    for (const task of sf.displayedTasks) {
+      if (task.list_id !== null) {
+        const bucket = listTaskMap.get(task.list_id) ?? [];
+        bucket.push(task);
+        listTaskMap.set(task.list_id, bucket);
+      }
+    }
+    const listSections = data.lists
+      .filter((l) => listTaskMap.has(l.id))
+      .map((l) => ({ list: l, tasks: listTaskMap.get(l.id)! }));
+    return { inboxTasks, listSections };
+  });
 
   function openTask(task: Task) {
     selectedTask = task;
@@ -32,6 +54,19 @@
 
   <SortFilterAccordion filters={sf}>
     {#snippet extraControls()}
+      <button
+        type="button"
+        onclick={() => (showListTasks = !showListTasks)}
+        class="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border transition-colors
+          {showListTasks
+            ? 'border-primary bg-primary/10 text-primary'
+            : 'border-border text-foreground-secondary hover:border-foreground hover:text-foreground'}"
+        aria-pressed={showListTasks}
+        aria-label="Toggle list tasks"
+      >
+        <Layers class="w-3.5 h-3.5" />
+        <span class="hidden sm:inline">Lists</span>
+      </button>
       <a
         href="/calendar"
         class="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border border-border text-foreground-secondary hover:border-foreground hover:text-foreground transition-colors"
@@ -73,7 +108,7 @@
         Clear filters
       </button>
     </div>
-  {:else}
+  {:else if !showListTasks}
     <div class="space-y-2">
       {#each sf.displayedTasks as task (task.id)}
         <div in:fly={{ y: -8, duration: motionDuration, easing: cubicOut }}>
@@ -81,6 +116,55 @@
         </div>
       {/each}
     </div>
+  {:else}
+    {#if groupedSections.inboxTasks.length > 0}
+      <div class="mb-6">
+        {#if groupedSections.listSections.length > 0}
+          <div class="flex items-baseline gap-3 mb-3">
+            <h2 class="text-section-header font-accent text-foreground-secondary" style="font-optical-sizing: auto;">Inbox</h2>
+            <div class="flex-1 h-px bg-border-divider mt-0.5"></div>
+            <span class="text-[11px] font-medium text-foreground-muted tabular-nums">{groupedSections.inboxTasks.length}</span>
+          </div>
+        {/if}
+        <div class="space-y-2">
+          {#each groupedSections.inboxTasks as task (task.id)}
+            <div in:fly={{ y: -8, duration: motionDuration, easing: cubicOut }}>
+              <TaskRow {task} onselect={openTask} userRole="owner" lists={data.lists} />
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/if}
+    {#each groupedSections.listSections as { list, tasks } (list.id)}
+      {@const ListIcon = getListIcon(list.icon)}
+      <div class="mb-6">
+        <div class="flex items-baseline gap-3 mb-3">
+          <div class="flex items-center gap-1.5">
+            <div
+              class="w-4 h-4 rounded flex items-center justify-center shrink-0"
+              style="background-color: {list.color || 'hsl(var(--foreground-muted))'}"
+            >
+              <ListIcon class="w-2.5 h-2.5 text-white" />
+            </div>
+            <h2
+              class="text-section-header font-accent"
+              style="color: {list.color || 'hsl(var(--foreground))'}; font-optical-sizing: auto;"
+            >
+              {list.name}
+            </h2>
+          </div>
+          <div class="flex-1 h-px bg-border-divider mt-0.5"></div>
+          <span class="text-[11px] font-medium text-foreground-muted tabular-nums">{tasks.length}</span>
+        </div>
+        <div class="space-y-2">
+          {#each tasks as task (task.id)}
+            <div in:fly={{ y: -8, duration: motionDuration, easing: cubicOut }}>
+              <TaskRow {task} onselect={openTask} userRole="owner" lists={data.lists} />
+            </div>
+          {/each}
+        </div>
+      </div>
+    {/each}
   {/if}
 
 </div>
