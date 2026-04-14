@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { Inbox, CalendarDays, Plus, Search, Menu } from '@lucide/svelte';
+  import { Inbox, CalendarDays, Plus, List, Menu } from '@lucide/svelte';
   import * as Sheet from '$lib/components/ui/sheet/index.js';
   import QuickAdd from '$lib/components/QuickAdd.svelte';
 
@@ -10,7 +10,7 @@
     return pathname.startsWith(href);
   }
 
-  const moreRoutes = ['/more', '/calendar', '/lists', '/overdue', '/upcoming', '/assigned', '/completed', '/settings'];
+  const moreRoutes = ['/more', '/calendar', '/search', '/overdue', '/upcoming', '/assigned', '/completed', '/settings'];
 
   function isMoreActive(pathname: string): boolean {
     return moreRoutes.some((r) => pathname.startsWith(r));
@@ -49,14 +49,14 @@
       <Plus class="w-6 h-6" />
     </button>
 
-    <!-- Search tab -->
+    <!-- Lists tab -->
     <a
-      href="/search"
+      href="/lists"
       class="flex flex-col items-center gap-0.5 px-2 py-2 min-h-11 justify-center
-        {isActive('/search', $page.url.pathname) ? 'text-primary' : 'text-foreground-secondary'}"
+        {isActive('/lists', $page.url.pathname) ? 'text-primary' : 'text-foreground-secondary'}"
     >
-      <Search class="w-5 h-5" />
-      <span class="text-[10px] font-medium">Search</span>
+      <List class="w-5 h-5" />
+      <span class="text-[10px] font-medium">Lists</span>
     </a>
 
     <!-- More tab -->
