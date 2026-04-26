@@ -34,7 +34,8 @@
       "Bash(grep -l \"CREATE TABLE tasks\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*)",
       "Bash(grep -r \"progress_current\\\\|progress_total\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*.sql)",
       "Bash(grep -l \"tasks\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*.sql)",
-      "Bash(xargs -I {} basename {})"
+      "Bash(xargs -I {} basename {})",
+      "Bash(npm ls:*)"
     ]
   }
 }

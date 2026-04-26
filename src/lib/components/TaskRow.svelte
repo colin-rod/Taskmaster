@@ -182,6 +182,7 @@
                 {toggling ? 'opacity-50' : ''}"
               class:is-completing={justCompleted}
               disabled={toggling}
+              onclick={(e) => e.stopPropagation()}
               aria-label={optimisticStatus === 'done' ? 'Reopen task' : 'Complete task'}
             >
               {#if optimisticStatus === 'done'}
