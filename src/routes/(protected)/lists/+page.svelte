@@ -4,6 +4,7 @@
   import type { PageData, ActionData } from './$types';
   import { LIST_COLORS } from '$lib/types/index.js';
   import { LIST_ICONS, getListIcon } from '$lib/utils/icons.js';
+  import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -16,6 +17,13 @@
   let editColor = $state<string | null>(null);
   let editIcon = $state('list');
   let creating = $state(false);
+  let showArchived = $state(false);
+
+  // Alert dialog state
+  let deleteAlertOpen = $state(false);
+  let archiveAlertOpen = $state(false);
+  let targetListId = $state<string | null>(null);
+  let targetListName = $state('');
 
   function startEdit(list: { id: string; name: string; color: string | null; icon: string }) {
     editingListId = list.id;
@@ -26,6 +34,18 @@
 
   function cancelEdit() {
     editingListId = null;
+  }
+
+  function openArchiveAlert(list: { id: string; name: string }) {
+    targetListId = list.id;
+    targetListName = list.name;
+    archiveAlertOpen = true;
+  }
+
+  function openDeleteAlert(list: { id: string; name: string }) {
+    targetListId = list.id;
+    targetListName = list.name;
+    deleteAlertOpen = true;
   }
 </script>
 
@@ -233,31 +253,159 @@
               >
                 Edit
               </button>
-              <form
-                method="POST"
-                action="?/deleteList"
-                use:enhance={() => {
-                  return async ({ result, update }) => {
-                    if (result.type === 'success') {
-                      toast.success('List deleted');
-                    }
-                    await update();
-                  };
-                }}
+              <button
+                type="button"
+                class="rounded-md px-2.5 py-1 text-xs font-medium text-foreground-secondary hover:bg-surface-subtle transition-colors"
+                onclick={(e) => { e.preventDefault(); e.stopPropagation(); openArchiveAlert(list); }}
               >
-                <input type="hidden" name="id" value={list.id} />
-                <button
-                  type="submit"
-                  class="rounded-md px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
-                  onclick={(e) => { e.stopPropagation(); if (!confirm('Delete this list? Your tasks will be moved to Inbox and the list cannot be recovered.')) { e.preventDefault(); } }}
-                >
-                  Delete
-                </button>
-              </form>
+                Archive
+              </button>
+              <button
+                type="button"
+                class="rounded-md px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
+                onclick={(e) => { e.preventDefault(); e.stopPropagation(); openDeleteAlert(list); }}
+              >
+                Delete
+              </button>
             </div>
           </a>
         {/if}
       {/each}
     </div>
   {/if}
+
+  <!-- Archived lists section -->
+  {#if data.archivedLists.length > 0}
+    <div class="mt-8">
+      <button
+        type="button"
+        class="flex items-center gap-2 text-sm font-medium text-foreground-secondary hover:text-foreground transition-colors mb-3"
+        onclick={() => { showArchived = !showArchived; }}
+      >
+        <svg
+          class="w-4 h-4 transition-transform {showArchived ? 'rotate-90' : ''}"
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+          aria-hidden="true"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+        </svg>
+        Archived ({data.archivedLists.length})
+      </button>
+
+      {#if showArchived}
+        <div class="space-y-3">
+          {#each data.archivedLists as list (list.id)}
+            {@const IconComponent = getListIcon(list.icon)}
+            <div class="flex items-center justify-between rounded-xl border bg-surface px-5 py-4 opacity-60 group hover:opacity-80 transition-opacity shadow-level-1">
+              <div class="flex items-center gap-3">
+                <div
+                  class="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm"
+                  style="background-color: {list.color || 'hsl(var(--foreground-muted))'}"
+                >
+                  <IconComponent class="w-5 h-5 text-white" />
+                </div>
+                <span class="font-semibold text-[15px]">{list.name}</span>
+                {#if list.members && list.members.length > 0}
+                  <span class="text-metadata">{list.members.length} member{list.members.length !== 1 ? 's' : ''}</span>
+                {/if}
+              </div>
+              <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                <form
+                  method="POST"
+                  action="?/unarchiveList"
+                  use:enhance={() => {
+                    return async ({ result, update }) => {
+                      if (result.type === 'success') {
+                        toast.success('List restored');
+                      }
+                      await update();
+                    };
+                  }}
+                >
+                  <input type="hidden" name="id" value={list.id} />
+                  <button
+                    type="submit"
+                    class="rounded-md px-2.5 py-1 text-xs font-medium text-foreground-secondary hover:bg-surface-subtle transition-colors"
+                  >
+                    Unarchive
+                  </button>
+                </form>
+                <button
+                  type="button"
+                  class="rounded-md px-2.5 py-1 text-xs font-medium text-destructive hover:bg-destructive/10 transition-colors"
+                  onclick={() => openDeleteAlert(list)}
+                >
+                  Delete
+                </button>
+              </div>
+            </div>
+          {/each}
+        </div>
+      {/if}
+    </div>
+  {/if}
 </div>
+
+<!-- Archive confirmation dialog -->
+<AlertDialog.Root bind:open={archiveAlertOpen}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>Archive "{targetListName}"?</AlertDialog.Title>
+      <AlertDialog.Description>
+        The list will be hidden from your sidebar and main view. Your tasks will stay in the list and you can restore it any time from the Archived section.
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+      <form
+        method="POST"
+        action="?/archiveList"
+        use:enhance={() => {
+          return async ({ result, update }) => {
+            archiveAlertOpen = false;
+            if (result.type === 'success') {
+              toast.success('List archived');
+            }
+            await update();
+          };
+        }}
+      >
+        <input type="hidden" name="id" value={targetListId} />
+        <AlertDialog.Action type="submit">Archive</AlertDialog.Action>
+      </form>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>
+
+<!-- Delete confirmation dialog -->
+<AlertDialog.Root bind:open={deleteAlertOpen}>
+  <AlertDialog.Content>
+    <AlertDialog.Header>
+      <AlertDialog.Title>Delete "{targetListName}"?</AlertDialog.Title>
+      <AlertDialog.Description>
+        Your tasks will be moved to Inbox. This cannot be undone.
+      </AlertDialog.Description>
+    </AlertDialog.Header>
+    <AlertDialog.Footer>
+      <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
+      <form
+        method="POST"
+        action="?/deleteList"
+        use:enhance={() => {
+          return async ({ result, update }) => {
+            deleteAlertOpen = false;
+            if (result.type === 'success') {
+              toast.success('List deleted');
+            }
+            await update();
+          };
+        }}
+      >
+        <input type="hidden" name="id" value={targetListId} />
+        <AlertDialog.Action type="submit" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialog.Action>
+      </form>
+    </AlertDialog.Footer>
+  </AlertDialog.Content>
+</AlertDialog.Root>

@@ -35,10 +35,11 @@ export const load: LayoutServerLoad = async ({ locals }) => {
       .eq('user_id', locals.profileId)
       .eq('is_read', false),
 
-    // User's lists
+    // User's lists (exclude archived)
     locals.supabase
       .from('task_lists')
       .select('id, name, color, icon, owner_id, sort_order, task_list_members(count)')
+      .is('archived_at', null)
       .order('sort_order', { ascending: true }),
 
     // Today count (due today, not done/canceled)

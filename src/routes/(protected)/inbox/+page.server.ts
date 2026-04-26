@@ -12,7 +12,6 @@ export const load: PageServerLoad = async (event) => {
     supabase
       .from('tasks')
       .select(TASK_SELECT)
-      .is('list_id', null)
       .order('created_at', { ascending: false }),
     supabase
       .from('task_list_members')

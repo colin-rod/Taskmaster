@@ -23,6 +23,7 @@ export interface TaskList {
   icon: string;
   owner_id: string;
   sort_order: number;
+  archived_at: string | null;
   created_at: string;
   updated_at: string;
   // Relations

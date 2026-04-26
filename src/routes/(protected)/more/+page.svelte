@@ -2,7 +2,7 @@
   import type { PageData } from './$types';
   import {
     Calendar,
-    List,
+    Search,
     AlertCircle,
     CalendarRange,
     UserCheck,
@@ -15,7 +15,7 @@
 
   const menuItems = [
     { label: 'Calendar', href: '/calendar', icon: Calendar },
-    { label: 'Lists', href: '/lists', icon: List },
+    { label: 'Search', href: '/search', icon: Search },
     { label: 'Overdue', href: '/overdue', icon: AlertCircle, countKey: 'overdue' as const },
     { label: 'Upcoming', href: '/upcoming', icon: CalendarRange, countKey: 'upcoming' as const },
     { label: 'Assigned to Me', href: '/assigned', icon: UserCheck, countKey: 'assigned' as const },
