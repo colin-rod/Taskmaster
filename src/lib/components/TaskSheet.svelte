@@ -23,6 +23,8 @@
   import AssigneePicker from '$lib/components/AssigneePicker.svelte';
   import LabelPicker from '$lib/components/LabelPicker.svelte';
   import LabelBadge from '$lib/components/LabelBadge.svelte';
+  import { getUpcomingOccurrences } from '$lib/utils/recurrence.js';
+  import { formatDateOnly } from '$lib/utils/dates.js';
 
   let {
     task = $bindable<Task | null>(null),
@@ -43,6 +45,11 @@
     task?.assigned_to_user_id
       ? members.find(m => m.user_id === task!.assigned_to_user_id)?.profile ?? null
       : null
+  );
+  let upcomingOccurrences = $derived(
+    task?.is_recurring && task?.recurrence_rule && task?.due_at
+      ? getUpcomingOccurrences(task.due_at, task.recurrence_rule, 5)
+      : []
   );
 
   let editTitle = $state('');
@@ -439,6 +446,19 @@
                 <p class="text-sm">{new Date(task.due_at).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })}</p>
               </div>
             {/if}
+            {#if upcomingOccurrences.length > 0}
+              <div>
+                <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary block mb-1.5">Upcoming</span>
+                <ul class="space-y-1">
+                  {#each upcomingOccurrences as date}
+                    <li class="text-sm text-foreground-secondary flex items-center gap-2">
+                      <span class="w-1.5 h-1.5 rounded-full bg-primary/50 shrink-0"></span>
+                      {formatDateOnly(date.toISOString())}
+                    </li>
+                  {/each}
+                </ul>
+              </div>
+            {/if}
           </div>
         </div>
         {#if (task.checklist_items ?? []).length > 0}
@@ -645,6 +665,21 @@
           {#if showRecurring}
             <div transition:slide={{ duration: 180, easing: cubicOut }}>
               <RecurrenceEditor bind:isRecurring={editIsRecurring} bind:recurrenceRule={editRecurrenceRule} onclose={() => { editIsRecurring = false; showRecurring = false; }} />
+            </div>
+          {/if}
+
+          <!-- Upcoming recurrences -->
+          {#if upcomingOccurrences.length > 0}
+            <div transition:slide={{ duration: 180, easing: cubicOut }}>
+              <span class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary block mb-2">Upcoming</span>
+              <ul class="space-y-1">
+                {#each upcomingOccurrences as date}
+                  <li class="text-sm text-foreground-secondary flex items-center gap-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-primary/50 shrink-0"></span>
+                    {formatDateOnly(date.toISOString())}
+                  </li>
+                {/each}
+              </ul>
             </div>
           {/if}
 
