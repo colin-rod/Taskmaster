@@ -360,6 +360,7 @@
     <AlertDialog.Footer>
       <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
       <form
+        class="w-full sm:w-auto"
         method="POST"
         action="?/archiveList"
         use:enhance={() => {
@@ -373,7 +374,7 @@
         }}
       >
         <input type="hidden" name="id" value={targetListId} />
-        <AlertDialog.Action type="submit">Archive</AlertDialog.Action>
+        <AlertDialog.Action type="submit" class="w-full">Archive</AlertDialog.Action>
       </form>
     </AlertDialog.Footer>
   </AlertDialog.Content>
@@ -391,6 +392,7 @@
     <AlertDialog.Footer>
       <AlertDialog.Cancel>Cancel</AlertDialog.Cancel>
       <form
+        class="w-full sm:w-auto"
         method="POST"
         action="?/deleteList"
         use:enhance={() => {
@@ -404,7 +406,7 @@
         }}
       >
         <input type="hidden" name="id" value={targetListId} />
-        <AlertDialog.Action type="submit" class="bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialog.Action>
+        <AlertDialog.Action type="submit" class="w-full bg-destructive text-destructive-foreground hover:bg-destructive/90">Delete</AlertDialog.Action>
       </form>
     </AlertDialog.Footer>
   </AlertDialog.Content>
