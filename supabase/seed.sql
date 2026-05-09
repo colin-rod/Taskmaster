@@ -15,6 +15,7 @@ DECLARE
   work_list    uuid := 'a0000001-0000-0000-0000-000000000001';
   personal_list uuid := 'a0000001-0000-0000-0000-000000000002';
   shopping_list uuid := 'a0000001-0000-0000-0000-000000000003';
+  packing_list  uuid := 'a0000001-0000-0000-0000-000000000004';
 
   task_overdue  uuid := 'b0000001-0000-0000-0000-000000000001';
   task_today    uuid := 'b0000001-0000-0000-0000-000000000002';
@@ -23,7 +24,12 @@ DECLARE
   task_recurring uuid := 'b0000001-0000-0000-0000-000000000005';
   task_done     uuid := 'b0000001-0000-0000-0000-000000000006';
   task_urgent   uuid := 'b0000001-0000-0000-0000-000000000007';
-  task_shopping1 uuid := 'b0000001-0000-0000-0000-000000000008';
+  task_shopping1  uuid := 'b0000001-0000-0000-0000-000000000008';
+  task_packing1   uuid := 'b0000001-0000-0000-0000-000000000009';
+  task_packing2   uuid := 'b0000001-0000-0000-0000-000000000010';
+  task_packing3   uuid := 'b0000001-0000-0000-0000-000000000011';
+  task_packing4   uuid := 'b0000001-0000-0000-0000-000000000012';
+  task_packing5   uuid := 'b0000001-0000-0000-0000-000000000013';
 
   cl_item1 uuid := 'c0000001-0000-0000-0000-000000000001';
   cl_item2 uuid := 'c0000001-0000-0000-0000-000000000002';
@@ -36,17 +42,19 @@ BEGIN
   ON CONFLICT (id) DO NOTHING;
 
   -- Task lists
-  INSERT INTO task_lists (id, name, color, owner_id, sort_order) VALUES
-    (work_list,     'Work',     '#3B82F6', seed_user_id, 0),
-    (personal_list, 'Personal', '#22C55E', seed_user_id, 1),
-    (shopping_list, 'Shopping', '#F97316', seed_user_id, 2)
+  INSERT INTO task_lists (id, name, color, icon, owner_id, sort_order) VALUES
+    (work_list,     'Work',         '#3B82F6', 'briefcase', seed_user_id, 0),
+    (personal_list, 'Personal',     '#22C55E', 'home',      seed_user_id, 1),
+    (shopping_list, 'Shopping',     '#F97316', 'shopping-cart', seed_user_id, 2),
+    (packing_list,  'Packing List', '#8B5CF6', 'plane',     seed_user_id, 3)
   ON CONFLICT (id) DO NOTHING;
 
   -- Owner membership rows
   INSERT INTO task_list_members (list_id, user_id, role) VALUES
     (work_list,     seed_user_id, 'owner'),
     (personal_list, seed_user_id, 'owner'),
-    (shopping_list, seed_user_id, 'owner')
+    (shopping_list, seed_user_id, 'owner'),
+    (packing_list,  seed_user_id, 'owner')
   ON CONFLICT (list_id, user_id) DO NOTHING;
 
   -- Tasks
@@ -101,6 +109,15 @@ BEGIN
   INSERT INTO tasks (id, owner_id, list_id, title, status, priority, is_recurring, sort_order)
   VALUES (task_shopping1, seed_user_id, shopping_list, 'Weekly groceries',
           'todo', 4, false, 0)
+  ON CONFLICT (id) DO NOTHING;
+
+  -- Packing list tasks
+  INSERT INTO tasks (id, owner_id, list_id, title, status, priority, is_recurring, sort_order) VALUES
+    (task_packing1, seed_user_id, packing_list, 'Clothes',             'todo', 4, false, 0),
+    (task_packing2, seed_user_id, packing_list, 'Toiletries',          'todo', 4, false, 1),
+    (task_packing3, seed_user_id, packing_list, 'Travel documents',    'todo', 2, false, 2),
+    (task_packing4, seed_user_id, packing_list, 'Chargers & electronics', 'todo', 3, false, 3),
+    (task_packing5, seed_user_id, packing_list, 'Medications',         'todo', 2, false, 4)
   ON CONFLICT (id) DO NOTHING;
 
   -- Checklist items for "Prepare for trip" (2 of 3 completed → shows progress badge)
