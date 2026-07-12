@@ -111,6 +111,23 @@ export function isRecurrenceExpired(rule: RecurrenceRule, nextDue: Date): boolea
 }
 
 /**
+ * Compute the next N upcoming occurrences starting from the given due date.
+ * Does not include the current due_at itself — only future dates.
+ * Stops early if the recurrence expires before reaching count.
+ */
+export function getUpcomingOccurrences(due_at: string, rule: RecurrenceRule, count: number = 5): Date[] {
+	const results: Date[] = [];
+	let current = new Date(due_at);
+	while (results.length < count) {
+		const next = computeNextDue(current, rule);
+		if (!next) break;
+		results.push(next);
+		current = next;
+	}
+	return results;
+}
+
+/**
  * Human-readable description of a recurrence rule.
  */
 export function describeRecurrence(rule: RecurrenceRule): string {

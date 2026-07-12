@@ -1,6 +1,6 @@
 <script lang="ts">
   import { page } from '$app/stores';
-  import { Inbox, CalendarDays, Plus, List, Menu } from '@lucide/svelte';
+  import { Inbox, CalendarDays, Plus, List, Ellipsis } from '@lucide/svelte';
   import * as Sheet from '$lib/components/ui/sheet/index.js';
   import QuickAdd from '$lib/components/QuickAdd.svelte';
 
@@ -65,7 +65,7 @@
       class="flex flex-col items-center gap-0.5 px-2 py-2 min-h-11 justify-center
         {isMoreActive($page.url.pathname) ? 'text-primary' : 'text-foreground-secondary'}"
     >
-      <Menu class="w-5 h-5" />
+      <Ellipsis class="w-5 h-5" />
       <span class="text-[10px] font-medium">More</span>
     </a>
   </nav>
