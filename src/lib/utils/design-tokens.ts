@@ -67,19 +67,21 @@ export const spacing = {
  * Border Radius
  */
 export const borderRadius = {
+  xs: '4px',
   sm: '6px',
-  md: '10px',
-  lg: '20px',
+  md: '8px',
+  lg: '12px',
+  xl: '16px',
 } as const;
 
 /**
  * Typography Scale
  */
 export const typography = {
-  pageTitle: 'text-page-title font-accent page-title-accent',
-  sectionHeader: 'text-section-header font-accent',
+  pageTitle: 'text-display page-title-accent',
+  sectionHeader: 'text-section',
   body: 'text-body font-ui',
-  metadata: 'text-metadata',
+  metadata: 'text-meta',
 } as const;
 
 /**
@@ -103,10 +105,10 @@ export const shadows = {
  * Priority Options
  */
 export const PRIORITY_OPTIONS = [
-  { level: 1, label: 'P1', desc: 'Urgent', color: 'text-destructive',     bg: 'bg-destructive/10',  dot: 'bg-destructive',        selectClass: 'select-priority-1' },
-  { level: 2, label: 'P2', desc: 'High',   color: 'text-orange-500',       bg: 'bg-orange-500/10',   dot: 'bg-orange-500',          selectClass: 'select-priority-2' },
-  { level: 3, label: 'P3', desc: 'Medium', color: 'text-blue-500',         bg: 'bg-blue-500/10',     dot: 'bg-blue-500',            selectClass: 'select-priority-3' },
-  { level: 4, label: 'P4', desc: 'Low',    color: 'text-foreground-muted', bg: 'bg-surface-subtle',  dot: 'bg-foreground-disabled',  selectClass: 'select-priority-4' },
+  { level: 1, label: 'P1', desc: 'Urgent', color: 'text-priority-p1',      bg: 'bg-priority-p1/10',  dot: 'bg-priority-p1',         selectClass: 'select-priority-1' },
+  { level: 2, label: 'P2', desc: 'High',   color: 'text-priority-p2',      bg: 'bg-priority-p2/10',  dot: 'bg-priority-p2',         selectClass: 'select-priority-2' },
+  { level: 3, label: 'P3', desc: 'Medium', color: 'text-priority-p3',      bg: 'bg-priority-p3/10',  dot: 'bg-priority-p3',         selectClass: 'select-priority-3' },
+  { level: 4, label: 'P4', desc: 'Low',    color: 'text-priority-p4',      bg: 'bg-surface-subtle',  dot: 'bg-priority-p4',         selectClass: 'select-priority-4' },
 ] as const;
 
 /**
@@ -115,9 +117,9 @@ export const PRIORITY_OPTIONS = [
  */
 export function getPriorityDotClass(priority: number): string {
   const map: Record<number, string> = {
-    1: 'bg-destructive',
-    2: 'bg-orange-500',
-    3: 'bg-blue-500',
+    1: 'bg-priority-p1',
+    2: 'bg-priority-p2',
+    3: 'bg-priority-p3',
     4: 'hidden',
   };
   return map[priority] ?? 'hidden';
