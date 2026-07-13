@@ -27,7 +27,7 @@
 
   const sf = createSortFilterState(() => activeTasks);
 
-  let groupedSections = $derived(() => {
+  let groupedSections = $derived.by(() => {
     const inboxTasks = sf.displayedTasks.filter((t) => t.list_id === null);
     const listTaskMap = new Map<string, typeof sf.displayedTasks>();
     for (const task of sf.displayedTasks) {

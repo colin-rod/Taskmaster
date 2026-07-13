@@ -14,7 +14,7 @@
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
   import AssigneePicker from '$lib/components/AssigneePicker.svelte';
   import { formatDateOnly, formatShortDate } from '$lib/utils/dates.js';
-  import { PRIORITY_OPTIONS, getDueDateClass } from '$lib/utils/design-tokens.js';
+  import { PRIORITY_OPTIONS, getDueDateClass, getPriorityDotClass } from '$lib/utils/design-tokens.js';
   import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
   import * as Popover from '$lib/components/ui/popover/index.js';
@@ -37,6 +37,11 @@
 
   const motionDuration = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 200;
 
+  // Touch/no-hover devices: a single tap on the row body opens the detail sheet
+  // (there's no hover to progressively reveal metadata inline). On pointer
+  // devices we keep double-click / ellipsis to open, so a stray click doesn't.
+  const isTouchDevice = typeof window !== 'undefined' && window.matchMedia('(hover: none)').matches;
+
   let toggling = $state(false);
   let justCompleted = $state(false);
   let completedTimeout: ReturnType<typeof setTimeout>;
@@ -55,6 +60,43 @@
     optimisticChecklist = Object.fromEntries(
       (task.checklist_items ?? []).map((i) => [i.id, i.is_completed])
     );
+  });
+
+  let isDone = $derived(optimisticStatus === 'done' || optimisticStatus === 'canceled');
+
+  // Resting-state "primary signal": the single most important piece of metadata
+  // shown when the row is not hovered. Precedence: urgent due date → P1/P2 → none.
+  let dueClass = $derived(getDueDateClass(task.due_at)); // '' unless overdue/today/≤3d
+  let showDueChip = $derived(!isDone && !!task.due_at && dueClass !== '');
+  let showPriorityDot = $derived(!isDone && (task.priority === 1 || task.priority === 2));
+
+  // "Does the row have any extra metadata worth revealing on hover?" — if not,
+  // the hover metadata line never renders and the row stays compact even on hover.
+  let hasHoverMeta = $derived(
+    optimisticStatus === 'in_progress' ||
+    !!task.due_at ||
+    task.is_recurring ||
+    !!task.reminder_at ||
+    checklistTotal > 0 ||
+    task.progress_total != null ||
+    !!task.assignee ||
+    (task.labels?.length ?? 0) > 0
+  );
+
+  // Relative "Completed Nh ago" label for done rows.
+  let completedLabel = $derived.by(() => {
+    if (!isDone) return '';
+    const ts = task.completed_at ?? task.updated_at;
+    if (!ts) return 'Completed';
+    const diffMs = Date.now() - new Date(ts).getTime();
+    const mins = Math.round(diffMs / 60000);
+    if (mins < 1) return 'Completed just now';
+    if (mins < 60) return `Completed ${mins}m ago`;
+    const hrs = Math.round(mins / 60);
+    if (hrs < 24) return `Completed ${hrs}h ago`;
+    const days = Math.round(hrs / 24);
+    if (days < 7) return `Completed ${days}d ago`;
+    return `Completed ${formatShortDate(ts)}`;
   });
 
   let deleteForm = $state<HTMLFormElement | undefined>(undefined);
@@ -115,6 +157,49 @@
     }
     await invalidateAll();
   }
+
+  // Reference to the checkbox toggle form so keyboard shortcuts can complete a task.
+  let toggleForm = $state<HTMLFormElement | undefined>(undefined);
+
+  function handleRowClick(e: MouseEvent) {
+    if (!isTouchDevice) return; // pointer devices open via dblclick / ellipsis
+    const target = e.target as HTMLElement;
+    // Don't hijack taps that land on the row's own interactive controls.
+    if (target.closest('button, a, input, [role="menuitem"], form, [data-radix-popper-content-wrapper]')) return;
+    onselect(task);
+  }
+
+  function handleRowKeydown(e: KeyboardEvent) {
+    // Only act on shortcuts when the row itself is focused (not an inner input/button).
+    if (e.target !== e.currentTarget) return;
+    switch (e.key) {
+      case 'Enter':
+      case 'o':
+        e.preventDefault();
+        onselect(task);
+        break;
+      case 'x':
+      case ' ': // Space toggles completion
+        if (canEdit) {
+          e.preventDefault();
+          toggleForm?.requestSubmit();
+        }
+        break;
+      case 'e':
+        if (canEdit) {
+          e.preventDefault();
+          onselect(task); // open sheet to edit — full inline title edit lives there
+        }
+        break;
+      case 'Delete':
+      case 'Backspace':
+        if (canEdit) {
+          e.preventDefault();
+          deleteAlertOpen = true;
+        }
+        break;
+    }
+  }
 </script>
 
 {#if !deleted}
@@ -124,19 +209,20 @@
     {#snippet child({ props })}
       <div
         {...props}
-        class="task-row-hover flex items-center gap-3 rounded-md border bg-surface px-4 py-2.5 group overflow-hidden"
+        class="task-row-hover flex items-center gap-3 rounded-lg border bg-surface px-4 py-2.5 group overflow-hidden"
         class:is-completing-row={justCompleted}
         class:task-row-in-progress={optimisticStatus === 'in_progress'}
         tabindex="0"
         role="button"
         ondblclick={() => onselect(task)}
-        onkeydown={(e) => { if (e.key === 'Enter' && e.target === e.currentTarget) onselect(task); }}
+        onclick={handleRowClick}
+        onkeydown={handleRowKeydown}
       >
         <!-- Toggle checkbox -->
         {#if userRole === 'viewer'}
           <div
             class="w-4.5 h-4.5 rounded-full border-[1.5px] flex items-center justify-center shrink-0
-              {task.status === 'done' ? 'bg-primary border-primary' : task.status === 'in_progress' ? 'border-status-doing' : 'border-foreground-muted/60'}"
+              {task.status === 'done' ? 'bg-primary border-primary' : task.status === 'in_progress' ? 'border-status-doing' : 'border-border-strong'}"
           >
             {#if task.status === 'done'}
               <svg class="w-3 h-3 text-primary-foreground" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
@@ -146,6 +232,7 @@
           </div>
         {:else}
           <form
+            bind:this={toggleForm}
             method="POST"
             action="?/toggleTask"
             use:enhance={() => {
@@ -177,19 +264,23 @@
             <input type="hidden" name="current_status" value={task.status} />
             <button
               type="submit"
-              class="w-4.5 h-4.5 rounded-full border-[1.5px] flex items-center justify-center shrink-0 transition-all
-                {optimisticStatus === 'done' ? 'bg-primary border-primary ring-2 ring-[hsl(var(--status-done)/0.2)]' : optimisticStatus === 'in_progress' ? 'border-status-doing hover:border-primary hover:scale-105' : 'border-foreground-muted/60 hover:border-primary hover:scale-105'}
-                {toggling ? 'opacity-50' : ''}"
-              class:is-completing={justCompleted}
+              class="tap-target shrink-0 flex items-center justify-center"
               disabled={toggling}
               onclick={(e) => e.stopPropagation()}
               aria-label={optimisticStatus === 'done' ? 'Reopen task' : 'Complete task'}
             >
-              {#if optimisticStatus === 'done'}
-                <svg class="w-3 h-3 text-primary-foreground" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
-                  <path d="M2 6l3 3 5-5" stroke-dasharray="20" stroke-dashoffset="20" class:is-completing={justCompleted} />
-                </svg>
-              {/if}
+              <span
+                class="w-4.5 h-4.5 rounded-full border-[1.5px] flex items-center justify-center transition-all
+                  {optimisticStatus === 'done' ? 'bg-primary border-primary ring-2 ring-[hsl(var(--status-done)/0.2)]' : optimisticStatus === 'in_progress' ? 'border-status-doing group-hover:border-primary' : 'border-border-strong hover:border-primary'}
+                  {toggling ? 'opacity-50' : ''}"
+                class:is-completing={justCompleted}
+              >
+                {#if optimisticStatus === 'done'}
+                  <svg class="w-3 h-3 text-primary-foreground" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M2 6l3 3 5-5" stroke-dasharray="20" stroke-dashoffset="20" class:is-completing={justCompleted} />
+                  </svg>
+                {/if}
+              </span>
             </button>
           </form>
         {/if}
@@ -200,48 +291,55 @@
             <div class="flex-1 min-w-0 overflow-hidden {optimisticStatus === 'done' ? (justCompleted ? 'task-done-title' : 'line-through') + ' text-foreground-muted/70 text-[14px]' : 'font-[510] text-[15px] text-foreground tracking-[-0.01em]'}">
               <InlineEditTitle taskId={task.id} value={task.title} disabled={!canEdit} />
             </div>
-            <!-- Labels — badges open the picker for editors, static for viewers -->
-            {#if canEdit}
-              <div class="relative flex items-center">
-                <!-- Visible label badges / hint — clicking opens the picker -->
-                <button
-                  type="button"
-                  class="flex items-center gap-1 rounded hover:opacity-80 transition-opacity"
-                  onclick={(e) => { e.stopPropagation(); labelPickerOpen = true; }}
-                  aria-label="Edit labels"
-                >
-                  {#if task.labels?.length}
-                    {#each task.labels.slice(0, 3) as label (label.id)}
-                      <LabelBadge {label} size="sm" />
-                    {/each}
-                    {#if task.labels.length > 3}
-                      <span class="text-[10px] text-foreground-muted">+{task.labels.length - 3}</span>
+            <!-- Labels — revealed on hover (desktop) only; hidden at rest & on touch -->
+            {#if !isDone}
+              {#if canEdit}
+                <div class="relative hidden md:group-hover:flex md:group-focus-within:flex items-center">
+                  <button
+                    type="button"
+                    class="flex items-center gap-1 rounded hover:opacity-80 transition-opacity"
+                    onclick={(e) => { e.stopPropagation(); labelPickerOpen = true; }}
+                    aria-label="Edit labels"
+                  >
+                    {#if task.labels?.length}
+                      {#each task.labels.slice(0, 3) as label (label.id)}
+                        <LabelBadge {label} size="sm" />
+                      {/each}
+                      {#if task.labels.length > 3}
+                        <span class="text-[10px] text-foreground-muted">+{task.labels.length - 3}</span>
+                      {/if}
+                    {:else}
+                      <span class="text-[10px] text-foreground-muted/50 hover:text-foreground-muted transition-colors px-0.5">+ label</span>
                     {/if}
-                  {:else}
-                    <span class="text-[10px] text-transparent group-hover:text-foreground-muted/40 transition-colors px-0.5">+ label</span>
+                  </button>
+                  <!-- LabelPicker anchors its popover here; its own trigger is hidden -->
+                  <span class="absolute inset-0 pointer-events-none opacity-0" aria-hidden="true">
+                    <LabelPicker
+                      taskId={task.id}
+                      listId={task.list_id}
+                      currentLabels={task.labels ?? []}
+                      bind:open={labelPickerOpen}
+                      disabled={false}
+                    />
+                  </span>
+                </div>
+              {:else if task.labels?.length}
+                <div class="hidden md:group-hover:flex items-center gap-1">
+                  {#each task.labels.slice(0, 3) as label (label.id)}
+                    <LabelBadge {label} size="sm" />
+                  {/each}
+                  {#if task.labels.length > 3}
+                    <span class="text-[10px] text-foreground-muted">+{task.labels.length - 3}</span>
                   {/if}
-                </button>
-                <!-- LabelPicker anchors its popover here; its own trigger is hidden -->
-                <span class="absolute inset-0 pointer-events-none opacity-0" aria-hidden="true">
-                  <LabelPicker
-                    taskId={task.id}
-                    listId={task.list_id}
-                    currentLabels={task.labels ?? []}
-                    bind:open={labelPickerOpen}
-                    disabled={false}
-                  />
-                </span>
-              </div>
-            {:else if task.labels?.length}
-              {#each task.labels.slice(0, 3) as label (label.id)}
-                <LabelBadge {label} size="sm" />
-              {/each}
-              {#if task.labels.length > 3}
-                <span class="text-[10px] text-foreground-muted">+{task.labels.length - 3}</span>
+                </div>
               {/if}
             {/if}
           </div>
-          <div class="flex items-center gap-2 mt-1 {optimisticStatus === 'done' ? 'opacity-60' : ''}">
+          <!-- Metadata line — revealed on hover (desktop) only, and only when the
+               task actually has extra metadata. Never shown at rest or on touch;
+               touch users get this via the detail sheet (tap row to open). -->
+          {#if hasHoverMeta && !isDone}
+          <div class="hidden md:group-hover:flex md:group-focus-within:flex items-center gap-2 mt-1" data-row-interactive>
             {#if optimisticStatus === 'in_progress'}
               <span
                 class="text-xs text-status-doing flex items-center gap-1 px-1 py-0.5 rounded-full"
@@ -456,34 +554,44 @@
               disabled={!canEdit}
             />
           </div>
-          {#if task.progress_total != null && task.progress_total > 0}
-            {@const pct = Math.min(100, Math.round(((task.progress_current ?? 0) / task.progress_total) * 100))}
-            <div class="mt-1.5 h-1 w-full rounded-full bg-border/40 overflow-hidden">
-              {#if progressShowLeft}
-                <div class="h-full rounded-full bg-amber-400/60 transition-all duration-300 ml-auto" style="width: {100 - pct}%"></div>
-              {:else}
-                <div class="h-full rounded-full bg-primary/60 transition-all duration-300" style="width: {pct}%"></div>
-              {/if}
-            </div>
           {/if}
         </div>
 
-        <!-- Priority badge -->
-        {#if canEdit}
-          <PriorityPicker taskId={task.id} value={task.priority} />
+        <!-- Resting signal: completion time on done rows; else one right-aligned
+             signal (urgent due chip → P1/P2 dot). Hidden on hover so the full
+             priority picker / metadata line take over. -->
+        {#if isDone}
+          <span class="shrink-0 text-[12.5px] text-foreground-muted tabular-nums whitespace-nowrap">{completedLabel}</span>
         {:else}
-          {@const p = PRIORITY_OPTIONS.find(p => p.level === task.priority)}
-          <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full shrink-0 {p?.bg ?? 'bg-surface-subtle'} {p?.color ?? 'text-foreground-muted'}" aria-label="Priority {p?.desc ?? task.priority}">
-            <span class="inline-block w-1.5 h-1.5 rounded-full {p?.dot ?? 'bg-foreground-disabled'}"></span>
-            P{task.priority}
-          </span>
+          <div class="flex items-center gap-2 shrink-0 md:group-hover:hidden md:group-focus-within:hidden">
+            {#if showDueChip}
+              <span class="text-[12.5px] font-medium whitespace-nowrap {dueClass}">{formatDateOnly(task.due_at)}</span>
+            {/if}
+            {#if showPriorityDot}
+              <span class="w-1.5 h-1.5 rounded-full {getPriorityDotClass(task.priority)}" aria-label="Priority P{task.priority}" title="Priority P{task.priority}"></span>
+            {/if}
+          </div>
+
+          <!-- Priority badge — full picker, revealed on hover (desktop) -->
+          <div class="hidden md:group-hover:block md:group-focus-within:block shrink-0" data-row-interactive>
+            {#if canEdit}
+              <PriorityPicker taskId={task.id} value={task.priority} />
+            {:else}
+              {@const p = PRIORITY_OPTIONS.find(p => p.level === task.priority)}
+              <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full shrink-0 {p?.bg ?? 'bg-surface-subtle'} {p?.color ?? 'text-foreground-muted'}" aria-label="Priority {p?.desc ?? task.priority}">
+                <span class="inline-block w-1.5 h-1.5 rounded-full {p?.dot ?? 'bg-foreground-disabled'}"></span>
+                P{task.priority}
+              </span>
+            {/if}
+          </div>
         {/if}
 
-        <!-- More menu (opens TaskSheet) -->
+        <!-- More menu (opens TaskSheet). Always tappable on touch; revealed on hover on desktop. -->
         <button
           type="button"
-          class="p-1.5 rounded-md text-transparent group-hover:text-foreground-muted hover:text-primary! hover:bg-primary/10 transition-all duration-150"
-          onclick={() => onselect(task)}
+          class="tap-target shrink-0 flex items-center justify-center rounded-md text-foreground-muted/50 md:text-transparent md:group-hover:text-foreground-muted md:group-focus-within:text-foreground-muted hover:text-primary! hover:bg-primary/10 transition-all duration-150"
+          data-row-interactive
+          onclick={(e) => { e.stopPropagation(); onselect(task); }}
           aria-label="Task details"
         >
           <Ellipsis class="w-4 h-4" />
