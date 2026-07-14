@@ -17,12 +17,28 @@
 
   let showCreateListDialog = $state(false);
   let searchOpen = $state(false);
+  // Single unified "add task" surface — the same bottom sheet is opened from the
+  // header button, the desktop FAB, the mobile FAB, and the global `c` shortcut.
   let quickAddOpen = $state(false);
-  let fabSheetOpen = $state(false);
 
   let selectedTask = $state<Task | null>(null);
   let sheetOpen = $state(false);
   let taskLoading = $state(false);
+
+  function openQuickAdd() {
+    quickAddOpen = true;
+  }
+
+  // Global keyboard shortcut: `c` opens Quick Add from anywhere, unless the user
+  // is typing in a field or another overlay is already capturing input.
+  function onGlobalKeydown(e: KeyboardEvent) {
+    if (e.key !== 'c' || e.metaKey || e.ctrlKey || e.altKey) return;
+    const el = e.target as HTMLElement | null;
+    if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
+    if (quickAddOpen || sheetOpen || searchOpen || showCreateListDialog) return;
+    e.preventDefault();
+    openQuickAdd();
+  }
 
   async function onSelectTask(taskId: string) {
     selectedTask = null;
@@ -35,6 +51,8 @@
     selectedTask = task;
   }
 </script>
+
+<svelte:window onkeydown={onGlobalKeydown} />
 
 <div class="h-screen flex flex-col">
   <!-- Header -->
@@ -53,27 +71,16 @@
       </h1>
       <div class="hidden md:flex items-center gap-1 min-w-0 ml-auto">
         <div class="flex items-center">
-          {#if quickAddOpen}
-            <div
-              class="w-full max-w-md"
-              onfocusout={(e) => {
-                if (!e.currentTarget.contains(e.relatedTarget as Node)) {
-                  quickAddOpen = false;
-                }
-              }}
-            >
-              <QuickAdd action="/inbox?/createTask" compact onClose={() => { quickAddOpen = false; }} />
-            </div>
-          {:else}
-            <button
-              type="button"
-              class="p-2.5 rounded-lg text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
-              onclick={() => { quickAddOpen = true; }}
-              aria-label="Add task"
-            >
-              <Plus class="w-4 h-4" />
-            </button>
-          {/if}
+          <button
+            type="button"
+            class="flex items-center gap-1.5 pl-2.5 pr-3 py-2 rounded-lg text-sm font-medium text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
+            onclick={openQuickAdd}
+            aria-label="Add task"
+          >
+            <Plus class="w-4 h-4" />
+            <span>Add task</span>
+            <kbd class="ml-1 hidden lg:inline-flex items-center rounded border border-border bg-surface px-1.5 text-[10px] font-medium text-foreground-muted">C</kbd>
+          </button>
         </div>
         <div class="flex items-center">
           {#if searchOpen}
@@ -129,26 +136,27 @@
 <button
   type="button"
   class="hidden md:flex fixed bottom-6 right-6 z-50 w-14 h-14 items-center justify-center
-         rounded-full bg-primary text-primary-foreground shadow-level-2
-         hover:bg-primary-hover transition-colors cursor-pointer"
-  onclick={() => { fabSheetOpen = true; }}
+         rounded-full bg-primary text-primary-foreground [box-shadow:var(--shadow-lg)]
+         hover:bg-primary-hover active:bg-primary-active transition-colors cursor-pointer"
+  onclick={openQuickAdd}
   aria-label="Add task"
 >
   <Plus class="w-6 h-6" />
 </button>
 
-<Sheet.Root bind:open={fabSheetOpen}>
-  <Sheet.Content side="bottom" class="rounded-t-lg px-4 pb-8 pt-4">
+<!-- Unified Quick Add surface — opened from header, FABs, and the `c` shortcut -->
+<Sheet.Root bind:open={quickAddOpen}>
+  <Sheet.Content side="bottom" class="rounded-t-xl px-4 pb-8 pt-4">
     <Sheet.Header>
-      <Sheet.Title>Quick Add Task</Sheet.Title>
+      <Sheet.Title>Add task</Sheet.Title>
     </Sheet.Header>
-    <div class="mt-2">
-      <QuickAdd action="/inbox?/createTask" onClose={() => { fabSheetOpen = false; }} />
+    <div class="mx-auto mt-2 w-full max-w-2xl">
+      <QuickAdd action="/inbox?/createTask" onClose={() => { quickAddOpen = false; }} />
     </div>
   </Sheet.Content>
 </Sheet.Root>
 
-<BottomTabBar />
+<BottomTabBar onAdd={openQuickAdd} />
 <CreateListDialog bind:open={showCreateListDialog} />
 <TaskSheet bind:task={selectedTask} bind:open={sheetOpen} loading={taskLoading} />
 <Toaster position="bottom-center" />

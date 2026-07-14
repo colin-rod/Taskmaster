@@ -250,7 +250,7 @@
 
       <button
         type="submit"
-        class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
+        class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover active:bg-primary-active transition-colors disabled:opacity-50"
         disabled={creating || !title.trim()}
       >
         {creating ? 'Adding...' : 'Add'}

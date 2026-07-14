@@ -1,10 +1,10 @@
 <script lang="ts">
   import { page } from '$app/stores';
   import { Inbox, CalendarDays, Plus, List, Ellipsis } from '@lucide/svelte';
-  import * as Sheet from '$lib/components/ui/sheet/index.js';
-  import QuickAdd from '$lib/components/QuickAdd.svelte';
 
-  let addSheetOpen = $state(false);
+  // The "+" opens the app-wide unified Quick Add surface owned by the layout,
+  // so there is a single add-task sheet shape everywhere.
+  let { onAdd }: { onAdd: () => void } = $props();
 
   function isActive(href: string, pathname: string): boolean {
     return pathname.startsWith(href);
@@ -42,8 +42,8 @@
     <!-- Add button (center, prominent) -->
     <button
       type="button"
-      class="flex items-center justify-center w-12 h-12 -mt-4 rounded-full bg-primary text-primary-foreground shadow-level-2"
-      onclick={() => { addSheetOpen = true; }}
+      class="flex items-center justify-center w-12 h-12 -mt-4 rounded-full bg-primary text-primary-foreground [box-shadow:var(--shadow-lg)] active:bg-primary-active transition-colors"
+      onclick={onAdd}
       aria-label="Add task"
     >
       <Plus class="w-6 h-6" />
@@ -70,14 +70,3 @@
     </a>
   </nav>
 </div>
-
-<Sheet.Root bind:open={addSheetOpen}>
-  <Sheet.Content side="bottom" class="rounded-t-lg px-4 pb-8 pt-4">
-    <Sheet.Header>
-      <Sheet.Title>Quick Add Task</Sheet.Title>
-    </Sheet.Header>
-    <div class="mt-2">
-      <QuickAdd />
-    </div>
-  </Sheet.Content>
-</Sheet.Root>
