@@ -2,37 +2,25 @@
   import { page } from '$app/stores';
   import { sidebarCollapsed } from '$lib/stores/sidebar.js';
   import {
-    AlertCircle,
-    CalendarDays,
-    CalendarRange,
-    CheckCheck,
-    Inbox,
-    UserCheck,
     PanelLeftClose,
     PanelLeftOpen,
     Plus,
   } from '@lucide/svelte';
   import { getListIcon } from '$lib/utils/icons.js';
+  import { inboxNavItem, smartViewNavItems, type FilterCounts } from '$lib/config/nav.js';
 
   let {
     filterCounts,
     lists,
     onCreateList,
   }: {
-    filterCounts: { today: number; overdue: number; upcoming: number; inbox: number; assigned: number; completed: number };
+    filterCounts: FilterCounts;
     lists: { id: string; name: string; color: string | null; icon: string; taskCount: number; isShared: boolean }[];
     onCreateList: () => void;
   } = $props();
 
-  const inboxFilter = { label: 'Inbox', href: '/inbox', icon: Inbox, countKey: 'inbox' as const };
-
-  const smartFilters = [
-    { label: 'Overdue', href: '/overdue', icon: AlertCircle, countKey: 'overdue' as const },
-    { label: 'Today', href: '/today', icon: CalendarDays, countKey: 'today' as const },
-    { label: 'Upcoming', href: '/upcoming', icon: CalendarRange, countKey: 'upcoming' as const },
-    { label: 'Assigned to Me', href: '/assigned', icon: UserCheck, countKey: 'assigned' as const },
-    { label: 'Completed', href: '/completed', icon: CheckCheck },
-  ];
+  const inboxFilter = inboxNavItem;
+  const smartFilters = smartViewNavItems;
 
   function isActive(href: string, pathname: string): boolean {
     if (href === '/') return pathname === '/';

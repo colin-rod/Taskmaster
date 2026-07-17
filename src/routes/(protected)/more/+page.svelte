@@ -1,25 +1,18 @@
 <script lang="ts">
   import type { PageData } from './$types';
-  import {
-    Calendar,
-    Search,
-    AlertCircle,
-    CalendarRange,
-    UserCheck,
-    CheckCheck,
-    Settings,
-    ChevronRight,
-  } from '@lucide/svelte';
+  import { Calendar, Search, Settings, ChevronRight } from '@lucide/svelte';
+  import { smartViewNavItems, type NavItem } from '$lib/config/nav.js';
 
   let { data }: { data: PageData } = $props();
 
-  const menuItems = [
+  // The mobile "More" menu = Calendar + Search, the shared smart views, then
+  // Settings. Overdue/Upcoming/Assigned/Completed come from the shared config
+  // so they stay in sync with the desktop sidebar. (Today is intentionally
+  // excluded here — it lives in the bottom tab bar.)
+  const menuItems: NavItem[] = [
     { label: 'Calendar', href: '/calendar', icon: Calendar },
     { label: 'Search', href: '/search', icon: Search },
-    { label: 'Overdue', href: '/overdue', icon: AlertCircle, countKey: 'overdue' as const },
-    { label: 'Upcoming', href: '/upcoming', icon: CalendarRange, countKey: 'upcoming' as const },
-    { label: 'Assigned to Me', href: '/assigned', icon: UserCheck, countKey: 'assigned' as const },
-    { label: 'Completed', href: '/completed', icon: CheckCheck, countKey: 'completed' as const },
+    ...smartViewNavItems.filter((v) => v.href !== '/today'),
     { label: 'Settings', href: '/settings', icon: Settings },
   ];
 </script>
