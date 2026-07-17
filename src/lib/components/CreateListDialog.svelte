@@ -4,6 +4,7 @@
   import { LIST_COLORS } from '$lib/types/index.js';
   import { LIST_ICONS, getListIcon } from '$lib/utils/icons.js';
   import * as Dialog from '$lib/components/ui/dialog/index.js';
+  import { Button } from '$lib/components/ui/button/index.js';
 
   let {
     open = $bindable(false),
@@ -112,20 +113,10 @@
         </div>
       </div>
       <Dialog.Footer>
-        <button
-          type="button"
-          class="rounded-md border px-4 py-2 text-sm font-medium text-foreground-secondary hover:bg-surface-subtle transition-colors"
-          onclick={() => { open = false; }}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          class="rounded-md bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition-colors disabled:opacity-50 shadow-sm"
-          disabled={creating || !name.trim()}
-        >
+        <Button variant="outline" onclick={() => { open = false; }}>Cancel</Button>
+        <Button type="submit" disabled={creating || !name.trim()}>
           {creating ? 'Creating...' : 'Create List'}
-        </button>
+        </Button>
       </Dialog.Footer>
     </form>
   </Dialog.Content>

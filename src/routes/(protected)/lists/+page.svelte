@@ -5,6 +5,7 @@
   import { LIST_COLORS } from '$lib/types/index.js';
   import { LIST_ICONS, getListIcon } from '$lib/utils/icons.js';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
+  import { Button } from '$lib/components/ui/button/index.js';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -52,13 +53,10 @@
 <div>
   <div class="flex items-center justify-between mb-6">
     <h1 class="text-page-title font-accent page-title-accent">Task Lists</h1>
-    <button
-      class="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition-colors shadow-sm inline-flex items-center gap-1.5"
-      onclick={() => { showCreateForm = !showCreateForm; }}
-    >
+    <Button onclick={() => { showCreateForm = !showCreateForm; }}>
       {#if !showCreateForm}<span aria-hidden="true" class="text-base leading-none">+</span>{/if}
       {showCreateForm ? 'Cancel' : 'New List'}
-    </button>
+    </Button>
   </div>
 
   {#if showCreateForm}
@@ -129,13 +127,9 @@
             {/each}
           </div>
         </div>
-        <button
-          type="submit"
-          class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
-          disabled={creating || !newListName.trim()}
-        >
+        <Button type="submit" disabled={creating || !newListName.trim()}>
           {creating ? 'Creating...' : 'Create List'}
-        </button>
+        </Button>
       </div>
     </form>
   {/if}
@@ -149,12 +143,7 @@
   {#if data.lists.length === 0 && !showCreateForm}
     <div class="text-center py-16">
       <p class="text-foreground-secondary mb-5 text-base">No lists yet. Create one to organize your tasks.</p>
-      <button
-        class="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary-hover transition-colors shadow-sm"
-        onclick={() => { showCreateForm = true; }}
-      >
-        Create your first list
-      </button>
+      <Button onclick={() => { showCreateForm = true; }}>Create your first list</Button>
     </div>
   {:else}
     <div class="space-y-3">
@@ -217,12 +206,8 @@
                 {/each}
               </div>
               <div class="flex gap-2">
-                <button type="submit" class="rounded-md bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:bg-primary-hover">
-                  Save
-                </button>
-                <button type="button" class="rounded-md border px-3 py-1.5 text-sm" onclick={cancelEdit}>
-                  Cancel
-                </button>
+                <Button type="submit" size="sm">Save</Button>
+                <Button variant="outline" size="sm" onclick={cancelEdit}>Cancel</Button>
               </div>
             </div>
           </form>

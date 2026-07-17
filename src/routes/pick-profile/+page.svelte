@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
+  import { Button } from '$lib/components/ui/button/index.js';
   import type { PageData, ActionData } from './$types';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
@@ -80,19 +81,10 @@
           <p class="text-xs text-destructive">{form.createError}</p>
         {/if}
         <div class="flex w-full gap-2">
-          <button
-            type="submit"
-            class="flex-1 rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-          >
-            Add
-          </button>
-          <button
-            type="button"
-            onclick={() => { adding = false; nameValue = ''; }}
-            class="flex-1 rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
-          >
+          <Button type="submit" class="flex-1">Add</Button>
+          <Button variant="outline" class="flex-1" onclick={() => { adding = false; nameValue = ''; }}>
             Cancel
-          </button>
+          </Button>
         </div>
       </form>
     {:else}

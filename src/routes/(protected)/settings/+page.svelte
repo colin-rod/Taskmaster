@@ -2,6 +2,7 @@
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
   import { calendarSettings } from '$lib/stores/calendarSettings.js';
+  import { Button } from '$lib/components/ui/button/index.js';
   import { subscribeToPush, unsubscribeFromPush, getExistingSubscription, getPushPermissionState } from '$lib/push.js';
 
   import type { PageData, ActionData } from './$types';
@@ -121,12 +122,7 @@
               onchange={handleFileChange}
             />
           </label>
-          <button
-            type="submit"
-            class="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover w-fit"
-          >
-            Upload photo
-          </button>
+          <Button type="submit" size="sm" class="w-fit">Upload photo</Button>
           {#if form?.avatarError}
             <p class="text-xs text-destructive">{form.avatarError}</p>
           {/if}
@@ -160,22 +156,16 @@
             class="flex-1 rounded-md border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             placeholder="Your name"
           />
-          <button
-            type="submit"
-            class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
-          >
-            Save
-          </button>
-          <button
-            type="button"
+          <Button type="submit">Save</Button>
+          <Button
+            variant="outline"
             onclick={() => {
               editingName = false;
               nameValue = data.profile?.display_name ?? '';
             }}
-            class="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
           >
             Cancel
-          </button>
+          </Button>
         </form>
         {#if form?.updateError}
           <p class="text-xs text-destructive mt-1">{form.updateError}</p>
@@ -204,12 +194,7 @@
         Sign in as a different person in your household.
       </p>
       <form method="POST" action="?/switchProfile">
-        <button
-          type="submit"
-          class="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-        >
-          Switch Profile
-        </button>
+        <Button type="submit" variant="outline">Switch Profile</Button>
       </form>
     </div>
 
@@ -267,11 +252,9 @@
             ? 'You will receive push notifications for task reminders.'
             : 'Enable to receive push notifications for task reminders.'}
         </p>
-        <button
-          type="button"
-          class="rounded-md px-4 py-2 text-sm font-medium {isSubscribed
-            ? 'border border-destructive/30 text-destructive hover:bg-destructive/10'
-            : 'bg-primary text-primary-foreground hover:bg-primary-hover'} disabled:opacity-50"
+        <Button
+          variant={isSubscribed ? 'outline' : 'default'}
+          class={isSubscribed ? 'border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive' : ''}
           disabled={loading}
           onclick={toggleNotifications}
         >
@@ -280,7 +263,7 @@
           {:else}
             {isSubscribed ? 'Disable Notifications' : 'Enable Notifications'}
           {/if}
-        </button>
+        </Button>
       {/if}
     </div>
   </div>
