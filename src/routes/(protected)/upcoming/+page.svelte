@@ -44,17 +44,17 @@
     <EmptyState title="Nothing on the horizon." subtitle="The next 7 days are yours.">
       {#snippet illustration()}
         <svg width="52" height="44" viewBox="0 0 52 44" fill="none">
-          <rect x="4" y="8" width="44" height="34" rx="3" fill="hsl(17 97% 93%)" stroke="hsl(17 91% 40%)" stroke-width="1.8"/>
-          <rect x="4" y="8" width="44" height="10" rx="3" fill="hsl(17 91% 40%)"/>
-          <rect x="4" y="14" width="44" height="4" fill="hsl(17 91% 40%)"/>
-          <line x1="16" y1="4" x2="16" y2="12" stroke="hsl(17 91% 40%)" stroke-width="2.5" stroke-linecap="round"/>
-          <line x1="36" y1="4" x2="36" y2="12" stroke="hsl(17 91% 40%)" stroke-width="2.5" stroke-linecap="round"/>
-          <rect x="10" y="24" width="8" height="6" rx="1.5" fill="hsl(17 91% 40%)" opacity="0.25"/>
-          <rect x="22" y="24" width="8" height="6" rx="1.5" fill="hsl(17 91% 40%)" opacity="0.25"/>
-          <rect x="34" y="24" width="8" height="6" rx="1.5" fill="hsl(17 91% 40%)" opacity="0.25"/>
-          <rect x="10" y="33" width="8" height="6" rx="1.5" fill="hsl(17 91% 40%)" opacity="0.25"/>
-          <rect x="22" y="33" width="8" height="6" rx="1.5" fill="hsl(17 91% 40%)" opacity="0.25"/>
-          <rect x="34" y="33" width="8" height="6" rx="1.5" fill="hsl(17 91% 40%)" opacity="0.25"/>
+          <rect x="4" y="8" width="44" height="34" rx="3" fill="hsl(var(--primary-tint))" stroke="hsl(var(--primary))" stroke-width="1.8"/>
+          <rect x="4" y="8" width="44" height="10" rx="3" fill="hsl(var(--primary))"/>
+          <rect x="4" y="14" width="44" height="4" fill="hsl(var(--primary))"/>
+          <line x1="16" y1="4" x2="16" y2="12" stroke="hsl(var(--primary))" stroke-width="2.5" stroke-linecap="round"/>
+          <line x1="36" y1="4" x2="36" y2="12" stroke="hsl(var(--primary))" stroke-width="2.5" stroke-linecap="round"/>
+          <rect x="10" y="24" width="8" height="6" rx="1.5" fill="hsl(var(--primary))" opacity="0.25"/>
+          <rect x="22" y="24" width="8" height="6" rx="1.5" fill="hsl(var(--primary))" opacity="0.25"/>
+          <rect x="34" y="24" width="8" height="6" rx="1.5" fill="hsl(var(--primary))" opacity="0.25"/>
+          <rect x="10" y="33" width="8" height="6" rx="1.5" fill="hsl(var(--primary))" opacity="0.25"/>
+          <rect x="22" y="33" width="8" height="6" rx="1.5" fill="hsl(var(--primary))" opacity="0.25"/>
+          <rect x="34" y="33" width="8" height="6" rx="1.5" fill="hsl(var(--primary))" opacity="0.25"/>
         </svg>
       {/snippet}
     </EmptyState>

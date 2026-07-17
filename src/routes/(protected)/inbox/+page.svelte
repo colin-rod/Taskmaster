@@ -83,11 +83,11 @@
       {#snippet illustration()}
         <svg width="52" height="52" viewBox="0 0 52 52" fill="none">
           <!-- Tray body -->
-          <rect x="6" y="28" width="40" height="18" rx="3" fill="hsl(17 97% 93%)" stroke="hsl(17 91% 40%)" stroke-width="1.8"/>
+          <rect x="6" y="28" width="40" height="18" rx="3" fill="hsl(var(--primary-tint))" stroke="hsl(var(--primary))" stroke-width="1.8"/>
           <!-- Tray opening curve -->
-          <path d="M6 28 Q6 20 14 20 H22 Q26 20 26 24 Q26 20 30 20 H38 Q46 20 46 28" fill="hsl(17 97% 93%)" stroke="hsl(17 91% 40%)" stroke-width="1.8"/>
+          <path d="M6 28 Q6 20 14 20 H22 Q26 20 26 24 Q26 20 30 20 H38 Q46 20 46 28" fill="hsl(var(--primary-tint))" stroke="hsl(var(--primary))" stroke-width="1.8"/>
           <!-- Floating checkmark circle -->
-          <circle cx="36" cy="14" r="9" fill="hsl(17 91% 40%)"/>
+          <circle cx="36" cy="14" r="9" fill="hsl(var(--primary))"/>
           <path d="M31.5 14l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       {/snippet}

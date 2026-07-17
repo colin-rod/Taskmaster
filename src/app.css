@@ -210,9 +210,9 @@
   }
 
   @keyframes input-success-pulse {
-    0%   { box-shadow: 0 0 0 0 hsl(17 91% 40% / 0); }
-    40%  { box-shadow: 0 0 0 4px hsl(17 91% 40% / 0.2); }
-    100% { box-shadow: 0 0 0 0 hsl(17 91% 40% / 0); }
+    0%   { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+    40%  { box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2); }
+    100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
   }
 
   @keyframes progress-finish {
@@ -227,10 +227,10 @@
     50%       { transform: scale(1.05); opacity: 0.9; }
   }
 
-  /* Gentle float for empty-state illustrations */
+  /* Gentle drift for empty-state illustrations — subtle, not a bounce */
   @keyframes float {
     0%, 100% { transform: translateY(0); }
-    50%       { transform: translateY(-6px); }
+    50%       { transform: translateY(-4px); }
   }
 
   /* Slide + fade strikethrough reveal */
@@ -241,9 +241,9 @@
 
   /* Orange ring radiates outward from checkbox on completion */
   @keyframes ring-burst {
-    0%   { box-shadow: 0 0 0 0 hsl(17 91% 40% / 0.35); }
-    60%  { box-shadow: 0 0 0 6px hsl(17 91% 40% / 0); }
-    100% { box-shadow: 0 0 0 6px hsl(17 91% 40% / 0); }
+    0%   { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.35); }
+    60%  { box-shadow: 0 0 0 6px hsl(var(--primary) / 0); }
+    100% { box-shadow: 0 0 0 6px hsl(var(--primary) / 0); }
   }
 
   /* Brief green wash on task row when completed */
@@ -392,7 +392,7 @@
   .save-badge--error  { background-color: hsl(var(--destructive) / 0.1); }
 
   .empty-state-float {
-    animation: float 3.5s ease-in-out infinite;
+    animation: float 5s ease-in-out infinite;
   }
 
   .checklist-item--dragging {

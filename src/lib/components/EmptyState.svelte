@@ -20,8 +20,8 @@
       {@render illustration()}
     </div>
   {/if}
-  <p class="font-accent text-lg text-foreground mb-1">{title}</p>
-  <p class="text-sm text-foreground-secondary max-w-xs">{subtitle}</p>
+  <p class="text-title text-foreground mb-1">{title}</p>
+  <p class="text-body-sm text-foreground-secondary max-w-xs">{subtitle}</p>
   {#if action}
     <div class="mt-4">
       {@render action()}

@@ -47,10 +47,10 @@
       {#snippet illustration()}
         <svg width="48" height="52" viewBox="0 0 48 52" fill="none">
           <!-- Person silhouette -->
-          <circle cx="24" cy="14" r="9" fill="hsl(17 97% 93%)" stroke="hsl(17 91% 40%)" stroke-width="1.8"/>
-          <path d="M6 46c0-9.94 8.06-18 18-18s18 8.06 18 18" fill="hsl(17 97% 93%)" stroke="hsl(17 91% 40%)" stroke-width="1.8" stroke-linecap="round"/>
+          <circle cx="24" cy="14" r="9" fill="hsl(var(--primary-tint))" stroke="hsl(var(--primary))" stroke-width="1.8"/>
+          <path d="M6 46c0-9.94 8.06-18 18-18s18 8.06 18 18" fill="hsl(var(--primary-tint))" stroke="hsl(var(--primary))" stroke-width="1.8" stroke-linecap="round"/>
           <!-- Checkmark badge -->
-          <circle cx="38" cy="38" r="9" fill="hsl(17 91% 40%)"/>
+          <circle cx="38" cy="38" r="9" fill="hsl(var(--primary))"/>
           <path d="M33.5 38l3 3 5-5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       {/snippet}

@@ -46,8 +46,8 @@
     <EmptyState title="All caught up." subtitle="No overdue tasks. Keep it that way.">
       {#snippet illustration()}
         <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
-          <circle cx="24" cy="24" r="20" fill="hsl(17 97% 93%)" stroke="hsl(17 91% 40%)" stroke-width="1.8"/>
-          <path d="M14 24l7 7 13-13" stroke="hsl(17 91% 40%)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+          <circle cx="24" cy="24" r="20" fill="hsl(var(--primary-tint))" stroke="hsl(var(--primary))" stroke-width="1.8"/>
+          <path d="M14 24l7 7 13-13" stroke="hsl(var(--primary))" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       {/snippet}
     </EmptyState>
