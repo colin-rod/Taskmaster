@@ -1,11 +1,13 @@
 <script lang="ts">
   import { Toaster } from 'svelte-sonner';
-  import { Settings, Search, Plus } from '@lucide/svelte';
+  import { Settings, Search, Plus, Sun, Moon } from '@lucide/svelte';
+  import { theme, toggleTheme } from '$lib/stores/theme.js';
   import NotificationBell from '$lib/components/NotificationBell.svelte';
   import SearchBar from '$lib/components/SearchBar.svelte';
   import Sidebar from '$lib/components/Sidebar.svelte';
   import BottomTabBar from '$lib/components/BottomTabBar.svelte';
   import CreateListDialog from '$lib/components/CreateListDialog.svelte';
+  import CommandPalette from '$lib/components/CommandPalette.svelte';
   import QuickAdd from '$lib/components/QuickAdd.svelte';
   import TaskSheet from '$lib/components/TaskSheet.svelte';
   import * as Sheet from '$lib/components/ui/sheet/index.js';
@@ -17,6 +19,7 @@
 
   let showCreateListDialog = $state(false);
   let searchOpen = $state(false);
+  let commandPaletteOpen = $state(false);
   // Single unified "add task" surface — the same bottom sheet is opened from the
   // header button, the desktop FAB, the mobile FAB, and the global `c` shortcut.
   let quickAddOpen = $state(false);
@@ -29,13 +32,20 @@
     quickAddOpen = true;
   }
 
-  // Global keyboard shortcut: `c` opens Quick Add from anywhere, unless the user
-  // is typing in a field or another overlay is already capturing input.
+  // Global keyboard shortcuts.
   function onGlobalKeydown(e: KeyboardEvent) {
+    // Cmd/Ctrl+K opens the command palette from anywhere (even while typing).
+    if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      e.preventDefault();
+      commandPaletteOpen = !commandPaletteOpen;
+      return;
+    }
+
+    // `c` opens Quick Add — but not while typing or with another overlay open.
     if (e.key !== 'c' || e.metaKey || e.ctrlKey || e.altKey) return;
     const el = e.target as HTMLElement | null;
     if (el && (el.isContentEditable || /^(INPUT|TEXTAREA|SELECT)$/.test(el.tagName))) return;
-    if (quickAddOpen || sheetOpen || searchOpen || showCreateListDialog) return;
+    if (quickAddOpen || sheetOpen || searchOpen || showCreateListDialog || commandPaletteOpen) return;
     e.preventDefault();
     openQuickAdd();
   }
@@ -101,6 +111,18 @@
         <div class="p-2 rounded-lg">
           <NotificationBell bind:unreadCount />
         </div>
+        <button
+          type="button"
+          class="p-2.5 rounded-lg text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
+          onclick={toggleTheme}
+          aria-label={$theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          {#if $theme === 'dark'}
+            <Sun class="w-4 h-4" />
+          {:else}
+            <Moon class="w-4 h-4" />
+          {/if}
+        </button>
         <a
           href="/settings"
           class="p-2.5 rounded-lg text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors cursor-pointer"
@@ -158,5 +180,6 @@
 
 <BottomTabBar onAdd={openQuickAdd} />
 <CreateListDialog bind:open={showCreateListDialog} />
+<CommandPalette bind:open={commandPaletteOpen} {onSelectTask} onNewTask={openQuickAdd} />
 <TaskSheet bind:task={selectedTask} bind:open={sheetOpen} loading={taskLoading} />
 <Toaster position="bottom-center" />

@@ -4,6 +4,12 @@
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
+/* Class-based dark mode: the `dark:` utility variant (used by shadcn
+   components) keys off a `.dark` class on <html>, not prefers-color-scheme,
+   so the in-app theme toggle controls it. The app's own tokens switch via
+   the `.dark {}` var overrides below. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
     /* === CLEAN & VIBRANT DESIGN SYSTEM ===
@@ -110,6 +116,95 @@
 
     /* Header shadow */
     --shadow-header: 0 1px 0 hsl(var(--border)), 0 1px 2px rgba(15, 18, 30, 0.03);
+  }
+
+  /* === DARK THEME ===
+     Same var names re-pointed. Neutrals invert (cool near-black canvas,
+     slightly lighter raised surfaces); accent/status hues keep their H/S and
+     gain lightness for AA contrast on dark surfaces; shadows deepen. */
+  .dark {
+    --background: 222 24% 8%;      /* near-black canvas */
+    --surface: 222 20% 11%;        /* cards, rows, sheet */
+    --surface-subtle: 222 18% 15%; /* hover/zebra */
+    --surface-sunken: 222 20% 9%;  /* inputs, inset */
+
+    --border: 222 14% 20%;
+    --border-subtle: 222 14% 17%;
+    --border-strong: 222 12% 30%;
+    --border-divider: 222 14% 17%;
+    --input: 222 14% 20%;
+
+    --foreground: 220 20% 96%;
+    --foreground-secondary: 220 12% 68%;
+    --foreground-muted: 220 10% 52%;
+    --foreground-disabled: 220 10% 34%;
+
+    --primary: 250 84% 66%;        /* lighter for contrast on dark */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 250 84% 72%;
+    --primary-active: 250 84% 78%;
+    --primary-tint: 250 40% 18%;   /* dark wash, not a pale tint */
+    --primary-tint-strong: 250 45% 26%;
+
+    --accent: 250 84% 66%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Status — same hue/sat, bumped lightness for dark surfaces */
+    --status-todo: 220 10% 55%;
+    --status-doing: 217 91% 66%;
+    --status-in-review: 271 81% 72%;
+    --status-done: 152 55% 50%;
+    --status-blocked: 28 92% 60%;
+    --status-canceled: 220 9% 50%;
+
+    --priority-p1: 0 80% 63%;
+    --priority-p2: 28 92% 60%;
+    --priority-p3: 217 91% 66%;
+    --priority-p4: 220 10% 55%;
+
+    --progress-critical: 0 80% 63%;
+    --progress-low: 28 92% 60%;
+    --progress-mid: 217 91% 66%;
+    --progress-high: 152 55% 55%;
+    --progress-done: 152 55% 50%;
+
+    --bg-done: 152 40% 14%;
+    --bg-blocked: 28 50% 16%;
+    --status-blocked-strong: 28 92% 60%;
+    --bg-review: 271 40% 18%;
+
+    --due-overdue-text: 0 80% 68%;
+    --due-overdue-bg:   0 50% 16%;
+    --due-today-text:   28 92% 64%;
+    --due-today-bg:     28 50% 16%;
+    --due-soon-text:    217 80% 70%;
+    --due-soon-bg:      217 40% 18%;
+
+    /* shadcn compatibility mappings */
+    --card: 222 20% 11%;
+    --card-foreground: 220 20% 96%;
+    --popover: 222 22% 13%;
+    --popover-foreground: 220 20% 96%;
+    --secondary: 222 18% 15%;
+    --secondary-foreground: 220 20% 96%;
+    --muted: 222 18% 15%;
+    --muted-foreground: 220 12% 68%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --ring: 250 84% 66%;
+
+    /* Shadows deepen on dark */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.30);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.40), 0 1px 2px rgba(0, 0, 0, 0.30);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.30);
+    --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.55), 0 4px 8px rgba(0, 0, 0, 0.35);
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.30);
+    --shadow-2: 0 12px 24px rgba(0, 0, 0, 0.55), 0 4px 8px rgba(0, 0, 0, 0.35);
+
+    --sidebar-bg: 222 22% 10%;
+    --sidebar-label: 220 12% 62%;
+
+    --shadow-header: 0 1px 0 hsl(var(--border)), 0 1px 2px rgba(0, 0, 0, 0.4);
   }
 }
 

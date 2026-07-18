@@ -61,7 +61,7 @@
     <form onsubmit={handleSubmit} class="space-y-4 mt-2">
       <div class="flex justify-center">
         <div
-          class="w-16 h-16 rounded-full flex items-center justify-center transition-colors shadow-level-2 ring-4 ring-white"
+          class="w-16 h-16 rounded-full flex items-center justify-center transition-colors shadow-level-2 ring-4 ring-surface"
           style="background-color: {color || 'hsl(var(--foreground-muted))'}"
         >
           <PreviewIcon class="w-8 h-8 text-white" />

@@ -2,6 +2,8 @@
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
   import { calendarSettings } from '$lib/stores/calendarSettings.js';
+  import { theme } from '$lib/stores/theme.js';
+  import { Sun, Moon } from '@lucide/svelte';
   import { Button } from '$lib/components/ui/button/index.js';
   import { subscribeToPush, unsubscribeFromPush, getExistingSubscription, getPushPermissionState } from '$lib/push.js';
 
@@ -196,6 +198,30 @@
       <form method="POST" action="?/switchProfile">
         <Button type="submit" variant="outline">Switch Profile</Button>
       </form>
+    </div>
+
+    <!-- Appearance -->
+    <div class="rounded-lg border p-4">
+      <h2 class="text-sm font-medium mb-1">Appearance</h2>
+      <p class="text-sm text-foreground-secondary mb-3">Choose light or dark theme.</p>
+      <div class="segmented-control max-w-[220px]">
+        <button
+          type="button"
+          class="segmented-control__btn {$theme === 'light' ? 'segmented-control__btn--active' : ''}"
+          aria-pressed={$theme === 'light'}
+          onclick={() => theme.set('light')}
+        >
+          <Sun class="w-3.5 h-3.5 inline mr-1" />Light
+        </button>
+        <button
+          type="button"
+          class="segmented-control__btn {$theme === 'dark' ? 'segmented-control__btn--active' : ''}"
+          aria-pressed={$theme === 'dark'}
+          onclick={() => theme.set('dark')}
+        >
+          <Moon class="w-3.5 h-3.5 inline mr-1" />Dark
+        </button>
+      </div>
     </div>
 
     <!-- Calendar -->

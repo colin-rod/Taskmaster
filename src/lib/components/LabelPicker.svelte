@@ -199,7 +199,7 @@
                 </button>
                 <button
                   type="button"
-                  class="text-xs text-red-500 hover:bg-red-50 rounded px-2 py-1 transition-colors"
+                  class="text-xs text-destructive hover:bg-destructive/10 rounded px-2 py-1 transition-colors"
                   onclick={() => deleteLabel(label.id)}
                 >
                   <Trash2 class="w-3 h-3" />
