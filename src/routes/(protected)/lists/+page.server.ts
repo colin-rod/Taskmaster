@@ -8,7 +8,12 @@ export const load: PageServerLoad = async ({ locals: { supabase } }) => {
     .select('*, members:task_list_members(user_id, role, profile:profiles(email, display_name))')
     .order('sort_order', { ascending: true });
 
-  return { lists: lists ?? [] };
+  const all = lists ?? [];
+
+  return {
+    lists: all.filter((l) => !l.archived_at),
+    archivedLists: all.filter((l) => !!l.archived_at),
+  };
 };
 
 export const actions: Actions = {
@@ -54,6 +59,46 @@ export const actions: Actions = {
     const { error } = await supabase
       .from('task_lists')
       .update({ name, color, icon })
+      .eq('id', id);
+
+    if (error) {
+      return fail(500, { error: error.message });
+    }
+
+    return { success: true };
+  },
+
+  archiveList: async ({ request, locals: { supabase } }) => {
+    const formData = await request.formData();
+    const id = formData.get('id')?.toString();
+
+    if (!id) {
+      return fail(400, { error: 'List ID is required' });
+    }
+
+    const { error } = await supabase
+      .from('task_lists')
+      .update({ archived_at: new Date().toISOString() })
+      .eq('id', id);
+
+    if (error) {
+      return fail(500, { error: error.message });
+    }
+
+    return { success: true };
+  },
+
+  unarchiveList: async ({ request, locals: { supabase } }) => {
+    const formData = await request.formData();
+    const id = formData.get('id')?.toString();
+
+    if (!id) {
+      return fail(400, { error: 'List ID is required' });
+    }
+
+    const { error } = await supabase
+      .from('task_lists')
+      .update({ archived_at: null })
       .eq('id', id);
 
     if (error) {

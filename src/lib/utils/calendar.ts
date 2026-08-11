@@ -1,5 +1,4 @@
 import type { Task } from '$lib/types/index.js';
-import { hasTime } from '$lib/utils/dates.js';
 
 export interface CalendarDay {
   isoDate: string;
@@ -7,8 +6,6 @@ export interface CalendarDay {
   isCurrentMonth: boolean;
   isToday: boolean;
   dueTasks: Task[];
-  timedDueTasks: Task[];
-  startTasks: Task[];
 }
 
 const todayIso = (): string => {
@@ -24,8 +21,6 @@ function makeDay(date: Date, currentMonth: number, todayStr: string): CalendarDa
     isCurrentMonth: date.getMonth() === currentMonth,
     isToday: isoDate === todayStr,
     dueTasks: [],
-    timedDueTasks: [],
-    startTasks: [],
   };
 }
 
@@ -64,7 +59,7 @@ export function buildWeekGrid(anchorDate: Date): CalendarDay[] {
   return days;
 }
 
-// Distribute tasks into CalendarDay[] by due_at and start_at
+// Distribute tasks into CalendarDay[] by due_at
 export function distributeTasks(days: CalendarDay[], tasks: Task[]): CalendarDay[] {
   const dayMap = new Map<string, CalendarDay>();
   for (const day of days) dayMap.set(day.isoDate, day);
@@ -74,18 +69,7 @@ export function distributeTasks(days: CalendarDay[], tasks: Task[]): CalendarDay
       const iso = task.due_at.slice(0, 10);
       const day = dayMap.get(iso);
       if (day) {
-        if (hasTime(task.due_at)) {
-          day.timedDueTasks.push(task);
-        } else {
-          day.dueTasks.push(task);
-        }
-      }
-    }
-    if (task.start_at) {
-      const iso = task.start_at.slice(0, 10);
-      const day = dayMap.get(iso);
-      if (day) {
-        day.startTasks.push(task);
+        day.dueTasks.push(task);
       }
     }
   }
@@ -98,12 +82,12 @@ export function parseDateParam(param: string | null, fallback: Date): Date {
   if (!param) return fallback;
   // "YYYY-MM" → first of month
   if (/^\d{4}-\d{2}$/.test(param)) {
-    const d = new Date(param + '-01T12:00:00');
+    const d = new Date(param + '-01T00:00:00');
     if (!isNaN(d.getTime())) return d;
   }
   // "YYYY-MM-DD"
   if (/^\d{4}-\d{2}-\d{2}$/.test(param)) {
-    const d = new Date(param + 'T12:00:00');
+    const d = new Date(param + 'T00:00:00');
     if (!isNaN(d.getTime())) return d;
   }
   return fallback;

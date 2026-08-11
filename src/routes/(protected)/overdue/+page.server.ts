@@ -1,5 +1,6 @@
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
+import { TASK_SELECT, flattenTaskLabels } from '$lib/server/task-actions.js';
 
 export const load: PageServerLoad = async (event) => {
   const { locals: { supabase } } = event;
@@ -9,14 +10,15 @@ export const load: PageServerLoad = async (event) => {
   const startOfToday = new Date(now);
   startOfToday.setHours(0, 0, 0, 0);
 
-  const { data: tasks } = await supabase
+  const { data: tasks, error } = await supabase
     .from('tasks')
-    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
+    .select(TASK_SELECT)
     .lt('due_at', startOfToday.toISOString())
     .not('status', 'in', '(done,canceled)')
     .order('due_at', { ascending: true });
 
-  return { tasks: tasks ?? [] };
+  if (error) console.error('[overdue] Task query failed:', error.message);
+  return { tasks: flattenTaskLabels(tasks ?? []) };
 };
 
 export const actions: Actions = {

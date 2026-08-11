@@ -63,7 +63,7 @@
 {:else}
   <button
     type="button"
-    class="text-left truncate hover:underline hover:decoration-foreground-muted/40 decoration-1 underline-offset-2 cursor-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm"
+    class="w-full text-left truncate hover:underline hover:decoration-foreground-muted/40 decoration-1 underline-offset-2 cursor-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm"
     aria-label="Edit title: {value}"
     title={value}
     onclick={startEdit}

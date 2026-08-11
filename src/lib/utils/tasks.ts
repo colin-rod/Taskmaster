@@ -16,7 +16,7 @@ export function groupByDay(tasks: Task[]): { label: string; isoDate: string; tas
 
   return Array.from(groups.entries()).map(([isoDate, tasks]) => ({
     isoDate,
-    label: new Date(isoDate + 'T12:00:00').toLocaleDateString(undefined, {
+    label: new Date(isoDate + 'T00:00:00').toLocaleDateString(undefined, {
       weekday: 'long',
       month: 'short',
       day: 'numeric',

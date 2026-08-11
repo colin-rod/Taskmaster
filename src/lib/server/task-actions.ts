@@ -2,7 +2,21 @@ import { fail } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { RecurrenceRule } from '$lib/types/index.js';
 import { computeNextDue } from '$lib/utils/recurrence.js';
-import { buildDueAt } from '$lib/utils/dates.js';
+
+// =============================================================================
+// Task Select Helpers
+// =============================================================================
+
+export const TASK_SELECT = '*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name), task_labels(label:labels(*))';
+
+export function flattenTaskLabels<T extends Record<string, unknown>>(tasks: T[]): T[] {
+  for (const task of tasks) {
+    const tl = task.task_labels as { label: unknown }[] | undefined;
+    (task as Record<string, unknown>).labels = tl?.map((r) => r.label).filter(Boolean) ?? [];
+    delete task.task_labels;
+  }
+  return tasks;
+}
 
 // =============================================================================
 // Role Map Helper
@@ -69,21 +83,26 @@ export async function toggleChecklistItem(formData: FormData, supabase: Supabase
 
   if (error) return fail(500, { error: error.message });
 
-  // Auto-complete: if all items are now completed, mark the task as done
+  // Auto-set status based on checklist progress
   if (newCompleted) {
     const { data: items } = await supabase
       .from('checklist_items')
       .select('is_completed')
       .eq('task_id', task_id);
 
-    if (items && items.length > 0 && items.every((item) => item.is_completed)) {
-      // Check if this is a recurring task
-      const { data: task } = await supabase
-        .from('tasks')
-        .select('is_recurring, recurrence_rule, due_at')
-        .eq('id', task_id)
-        .single();
+    const { data: task } = await supabase
+      .from('tasks')
+      .select('status, is_recurring, recurrence_rule, due_at')
+      .eq('id', task_id)
+      .single();
 
+    // Auto set to in_progress when an item is checked (if currently todo)
+    if (task?.status === 'todo') {
+      await supabase.from('tasks').update({ status: 'in_progress' }).eq('id', task_id);
+    }
+
+    // Auto-complete: if all items are now completed, mark the task as done
+    if (items && items.length > 0 && items.every((item) => item.is_completed)) {
       if (task?.is_recurring && task.recurrence_rule) {
         const result = await rollForwardRecurringTask(task_id, task, supabase);
         if (result.rolled) return { success: true, rolled: true };
@@ -166,6 +185,9 @@ async function rollForwardRecurringTask(
     return { rolled: false };
   }
 
+  // Normalize to midnight UTC (computeNextDue already does this, but be explicit)
+  nextDue.setUTCHours(0, 0, 0, 0);
+
   // Build updated rule (increment occurrences_completed if after_n_occurrences)
   let updatedRule: RecurrenceRule = task.recurrence_rule;
   if (task.recurrence_rule.ends?.type === 'after_n_occurrences') {
@@ -247,8 +269,7 @@ export async function updateTask(formData: FormData, supabase: SupabaseClient) {
   const notes = formData.get('notes')?.toString() || null;
   const priority = Number(formData.get('priority') || 4);
   const due_at_raw = formData.get('due_at')?.toString() || '';
-  const due_time = formData.get('due_time')?.toString() || '';
-  const due_at = buildDueAt(due_at_raw, due_time);
+  const due_at = due_at_raw ? `${due_at_raw}T00:00:00.000Z` : null;
   const status = formData.get('status')?.toString() || 'todo';
   const is_recurring = formData.get('is_recurring') === 'true';
   const recurrence_rule_raw = formData.get('recurrence_rule')?.toString();

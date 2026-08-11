@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Task } from '$lib/types/index.js';
   import type { CalendarDay } from '$lib/utils/calendar.js';
+  import type { Task } from '$lib/types/index.js';
   import CalendarTaskChip from './CalendarTaskChip.svelte';
 
   let {
@@ -15,14 +15,9 @@
 
   const MAX_VISIBLE = 3;
 
-  // Combine all tasks for the cell: all-day due first, then timed due, then start_at chips
-  const allTasks = $derived([...day.dueTasks, ...day.timedDueTasks, ...day.startTasks]);
+  const allTasks = $derived([...day.dueTasks]);
   const visibleTasks = $derived(allTasks.slice(0, MAX_VISIBLE));
   const overflow = $derived(allTasks.length - MAX_VISIBLE);
-
-  function getRoleForTask(task: Task): 'due' | 'start' {
-    return task.start_at && !task.due_at ? 'start' : 'due';
-  }
 </script>
 
 <div
@@ -45,7 +40,7 @@
   <!-- Task chips -->
   <div class="flex flex-col gap-0.5">
     {#each visibleTasks as task (task.id)}
-      <CalendarTaskChip {task} role={getRoleForTask(task)} {onTaskClick} />
+      <CalendarTaskChip {task} {onTaskClick} />
     {/each}
   </div>
 

@@ -1,7 +1,6 @@
 <script lang="ts">
 	import type { RecurrenceRule } from '$lib/types/index.js';
 	import { describeRecurrence } from '$lib/utils/recurrence.js';
-	import TimeInput from '$lib/components/TimeInput.svelte';
 
 	let {
 		isRecurring = $bindable(false),
@@ -18,7 +17,6 @@
 	let frequency = $state<'daily' | 'weekly' | 'monthly'>('daily');
 	let interval = $state(1);
 	let byweekday = $state<number[]>([]);
-	let timeOfDay = $state('');
 	let scheduleType = $state<'due_date' | 'completion_date'>('due_date');
 	let endsType = $state<'never' | 'on_date' | 'after_n_occurrences'>('never');
 	let endsDate = $state('');
@@ -34,7 +32,6 @@
 				frequency = recurrenceRule.frequency;
 				interval = recurrenceRule.interval;
 				byweekday = recurrenceRule.byweekday ? [...recurrenceRule.byweekday] : [];
-				timeOfDay = recurrenceRule.time_of_day ?? '';
 				scheduleType = recurrenceRule.schedule_type ?? 'due_date';
 				endsType = recurrenceRule.ends?.type ?? 'never';
 				endsDate = recurrenceRule.ends?.type === 'on_date' ? recurrenceRule.ends.date : '';
@@ -43,7 +40,6 @@
 				frequency = 'daily';
 				interval = 1;
 				byweekday = [];
-				timeOfDay = '';
 				scheduleType = 'due_date';
 				endsType = 'never';
 				endsDate = '';
@@ -65,10 +61,6 @@
 
 		if (frequency === 'weekly' && byweekday.length > 0) {
 			rule.byweekday = [...byweekday].sort((a, b) => a - b);
-		}
-
-		if (timeOfDay) {
-			rule.time_of_day = timeOfDay;
 		}
 
 		if (scheduleType === 'completion_date') {
@@ -148,7 +140,7 @@
 
 		<!-- Schedule type -->
 		<div>
-			<span class="text-sm text-foreground-secondary mb-1.5 block">Schedule based on</span>
+			<span class="text-sm text-foreground-secondary mb-1.5 block">Next date based on</span>
 			<div class="flex gap-1">
 				<button
 					type="button"
@@ -158,7 +150,7 @@
 							: 'bg-surface-subtle text-foreground-secondary hover:bg-surface-subtle/80'}"
 					onclick={() => (scheduleType = 'due_date')}
 				>
-					Due date
+					Previous due date
 				</button>
 				<button
 					type="button"
@@ -194,19 +186,13 @@
 			</div>
 		{/if}
 
-		<!-- Time of day -->
-		<div>
-			<label for="recurrence-time" class="text-sm text-foreground-secondary">Time</label>
-			<TimeInput id="recurrence-time" bind:value={timeOfDay} />
-		</div>
-
 		<!-- End condition -->
 		<div class="flex items-center gap-2">
 			<label for="recurrence-ends" class="text-sm text-foreground-secondary">Ends</label>
 			<select id="recurrence-ends" bind:value={endsType} class="select-input flex-1">
 				<option value="never">Never</option>
 				<option value="on_date">On date</option>
-				<option value="after_n_occurrences">After N times</option>
+				<option value="after_n_occurrences">After a set number of times</option>
 			</select>
 		</div>
 

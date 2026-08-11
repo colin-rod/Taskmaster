@@ -27,6 +27,13 @@ export default ts.config(
 		},
 	},
 	{
+		files: ['**/*.svelte.ts', '**/*.svelte.js'],
+		languageOptions: {
+			parser: svelteParser,
+			parserOptions: { parser: ts.parser },
+		},
+	},
+	{
 		ignores: ['.svelte-kit/', 'build/', 'node_modules/', '.vercel/', 'coverage/'],
 	},
 );

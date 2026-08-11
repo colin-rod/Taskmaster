@@ -1,0 +1,41 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(grep -n \"TaskSheet\" /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\)/*/+page.svelte)",
+      "Bash(head -50 \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/lists/[id]/+page.server.ts\")",
+      "Bash(ls /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\))",
+      "Bash(ls /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\)/lists)",
+      "Bash(ls /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\)/lists/[id])",
+      "Bash(ls -la \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/lists/[id]/\")",
+      "Bash(find /Users/colinrodrigues/Taskmaster -type f \\\\\\(-name *schema* -o -name *migration* -o -name *.sql \\\\\\))",
+      "Bash(grep -l \"CREATE TABLE.*tasks\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*.sql)",
+      "Bash(grep -r \"in_progress\\\\|in-progress\" /Users/colinrodrigues/Taskmaster/src --include=*.svelte --include=*.ts)",
+      "Bash(ls -la /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\)/*/)",
+      "Bash(cat \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/inbox/+page.svelte\")",
+      "Bash(cat \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/lists/[id]/+page.svelte\")",
+      "Bash(git diff:*)",
+      "Bash(wc -l \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/inbox/+page.svelte\")",
+      "Bash(git add:*)",
+      "Bash(find /Users/colinrodrigues/Taskmaster -name schema.sql -o -name *schema*)",
+      "Bash(git -C /Users/colinrodrigues/Taskmaster log --all --full-history --reverse -- \"supabase/migrations/*.sql\")",
+      "Bash(grep -E \"\\\\.\\(svelte|ts|tsx\\)$\")",
+      "Bash(cat '/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/+layout.svelte')",
+      "Bash(find /Users/colinrodrigues/Taskmaster -type f \\\\\\(-name *.sql -o -name *schema* -o -name *migration* \\\\\\))",
+      "Bash(find /Users/colinrodrigues/Taskmaster/supabase/migrations -name \"*.sql\" -exec basename {})",
+      "Bash(find /Users/colinrodrigues/Taskmaster -name config.json -o -name supabase.json -o -name *.schema.sql)",
+      "Bash(grep -h \"due_at\\\\|reminder_at\\\\|start_at\\\\|duration\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*.sql)",
+      "Bash(grep -l \"CREATE TABLE\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*.sql)",
+      "Read(//Users/colinrodrigues/.claude/plans/**)",
+      "Bash(head -100 \"/Users/colinrodrigues/Taskmaster/src/routes/\\(protected\\)/today/+page.server.ts\")",
+      "WebFetch(domain:joonote.com)",
+      "Bash(grep -n \"listLabels\\\\|labels\" /Users/colinrodrigues/Taskmaster/src/routes/\\\\\\(protected\\\\\\)/lists/[id]/+page.svelte)",
+      "Bash(cat /Users/colinrodrigues/Taskmaster/supabase/migrations/*)",
+      "Bash(xargs -I {} cat /Users/colinrodrigues/Taskmaster/supabase/migrations/{})",
+      "Bash(grep -l \"CREATE TABLE tasks\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*)",
+      "Bash(grep -r \"progress_current\\\\|progress_total\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*.sql)",
+      "Bash(grep -l \"tasks\" /Users/colinrodrigues/Taskmaster/supabase/migrations/*.sql)",
+      "Bash(xargs -I {} basename {})",
+      "Bash(npm ls:*)"
+    ]
+  }
+}

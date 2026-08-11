@@ -10,6 +10,9 @@
   import * as Popover from '$lib/components/ui/popover/index.js';
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
+  import QuickAdd from '$lib/components/QuickAdd.svelte';
+  import SortFilterAccordion from '$lib/components/SortFilterAccordion.svelte';
+  import { createSortFilterState } from '$lib/stores/sort-filter.svelte.js';
 
   let { data, form }: { data: PageData; form: ActionData } = $props();
 
@@ -31,6 +34,8 @@
   let activeTasks = $derived(data.tasks.filter((t) => t.status !== 'done' && t.status !== 'canceled'));
   let completedTasks = $derived(data.tasks.filter((t) => t.status === 'done' || t.status === 'canceled'));
   let showCompleted = $state(false);
+
+  const sf = createSortFilterState(() => activeTasks);
   const ListIcon = $derived(getListIcon(data.list.icon));
 
   // svelte-ignore state_referenced_locally
@@ -126,7 +131,7 @@
           <ListIcon class="w-5 h-5 text-white" />
         </div>
       {/if}
-      <h1 class="text-page-title font-accent">{data.list.name}</h1>
+      <h1 class="text-page-title font-accent page-title-accent">{data.list.name}</h1>
     </div>
     {#if isOwner}
       <button
@@ -139,6 +144,14 @@
       </button>
     {/if}
   </div>
+
+  <div class="mb-6">
+    <QuickAdd action="?/createTask" listId={data.list.id} />
+  </div>
+
+  {#if activeTasks.length > 0}
+    <SortFilterAccordion filters={sf} />
+  {/if}
 
   {#if form?.error}
     <div class="mb-4 rounded-md border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
@@ -153,8 +166,8 @@
     </div>
   {:else}
     <div class="space-y-3">
-      {#each activeTasks as task (task.id)}
-        <TaskRow {task} onselect={openTask} {userRole} members={data.list.members ?? []} />
+      {#each sf.displayedTasks as task (task.id)}
+        <TaskRow {task} onselect={openTask} {userRole} members={data.list.members ?? []} listLabels={data.labels ?? []} />
       {/each}
     </div>
   {/if}
@@ -178,7 +191,7 @@
       {#if showCompleted}
         <div class="space-y-3 mt-2">
           {#each completedTasks as task (task.id)}
-            <TaskRow {task} onselect={openTask} {userRole} members={data.list.members ?? []} />
+            <TaskRow {task} onselect={openTask} {userRole} members={data.list.members ?? []} listLabels={data.labels ?? []} />
           {/each}
         </div>
       {/if}

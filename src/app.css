@@ -1,82 +1,210 @@
-/* North Design System - Typography */
-@import '@fontsource-variable/dm-sans';
-@import '@fontsource-variable/fraunces';
+/* Clean & Vibrant Design System - Typography */
+@import '@fontsource-variable/inter';
 
 @import "tailwindcss";
 @config "../tailwind.config.js";
 
+/* Class-based dark mode: the `dark:` utility variant (used by shadcn
+   components) keys off a `.dark` class on <html>, not prefers-color-scheme,
+   so the in-app theme toggle controls it. The app's own tokens switch via
+   the `.dark {}` var overrides below. */
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
-    /* === NORTH DESIGN SYSTEM COLORS === */
+    /* === CLEAN & VIBRANT DESIGN SYSTEM ===
+       All values are dark-mode-ready: a future `.dark {}` block re-points
+       these same var names. Every component must consume hsl(var(--token)),
+       never a raw Tailwind palette color or hardcoded hex. */
 
-    /* Core Neutrals - Background */
-    --background: 42 17% 98%; /* #FAF9F6 - Base background */
-    --surface: 0 0% 100%; /* #FFFFFF - Surface/card background */
-    --surface-subtle: 40 18% 95%; /* #F3F1EC - Subtle background tint */
+    /* Core Neutrals - cool gray (hue ~220) */
+    --background: 220 20% 98%; /* app canvas, barely off-white */
+    --surface: 0 0% 100%; /* cards, rows, sheet — pure white */
+    --surface-subtle: 220 20% 96%; /* zebra/hover fill, subtle panels */
+    --surface-sunken: 220 18% 94%; /* input backgrounds, inset areas */
 
     /* Borders */
-    --border: 35 17% 88%; /* #E7E2DA - Light border */
-    --border-divider: 38 16% 91%; /* #EAE6DF - Divider */
-    --input: 35 17% 88%; /* #E7E2DA - Input border */
+    --border: 220 14% 90%; /* default hairline border */
+    --border-subtle: 220 16% 93%; /* faint divider between rows */
+    --border-strong: 220 12% 82%; /* emphasized rule, checkbox outline */
+    --border-divider: 220 16% 93%; /* legacy alias → border-subtle */
+    --input: 220 14% 90%; /* input border */
 
     /* Text */
-    --foreground: 217 19% 15%; /* #1F2937 - Primary text (deep navy) */
-    --foreground-secondary: 215 14% 48%; /* #6B7280 - Secondary text */
-    --foreground-muted: 214 11% 64%; /* #9CA3AF - Muted text */
-    --foreground-disabled: 214 14% 82%; /* #D1D5DB - Disabled text */
+    --foreground: 222 24% 12%; /* primary text */
+    --foreground-secondary: 220 12% 40%; /* secondary text, metadata */
+    --foreground-muted: 220 10% 58%; /* placeholders, muted */
+    --foreground-disabled: 220 10% 78%; /* disabled text */
 
-    /* Primary Accent - Warm Burnt Orange */
-    --primary: 17 91% 40%; /* #C2410C - Brand accent */
+    /* Primary Accent - Electric Indigo/Violet (#5B4CF5) — the ONE accent */
+    --primary: 250 84% 60%;
     --primary-foreground: 0 0% 100%; /* White text on primary */
-    --primary-hover: 17 89% 33%; /* #9A3412 - Hover state */
-    --primary-tint: 17 97% 93%; /* #FDE8DD - Soft background tint */
+    --primary-hover: 250 84% 53%; /* darken ~7L for hover */
+    --primary-active: 250 84% 47%; /* darken further for :active */
+    --primary-tint: 250 84% 96%; /* light wash — chip bg, selected row */
+    --primary-tint-strong: 250 70% 90%; /* stronger wash — active nav item */
 
-    /* Secondary Accent - Deep Indigo (sparingly used) */
-    --accent: 239 68% 60%; /* #4F46E5 - Secondary accent */
-    --accent-foreground: 0 0% 100%; /* White text on accent */
+    /* Legacy secondary accent — folded into primary (kept as alias) */
+    --accent: 250 84% 60%;
+    --accent-foreground: 0 0% 100%;
 
-    /* Status Colors */
-    --status-todo: 216 21% 73%;
+    /* Status Colors (desaturated so they don't compete with primary) */
+    --status-todo: 220 10% 65%;
     --status-doing: 217 91% 60%;
-    --status-in-review: 258 90% 66%;
-    --status-done: 142 71% 45%;
-    --status-blocked: 32 95% 54%;
-    --status-canceled: 215 16% 57%;
+    --status-in-review: 271 81% 66%;
+    --status-done: 152 60% 42%;
+    --status-blocked: 28 92% 54%; /* amber — warning color, not brand */
+    --status-canceled: 220 9% 55%;
+
+    /* Priority colors (referenced from design-tokens.ts) */
+    --priority-p1: 0 72% 51%; /* red — urgent */
+    --priority-p2: 28 92% 54%; /* amber — high */
+    --priority-p3: 217 91% 60%; /* blue — medium */
+    --priority-p4: 220 10% 65%; /* gray — low */
 
     /* Progress bar fill tiers */
     --progress-critical: 0 72% 51%;
-    --progress-low: 32 95% 54%;
+    --progress-low: 28 92% 54%;
     --progress-mid: 217 91% 60%;
-    --progress-high: 158 64% 52%;
-    --progress-done: 142 71% 45%;
+    --progress-high: 152 60% 52%;
+    --progress-done: 152 60% 42%;
 
     /* Semantic Background Tints */
-    --bg-done: 138 76% 97%;
-    --bg-blocked: 48 100% 94%;
-    --status-blocked-strong: 25 95% 47%;
-    --bg-review: 252 100% 98%;
+    --bg-done: 152 60% 96%;
+    --bg-blocked: 28 92% 95%;
+    --status-blocked-strong: 28 92% 44%;
+    --bg-review: 271 81% 97%;
+
+    /* Due-date urgency (feeds getDueDateClass) */
+    --due-overdue-text: 0 72% 45%;
+    --due-overdue-bg:   0 72% 96%;
+    --due-today-text:   28 92% 40%;
+    --due-today-bg:     28 92% 95%;
+    --due-soon-text:    217 60% 40%;
+    --due-soon-bg:      217 60% 96%;
 
     /* shadcn/svelte compatibility mappings */
     --card: 0 0% 100%;
-    --card-foreground: 217 19% 15%;
+    --card-foreground: 222 24% 12%;
     --popover: 0 0% 100%;
-    --popover-foreground: 217 19% 15%;
-    --secondary: 40 18% 95%;
-    --secondary-foreground: 217 19% 15%;
-    --muted: 40 18% 95%;
-    --muted-foreground: 215 14% 48%;
+    --popover-foreground: 222 24% 12%;
+    --secondary: 220 20% 96%;
+    --secondary-foreground: 222 24% 12%;
+    --muted: 220 20% 96%;
+    --muted-foreground: 220 12% 40%;
     --destructive: 0 72% 51%;
     --destructive-foreground: 0 0% 100%;
-    --ring: 17 91% 40%;
+    --ring: 250 84% 60%;
 
     /* Border Radius */
-    --radius: 0.625rem;
-    --radius-sm: 0.375rem;
-    --radius-lg: 1.25rem;
+    --radius: 0.5rem;       /* md — 8px, default */
+    --radius-sm: 0.375rem;  /* 6px */
+    --radius-lg: 0.75rem;   /* 12px — cards, task rows */
 
-    /* Shadows */
-    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.05);
-    --shadow-2: 0 6px 24px rgba(0, 0, 0, 0.08);
+    /* Shadows — 4 tiers, tighter & cooler */
+    --shadow-xs: 0 1px 2px rgba(15, 18, 30, 0.04);
+    --shadow-sm: 0 1px 3px rgba(15, 18, 30, 0.08), 0 1px 2px rgba(15, 18, 30, 0.04);
+    --shadow-md: 0 4px 12px rgba(15, 18, 30, 0.08), 0 2px 4px rgba(15, 18, 30, 0.04);
+    --shadow-lg: 0 12px 24px rgba(15, 18, 30, 0.10), 0 4px 8px rgba(15, 18, 30, 0.04);
+    /* Legacy aliases */
+    --shadow-1: 0 1px 2px rgba(15, 18, 30, 0.04);
+    --shadow-2: 0 12px 24px rgba(15, 18, 30, 0.10), 0 4px 8px rgba(15, 18, 30, 0.04);
+
+    /* Sidebar */
+    --sidebar-bg: 220 22% 97%;
+    --sidebar-label: 220 12% 40%;
+
+    /* Header shadow */
+    --shadow-header: 0 1px 0 hsl(var(--border)), 0 1px 2px rgba(15, 18, 30, 0.03);
+  }
+
+  /* === DARK THEME ===
+     Same var names re-pointed. Neutrals invert (cool near-black canvas,
+     slightly lighter raised surfaces); accent/status hues keep their H/S and
+     gain lightness for AA contrast on dark surfaces; shadows deepen. */
+  .dark {
+    --background: 222 24% 8%;      /* near-black canvas */
+    --surface: 222 20% 11%;        /* cards, rows, sheet */
+    --surface-subtle: 222 18% 15%; /* hover/zebra */
+    --surface-sunken: 222 20% 9%;  /* inputs, inset */
+
+    --border: 222 14% 20%;
+    --border-subtle: 222 14% 17%;
+    --border-strong: 222 12% 30%;
+    --border-divider: 222 14% 17%;
+    --input: 222 14% 20%;
+
+    --foreground: 220 20% 96%;
+    --foreground-secondary: 220 12% 68%;
+    --foreground-muted: 220 10% 52%;
+    --foreground-disabled: 220 10% 34%;
+
+    --primary: 250 84% 66%;        /* lighter for contrast on dark */
+    --primary-foreground: 0 0% 100%;
+    --primary-hover: 250 84% 72%;
+    --primary-active: 250 84% 78%;
+    --primary-tint: 250 40% 18%;   /* dark wash, not a pale tint */
+    --primary-tint-strong: 250 45% 26%;
+
+    --accent: 250 84% 66%;
+    --accent-foreground: 0 0% 100%;
+
+    /* Status — same hue/sat, bumped lightness for dark surfaces */
+    --status-todo: 220 10% 55%;
+    --status-doing: 217 91% 66%;
+    --status-in-review: 271 81% 72%;
+    --status-done: 152 55% 50%;
+    --status-blocked: 28 92% 60%;
+    --status-canceled: 220 9% 50%;
+
+    --priority-p1: 0 80% 63%;
+    --priority-p2: 28 92% 60%;
+    --priority-p3: 217 91% 66%;
+    --priority-p4: 220 10% 55%;
+
+    --progress-critical: 0 80% 63%;
+    --progress-low: 28 92% 60%;
+    --progress-mid: 217 91% 66%;
+    --progress-high: 152 55% 55%;
+    --progress-done: 152 55% 50%;
+
+    --bg-done: 152 40% 14%;
+    --bg-blocked: 28 50% 16%;
+    --status-blocked-strong: 28 92% 60%;
+    --bg-review: 271 40% 18%;
+
+    --due-overdue-text: 0 80% 68%;
+    --due-overdue-bg:   0 50% 16%;
+    --due-today-text:   28 92% 64%;
+    --due-today-bg:     28 50% 16%;
+    --due-soon-text:    217 80% 70%;
+    --due-soon-bg:      217 40% 18%;
+
+    /* shadcn compatibility mappings */
+    --card: 222 20% 11%;
+    --card-foreground: 220 20% 96%;
+    --popover: 222 22% 13%;
+    --popover-foreground: 220 20% 96%;
+    --secondary: 222 18% 15%;
+    --secondary-foreground: 220 20% 96%;
+    --muted: 222 18% 15%;
+    --muted-foreground: 220 12% 68%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --ring: 250 84% 66%;
+
+    /* Shadows deepen on dark */
+    --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.30);
+    --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.40), 0 1px 2px rgba(0, 0, 0, 0.30);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.30);
+    --shadow-lg: 0 12px 24px rgba(0, 0, 0, 0.55), 0 4px 8px rgba(0, 0, 0, 0.35);
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.30);
+    --shadow-2: 0 12px 24px rgba(0, 0, 0, 0.55), 0 4px 8px rgba(0, 0, 0, 0.35);
+
+    --sidebar-bg: 222 22% 10%;
+    --sidebar-label: 220 12% 62%;
+
+    --shadow-header: 0 1px 0 hsl(var(--border)), 0 1px 2px rgba(0, 0, 0, 0.4);
   }
 }
 
@@ -89,11 +217,11 @@
     background-color: hsl(var(--background));
     color: hsl(var(--foreground));
     font-family:
-      'DM Sans',
+      'Inter Variable',
       -apple-system,
       BlinkMacSystemFont,
       'Segoe UI',
-      Roboto,
+      system-ui,
       sans-serif;
     font-size: 15px;
     line-height: 1.5;
@@ -107,14 +235,48 @@
   h4,
   h5,
   h6 {
-    font-family: 'Fraunces', Georgia, serif;
+    font-weight: 600;
     line-height: 1.3;
+    letter-spacing: -0.01em;
   }
 }
 
 @layer utilities {
   .text-metadata {
     color: hsl(var(--foreground-secondary));
+  }
+
+  /* Minimum 44x44 touch target (iOS HIG) without changing visual layout size.
+     The negative margin lets the enlarged hit area overlap surrounding space
+     so it doesn't push siblings around. */
+  .tap-target {
+    min-width: 44px;
+    min-height: 44px;
+    margin: -13px;
+  }
+  /* On pointer (hover-capable) devices, shrink back so rows stay compact. */
+  @media (hover: hover) and (pointer: fine) {
+    .tap-target {
+      min-width: 0;
+      min-height: 0;
+      margin: 0;
+      padding: 2px;
+    }
+  }
+
+  /* Safe area padding for bottom tab bar content */
+  .pb-safe {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  /* Bottom padding that clears the fixed tab bar + iOS home indicator */
+  .pb-tab-safe {
+    padding-bottom: calc(3.5rem + env(safe-area-inset-bottom));
+  }
+
+  /* Top padding for iOS Dynamic Island / status bar */
+  .pt-safe {
+    padding-top: calc(0.875rem + env(safe-area-inset-top));
   }
 }
 
@@ -143,9 +305,9 @@
   }
 
   @keyframes input-success-pulse {
-    0%   { box-shadow: 0 0 0 0 hsl(17 91% 40% / 0); }
-    40%  { box-shadow: 0 0 0 4px hsl(17 91% 40% / 0.2); }
-    100% { box-shadow: 0 0 0 0 hsl(17 91% 40% / 0); }
+    0%   { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
+    40%  { box-shadow: 0 0 0 4px hsl(var(--primary) / 0.2); }
+    100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0); }
   }
 
   @keyframes progress-finish {
@@ -158,6 +320,44 @@
   @keyframes sun-pulse {
     0%, 100% { transform: scale(1); opacity: 0.6; }
     50%       { transform: scale(1.05); opacity: 0.9; }
+  }
+
+  /* Gentle drift for empty-state illustrations — subtle, not a bounce */
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-4px); }
+  }
+
+  /* Slide + fade strikethrough reveal */
+  @keyframes strikethrough-slide {
+    from { text-decoration-color: transparent; }
+    to   { text-decoration-color: currentColor; }
+  }
+
+  /* Orange ring radiates outward from checkbox on completion */
+  @keyframes ring-burst {
+    0%   { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.35); }
+    60%  { box-shadow: 0 0 0 6px hsl(var(--primary) / 0); }
+    100% { box-shadow: 0 0 0 6px hsl(var(--primary) / 0); }
+  }
+
+  /* Brief green wash on task row when completed */
+  @keyframes row-flash {
+    0%   { background-color: hsl(var(--surface)); }
+    30%  { background-color: hsl(var(--bg-done)); }
+    100% { background-color: hsl(var(--surface)); }
+  }
+
+  /* Success flash — green wash on save-badge */
+  @keyframes save-success-flash {
+    0%   { box-shadow: 0 0 0 0 hsl(142 71% 45% / 0); }
+    40%  { box-shadow: 0 0 0 5px hsl(142 71% 45% / 0.18); }
+    100% { box-shadow: 0 0 0 0 hsl(142 71% 45% / 0); }
+  }
+
+  /* Drag lift — shadow grows + slight scale */
+  @keyframes drag-lift {
+    to { box-shadow: 0 8px 24px rgba(0,0,0,0.12); transform: scale(1.015); }
   }
 }
 
@@ -182,7 +382,12 @@
   }
 
   .is-completing {
-    animation: checkbox-pop 0.35s ease-out;
+    animation: checkbox-pop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+               ring-burst 0.4s ease-out;
+  }
+
+  .is-completing-row {
+    animation: row-flash 0.45s ease-out;
   }
   .is-completing path {
     animation: checkmark-draw 0.25s ease-out 0.1s forwards;
@@ -198,34 +403,34 @@
   }
 
   .section-header {
-    font-size: 0.75rem;
-    font-weight: 500;
-    color: hsl(var(--foreground-muted));
-    font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 0.8125rem; /* 13px */
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+    color: hsl(var(--sidebar-label));
   }
 
-  /* Bolder section label — Fraunces uppercase */
+  /* Bolder section label */
   .section-header-bold {
-    font-family: 'Fraunces', Georgia, serif;
-    font-size: 0.6875rem;
-    font-weight: 700;
-    letter-spacing: 0.08em;
+    font-size: 0.8125rem; /* 13px */
+    font-weight: 600;
+    letter-spacing: 0.02em;
     text-transform: uppercase;
-    color: hsl(var(--foreground-secondary));
+    color: hsl(var(--foreground-muted));
     display: block;
   }
 
   /* Left-accent hover for task rows */
   .task-row-hover {
     position: relative;
-    transition: background-color 150ms ease, box-shadow 150ms ease;
+    transition: background-color 150ms ease, box-shadow 150ms ease, transform 200ms ease;
   }
   .task-row-hover::before {
     content: '';
     position: absolute;
     left: 0; top: 0; bottom: 0;
-    width: 3px;
-    border-radius: 3px 0 0 3px;
+    width: 4px;
+    border-radius: 4px 0 0 4px;
     background-color: hsl(var(--primary));
     opacity: 0;
     transition: opacity 150ms ease;
@@ -233,8 +438,38 @@
   .task-row-hover:hover::before,
   .task-row-hover:focus-within::before { opacity: 1; }
   .task-row-hover:hover {
-    background-color: hsl(var(--primary-tint));
-    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    background-color: hsl(var(--surface-subtle));
+    box-shadow: var(--shadow-sm);
+    transform: translateY(-1px);
+  }
+
+  /* In-progress task row — persistent left accent bar in status-doing color */
+  .task-row-in-progress::before {
+    background-color: hsl(var(--status-doing));
+    opacity: 1;
+  }
+  .task-row-in-progress:hover::before,
+  .task-row-in-progress:focus-within::before {
+    background-color: hsl(var(--primary));
+    opacity: 1;
+  }
+
+  /* Sidebar active indicator bar */
+  .sidebar-active-bar {
+    position: absolute;
+    left: 0;
+    top: 3px;
+    bottom: 3px;
+    width: 4px;
+    background-color: hsl(var(--primary));
+    border-radius: 0 3px 3px 0;
+  }
+
+  /* Page title — clean display treatment */
+  .page-title-accent {
+    font-weight: 650;
+    letter-spacing: -0.02em;
+    font-optical-sizing: auto;
   }
 
   /* Circular badge for autosave state in TaskSheet */
@@ -248,6 +483,76 @@
     transition: background-color 200ms ease;
   }
   .save-badge--saving { background-color: hsl(var(--surface-subtle)); }
-  .save-badge--saved  { background-color: hsl(142 71% 45% / 0.12); }
+  .save-badge--saved  { background-color: hsl(142 71% 45% / 0.12); animation: save-success-flash 0.6s ease-out, scale-in 0.15s ease-out; }
   .save-badge--error  { background-color: hsl(var(--destructive) / 0.1); }
+
+  .empty-state-float {
+    animation: float 5s ease-in-out infinite;
+  }
+
+  .checklist-item--dragging {
+    animation: drag-lift 0.15s ease-out forwards;
+    cursor: grabbing;
+    z-index: 10;
+    position: relative;
+  }
+
+  .task-done-title {
+    text-decoration-line: line-through;
+    text-decoration-color: transparent;
+    animation: strikethrough-slide 0.25s ease-out 0.05s forwards;
+  }
+
+  /* Due-date urgency */
+  .due-overdue { color: hsl(var(--due-overdue-text)); font-weight: 500; }
+  .due-today   { color: hsl(var(--due-today-text));   font-weight: 500; }
+  .due-soon    { color: hsl(var(--due-soon-text));    font-weight: 500; }
+
+  /* Colored-select text */
+  .select-priority-1      { color: hsl(var(--priority-p1)); }
+  .select-priority-2      { color: hsl(var(--priority-p2)); }
+  .select-priority-3      { color: hsl(var(--priority-p3)); }
+  .select-priority-4      { color: hsl(var(--priority-p4)); }
+  .select-status-doing    { color: hsl(var(--status-doing)); }
+  .select-status-done     { color: hsl(var(--status-done)); }
+  .select-status-canceled { color: hsl(var(--foreground-muted)); }
+
+  /* Segmented control */
+  .segmented-control {
+    display: flex;
+    border: 1px solid hsl(var(--border));
+    border-radius: var(--radius-sm);
+    background-color: hsl(var(--surface-subtle));
+    padding: 3px;
+    gap: 2px;
+  }
+  .segmented-control__btn {
+    flex: 1;
+    padding: 5px 8px;
+    border-radius: calc(var(--radius-sm) - 2px);
+    font-size: 0.75rem;
+    font-weight: 500;
+    line-height: 1.4;
+    text-align: center;
+    cursor: pointer;
+    transition: background-color 120ms ease, color 120ms ease, box-shadow 120ms ease;
+    color: hsl(var(--foreground-secondary));
+    background-color: transparent;
+    border: none;
+    outline: none;
+    white-space: nowrap;
+  }
+  .segmented-control__btn:hover:not(.segmented-control__btn--active) {
+    background-color: hsl(var(--surface));
+    color: hsl(var(--foreground));
+  }
+  .segmented-control__btn--active {
+    background-color: hsl(var(--surface));
+    color: hsl(var(--foreground));
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1), 0 0 0 1px hsl(var(--border));
+  }
+  .segmented-control__btn--p1.segmented-control__btn--active { color: hsl(var(--priority-p1)); }
+  .segmented-control__btn--p2.segmented-control__btn--active { color: hsl(var(--priority-p2)); }
+  .segmented-control__btn--p3.segmented-control__btn--active { color: hsl(var(--priority-p3)); }
+  .segmented-control__btn--p4.segmented-control__btn--active { color: hsl(var(--priority-p4)); }
 }

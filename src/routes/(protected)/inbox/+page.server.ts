@@ -2,17 +2,31 @@ import { fail } from '@sveltejs/kit';
 
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
+import { TASK_SELECT, flattenTaskLabels } from '$lib/server/task-actions.js';
+import type { TaskList } from '$lib/types/index.js';
 
 export const load: PageServerLoad = async (event) => {
-  const { locals: { supabase } } = event;
+  const { locals: { supabase, profileId } } = event;
   event.depends('app:tasks');
-  const { data: tasks } = await supabase
-    .from('tasks')
-    .select('*, checklist_items(*)')
-    .is('list_id', null)
-    .order('created_at', { ascending: false });
+  const [{ data: tasks, error }, { data: listMemberships }] = await Promise.all([
+    supabase
+      .from('tasks')
+      .select(TASK_SELECT)
+      .order('created_at', { ascending: false }),
+    supabase
+      .from('task_list_members')
+      .select('role, list:task_lists(id, name, color, icon, owner_id, sort_order, created_at, updated_at)')
+      .eq('user_id', profileId!)
+      .in('role', ['owner', 'editor']),
+  ]);
 
-  return { tasks: tasks ?? [] };
+  if (error) console.error('[inbox] Task query failed:', error.message);
+  const lists = ((listMemberships ?? [])
+    .map((m) => m.list)
+    .filter(Boolean) as unknown as TaskList[])
+    .sort((a, b) => a.sort_order - b.sort_order);
+
+  return { tasks: flattenTaskLabels(tasks ?? []), lists };
 };
 
 export const actions: Actions = {
@@ -29,21 +43,24 @@ export const actions: Actions = {
       try { recurrence_rule = JSON.parse(recurrence_rule_raw); } catch { /* ignore */ }
     }
 
+    const reminder_at = formData.get('reminder_at')?.toString() || null;
+
     if (!title) return fail(400, { error: 'Task title is required' });
 
-    const { error } = await supabase.from('tasks').insert({
+    const { data: newTask, error } = await supabase.from('tasks').insert({
       title,
       list_id: null,
       owner_id: profileId!,
       due_at,
+      reminder_at,
       status: 'todo',
       priority,
       is_recurring,
       recurrence_rule,
-    });
+    }).select('id').single();
 
     if (error) return fail(500, { error: error.message });
-    return { success: true };
+    return { success: true, taskId: newTask.id };
   },
 
   toggleTask: async ({ request, locals: { supabase } }) => {

@@ -12,47 +12,45 @@ export default {
       },
     },
     extend: {
-      /* North Design System Extensions */
-      spacing: {
-        /* North spacing scale - enables p-north-lg, mb-north-xl, etc. */
-        'north-xs': '4px',
-        'north-sm': '8px',
-        'north-md': '12px',
-        'north-base': '16px',
-        'north-lg': '24px',
-        'north-xl': '32px',
-        'north-2xl': '48px',
-        /* North 4px grid numeric scale */
-        1: '4px',
-        2: '8px',
-        3: '12px',
-        4: '16px',
-        6: '24px',
-        8: '32px',
-        12: '48px',
-      },
+      /* Clean & Vibrant Design System Extensions */
       fontFamily: {
-        ui: ['DM Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        accent: ['Fraunces', 'Georgia', 'serif'],
-        sans: ['DM Sans', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'Roboto', 'sans-serif'],
-        serif: ['Fraunces', 'Georgia', 'serif'],
+        ui: ['Inter Variable', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],
+        sans: ['Inter Variable', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],
+        /* Legacy alias — `font-accent` markup now renders in Inter (no serif).
+           Kept valid so existing headings keep working; remove in a later polish pass. */
+        accent: ['Inter Variable', '-apple-system', 'BlinkMacSystemFont', 'Segoe UI', 'system-ui', 'sans-serif'],
       },
       fontSize: {
-        'page-title': ['22px', { lineHeight: '1.2', letterSpacing: '-0.3px', fontWeight: '600' }],
-        'section-header': ['16px', { lineHeight: '1.3', fontWeight: '600' }],
-        'issue-title': ['16px', { lineHeight: '1.3', fontWeight: '500' }],
-        body: ['15px', { lineHeight: '1.5', fontWeight: '400' }],
-        metadata: ['13px', { lineHeight: '1.5', fontWeight: '500' }],
+        /* Clean & Vibrant type scale */
+        display: ['24px', { lineHeight: '32px', letterSpacing: '-0.02em', fontWeight: '650' }],
+        title: ['17px', { lineHeight: '24px', letterSpacing: '-0.01em', fontWeight: '600' }],
+        section: ['13px', { lineHeight: '18px', letterSpacing: '0.02em', fontWeight: '600' }],
+        body: ['15px', { lineHeight: '22px', fontWeight: '450' }],
+        'body-sm': ['13.5px', { lineHeight: '20px', fontWeight: '450' }],
+        meta: ['12.5px', { lineHeight: '16px', letterSpacing: '0.01em', fontWeight: '500' }],
+        micro: ['11px', { lineHeight: '14px', letterSpacing: '0.02em', fontWeight: '600' }],
+        /* Legacy aliases — keep existing markup working during phased rollout */
+        'page-title': ['24px', { lineHeight: '32px', letterSpacing: '-0.02em', fontWeight: '650' }],
+        'section-header': ['17px', { lineHeight: '24px', letterSpacing: '-0.01em', fontWeight: '600' }],
+        'issue-title': ['15px', { lineHeight: '22px', fontWeight: '450' }],
+        metadata: ['12.5px', { lineHeight: '16px', fontWeight: '500' }],
       },
       borderRadius: {
+        xs: '4px',
         sm: '6px',
-        md: '10px',
-        lg: '20px',
-        DEFAULT: '10px',
+        md: '8px',
+        lg: '12px',
+        xl: '16px',
+        DEFAULT: '8px',
       },
       boxShadow: {
-        'level-1': '0 1px 2px rgba(0, 0, 0, 0.05)',
-        'level-2': '0 6px 24px rgba(0, 0, 0, 0.08)',
+        xs: 'var(--shadow-xs)',
+        sm: 'var(--shadow-sm)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+        /* Legacy aliases */
+        'level-1': 'var(--shadow-xs)',
+        'level-2': 'var(--shadow-lg)',
       },
       transitionDuration: {
         drawer: '250ms',
@@ -62,12 +60,15 @@ export default {
       },
       colors: {
         border: 'hsl(var(--border))',
+        'border-subtle': 'hsl(var(--border-subtle))',
+        'border-strong': 'hsl(var(--border-strong))',
         'border-divider': 'hsl(var(--border-divider))',
         input: 'hsl(var(--input))',
         ring: 'hsl(var(--ring))',
         background: 'hsl(var(--background))',
         surface: 'hsl(var(--surface))',
         'surface-subtle': 'hsl(var(--surface-subtle))',
+        'surface-sunken': 'hsl(var(--surface-sunken))',
         foreground: 'hsl(var(--foreground))',
         'foreground-secondary': 'hsl(var(--foreground-secondary))',
         'foreground-muted': 'hsl(var(--foreground-muted))',
@@ -76,7 +77,15 @@ export default {
           DEFAULT: 'hsl(var(--primary))',
           foreground: 'hsl(var(--primary-foreground))',
           hover: 'hsl(var(--primary-hover))',
+          active: 'hsl(var(--primary-active))',
           tint: 'hsl(var(--primary-tint))',
+          'tint-strong': 'hsl(var(--primary-tint-strong))',
+        },
+        priority: {
+          p1: 'hsl(var(--priority-p1))',
+          p2: 'hsl(var(--priority-p2))',
+          p3: 'hsl(var(--priority-p3))',
+          p4: 'hsl(var(--priority-p4))',
         },
         secondary: {
           DEFAULT: 'hsl(var(--secondary))',

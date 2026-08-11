@@ -2,18 +2,20 @@ import { fail } from '@sveltejs/kit';
 
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
+import { TASK_SELECT, flattenTaskLabels } from '$lib/server/task-actions.js';
 
 export const load: PageServerLoad = async (event) => {
   const { locals: { supabase, profileId } } = event;
   event.depends('app:tasks');
-  const { data: tasks } = await supabase
+  const { data: tasks, error } = await supabase
     .from('tasks')
-    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
+    .select(TASK_SELECT)
     .eq('assigned_to_user_id', profileId!)
     .order('due_at', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false });
 
-  return { tasks: tasks ?? [] };
+  if (error) console.error('[assigned] Task query failed:', error.message);
+  return { tasks: flattenTaskLabels(tasks ?? []) };
 };
 
 export const actions: Actions = {

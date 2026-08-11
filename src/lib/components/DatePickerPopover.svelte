@@ -1,7 +1,8 @@
 <script lang="ts">
   import * as Popover from '$lib/components/ui/popover/index.js';
-  import { hasTime, toDateString, formatDateOnly } from '$lib/utils/dates.js';
+  import { toDateString, formatDateOnly, formatShortDate } from '$lib/utils/dates.js';
   import { patchTask } from '$lib/utils/api.js';
+  import { CalendarDays } from '@lucide/svelte';
 
   let {
     taskId = undefined,
@@ -51,12 +52,12 @@
   function quickDate(offset: number): string {
     const d = new Date();
     d.setDate(d.getDate() + offset);
-    // Preserve existing time if one is set
-    if (value && hasTime(value)) {
-      const existing = new Date(value);
-      d.setHours(existing.getHours(), existing.getMinutes(), 0, 0);
-      return d.toISOString();
-    }
+    return toDateString(d);
+  }
+
+  function quickDateNextMonth(): string {
+    const d = new Date();
+    d.setMonth(d.getMonth() + 1);
     return toDateString(d);
   }
 
@@ -75,15 +76,8 @@
   function handleCustomDate(e: Event) {
     const input = e.target as HTMLInputElement;
     if (input.value) {
-      const newDate = new Date(input.value + 'T12:00:00');
-      // Preserve existing time if set
-      if (value && hasTime(value)) {
-        const existing = new Date(value);
-        newDate.setHours(existing.getHours(), existing.getMinutes(), 0, 0);
-        setDate(newDate.toISOString());
-      } else {
-        setDate(toDateString(newDate));
-      }
+      const newDate = new Date(input.value + 'T00:00:00Z');
+      setDate(toDateString(newDate));
     }
   }
 
@@ -93,13 +87,14 @@
   <Popover.Trigger {disabled}>
     <button
       type="button"
-      class={triggerClass || `text-xs cursor-pointer hover:underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm ${isOverdue(value) ? 'text-destructive' : 'text-foreground-secondary'}`}
+      class={triggerClass || `flex items-center gap-1 text-xs cursor-pointer hover:underline underline-offset-2 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1 rounded-sm ${isOverdue(value) ? 'text-destructive' : 'text-foreground-secondary'}`}
       aria-label="Set due date: {value ? formatDateOnly(value) : placeholder}"
     >
+      <CalendarDays class="size-3 shrink-0" />
       {value ? formatDateOnly(value) : placeholder}
     </button>
   </Popover.Trigger>
-  <Popover.Content class="w-48 p-1" align="start">
+  <Popover.Content class="w-56 p-1" align="start">
     <button
       type="button"
       class="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle transition-colors"
@@ -109,17 +104,35 @@
     </button>
     <button
       type="button"
-      class="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle transition-colors"
+      class="flex items-center justify-between w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle transition-colors"
       onclick={() => setDate(quickDate(1))}
     >
-      Tomorrow
+      <span>Tomorrow</span>
+      <span class="text-foreground-secondary text-xs">{formatShortDate(quickDate(1))}</span>
     </button>
     <button
       type="button"
-      class="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle transition-colors"
+      class="flex items-center justify-between w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle transition-colors"
       onclick={() => setDate(quickDate(7))}
     >
-      Next week
+      <span>Next week</span>
+      <span class="text-foreground-secondary text-xs">{formatShortDate(quickDate(7))}</span>
+    </button>
+    <button
+      type="button"
+      class="flex items-center justify-between w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle transition-colors"
+      onclick={() => setDate(quickDate(14))}
+    >
+      <span>In two weeks</span>
+      <span class="text-foreground-secondary text-xs">{formatShortDate(quickDate(14))}</span>
+    </button>
+    <button
+      type="button"
+      class="flex items-center justify-between w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle transition-colors"
+      onclick={() => setDate(quickDateNextMonth())}
+    >
+      <span>Next month</span>
+      <span class="text-foreground-secondary text-xs">{formatShortDate(quickDateNextMonth())}</span>
     </button>
     <div class="border-t border-border-divider mt-1 pt-1">
       <div class="grid grid-cols-7 gap-0.5">

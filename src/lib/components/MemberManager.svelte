@@ -1,6 +1,7 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
+  import { Button } from '$lib/components/ui/button/index.js';
   import {
     Dialog,
     DialogContent,
@@ -106,13 +107,15 @@
         >
           <input type="hidden" name="list_id" value={list.id} />
           <input type="hidden" name="user_id" value={member.user_id} />
-          <button
+          <Button
             type="submit"
-            class="p-1 text-foreground-muted hover:text-destructive transition-colors"
+            variant="ghost"
+            size="icon-sm"
+            class="text-foreground-muted hover:text-destructive"
             aria-label="Remove member"
           >
             <X class="w-4 h-4" />
-          </button>
+          </Button>
         </form>
       </div>
     {/each}
@@ -160,13 +163,9 @@
           <option value="editor">Editor</option>
           <option value="viewer">Viewer</option>
         </select>
-        <button
-          type="submit"
-          class="rounded-md bg-primary px-3 py-2.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover disabled:opacity-50"
-          disabled={adding || !email.trim()}
-        >
+        <Button type="submit" disabled={adding || !email.trim()}>
           {adding ? 'Adding...' : 'Add'}
-        </button>
+        </Button>
       </form>
     </div>
   </DialogContent>

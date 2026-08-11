@@ -1,18 +1,20 @@
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
+import { TASK_SELECT, flattenTaskLabels } from '$lib/server/task-actions.js';
 
 export const load: PageServerLoad = async (event) => {
   const { locals: { supabase } } = event;
   event.depends('app:tasks');
 
-  const { data: tasks } = await supabase
+  const { data: tasks, error } = await supabase
     .from('tasks')
-    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
+    .select(TASK_SELECT)
     .in('status', ['done', 'canceled'])
     .order('completed_at', { ascending: false, nullsFirst: false })
     .order('created_at', { ascending: false });
 
-  return { tasks: tasks ?? [] };
+  if (error) console.error('[completed] Task query failed:', error.message);
+  return { tasks: flattenTaskLabels(tasks ?? []) };
 };
 
 export const actions: Actions = {

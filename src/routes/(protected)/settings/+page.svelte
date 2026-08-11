@@ -2,6 +2,9 @@
   import { enhance } from '$app/forms';
   import { toast } from 'svelte-sonner';
   import { calendarSettings } from '$lib/stores/calendarSettings.js';
+  import { theme } from '$lib/stores/theme.js';
+  import { Sun, Moon } from '@lucide/svelte';
+  import { Button } from '$lib/components/ui/button/index.js';
   import { subscribeToPush, unsubscribeFromPush, getExistingSubscription, getPushPermissionState } from '$lib/push.js';
 
   import type { PageData, ActionData } from './$types';
@@ -84,7 +87,7 @@
 </script>
 
 <div>
-  <h1 class="text-page-title font-accent mb-6">Settings</h1>
+  <h1 class="text-page-title font-accent page-title-accent mb-8">Settings</h1>
 
   <div class="space-y-6">
     <!-- Edit Profile -->
@@ -121,17 +124,12 @@
               onchange={handleFileChange}
             />
           </label>
-          <button
-            type="submit"
-            class="rounded-md bg-primary px-3 py-1.5 text-sm font-medium text-primary-foreground hover:bg-primary-hover w-fit"
-          >
-            Upload photo
-          </button>
+          <Button type="submit" size="sm" class="w-fit">Upload photo</Button>
           {#if form?.avatarError}
             <p class="text-xs text-destructive">{form.avatarError}</p>
           {/if}
           {#if form?.avatarSuccess}
-            <p class="text-xs text-green-600">Photo updated</p>
+            <p class="text-xs text-status-done">Photo updated</p>
           {/if}
         </div>
       </form>
@@ -160,22 +158,16 @@
             class="flex-1 rounded-md border bg-background px-3 py-2 text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             placeholder="Your name"
           />
-          <button
-            type="submit"
-            class="rounded-md bg-primary px-3 py-2 text-sm font-medium text-primary-foreground hover:bg-primary-hover"
-          >
-            Save
-          </button>
-          <button
-            type="button"
+          <Button type="submit">Save</Button>
+          <Button
+            variant="outline"
             onclick={() => {
               editingName = false;
               nameValue = data.profile?.display_name ?? '';
             }}
-            class="rounded-md border px-3 py-2 text-sm font-medium hover:bg-muted"
           >
             Cancel
-          </button>
+          </Button>
         </form>
         {#if form?.updateError}
           <p class="text-xs text-destructive mt-1">{form.updateError}</p>
@@ -192,32 +184,51 @@
           </button>
         </div>
         {#if form?.updateSuccess}
-          <p class="text-xs text-green-600 mt-1">Name updated</p>
+          <p class="text-xs text-status-done mt-1">Name updated</p>
         {/if}
       {/if}
     </div>
 
     <!-- Switch Profile -->
     <div class="rounded-lg border p-4">
-      <h2 class="text-sm font-medium mb-1">Profile</h2>
+      <h2 class="text-sm font-medium mb-1">Switch Profile</h2>
       <p class="text-sm text-foreground-secondary mb-3">
-        Switch to a different household member.
+        Sign in as a different person in your household.
       </p>
       <form method="POST" action="?/switchProfile">
-        <button
-          type="submit"
-          class="rounded-md border px-4 py-2 text-sm font-medium hover:bg-muted"
-        >
-          Switch Profile
-        </button>
+        <Button type="submit" variant="outline">Switch Profile</Button>
       </form>
+    </div>
+
+    <!-- Appearance -->
+    <div class="rounded-lg border p-4">
+      <h2 class="text-sm font-medium mb-1">Appearance</h2>
+      <p class="text-sm text-foreground-secondary mb-3">Choose light or dark theme.</p>
+      <div class="segmented-control max-w-[220px]">
+        <button
+          type="button"
+          class="segmented-control__btn {$theme === 'light' ? 'segmented-control__btn--active' : ''}"
+          aria-pressed={$theme === 'light'}
+          onclick={() => theme.set('light')}
+        >
+          <Sun class="w-3.5 h-3.5 inline mr-1" />Light
+        </button>
+        <button
+          type="button"
+          class="segmented-control__btn {$theme === 'dark' ? 'segmented-control__btn--active' : ''}"
+          aria-pressed={$theme === 'dark'}
+          onclick={() => theme.set('dark')}
+        >
+          <Moon class="w-3.5 h-3.5 inline mr-1" />Dark
+        </button>
+      </div>
     </div>
 
     <!-- Calendar -->
     <div class="rounded-lg border p-4">
       <h2 class="text-sm font-medium mb-1">Calendar</h2>
       <p class="text-sm text-foreground-secondary mb-3">
-        Set the hours shown by default in the week and day views.
+        Choose which hours appear by default in the calendar.
       </p>
       <div class="flex items-center gap-3">
         <div class="flex flex-col gap-1">
@@ -255,11 +266,11 @@
       <h2 class="text-sm font-medium mb-1">Push Notifications</h2>
       {#if !supported}
         <p class="text-sm text-foreground-secondary">
-          Push notifications are not supported in this browser.
+          Your browser doesn't support push notifications. Try Chrome, Edge, or Safari on desktop.
         </p>
       {:else if permissionState === 'denied'}
         <p class="text-sm text-foreground-secondary">
-          Notification permission was denied. To re-enable, update your browser's site settings for this page.
+          Notifications are blocked for this site. To turn them on, open your browser's site settings and allow notifications.
         </p>
       {:else}
         <p class="text-sm text-foreground-secondary mb-3">
@@ -267,11 +278,9 @@
             ? 'You will receive push notifications for task reminders.'
             : 'Enable to receive push notifications for task reminders.'}
         </p>
-        <button
-          type="button"
-          class="rounded-md px-4 py-2 text-sm font-medium {isSubscribed
-            ? 'border border-destructive/30 text-destructive hover:bg-destructive/10'
-            : 'bg-primary text-primary-foreground hover:bg-primary-hover'} disabled:opacity-50"
+        <Button
+          variant={isSubscribed ? 'outline' : 'default'}
+          class={isSubscribed ? 'border-destructive/30 text-destructive hover:bg-destructive/10 hover:text-destructive' : ''}
           disabled={loading}
           onclick={toggleNotifications}
         >
@@ -280,7 +289,7 @@
           {:else}
             {isSubscribed ? 'Disable Notifications' : 'Enable Notifications'}
           {/if}
-        </button>
+        </Button>
       {/if}
     </div>
   </div>

@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
+import { TASK_SELECT, flattenTaskLabels } from '$lib/server/task-actions.js';
 
 export const load: PageServerLoad = async (event) => {
   const { locals: { supabase } } = event;
@@ -15,31 +16,45 @@ export const load: PageServerLoad = async (event) => {
   sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
   sevenDaysOut.setHours(23, 59, 59, 999);
 
-  // Fetch overdue, due-today, and upcoming in parallel
-  const [{ data: overdue }, { data: dueToday }, { data: upcoming }] = await Promise.all([
+  // Fetch overdue, due-today, upcoming, and completed-today in parallel
+  const [{ data: overdue, error: e1 }, { data: dueToday, error: e2 }, { data: upcoming, error: e3 }, { data: completedToday, error: e4 }] = await Promise.all([
     supabase
       .from('tasks')
-      .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
+      .select(TASK_SELECT)
       .lt('due_at', startOfToday.toISOString())
+      .not('status', 'in', '("done","canceled")')
       .order('due_at', { ascending: true }),
     supabase
       .from('tasks')
-      .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
+      .select(TASK_SELECT)
       .gte('due_at', startOfToday.toISOString())
       .lte('due_at', endOfToday.toISOString())
+      .not('status', 'in', '("done","canceled")')
       .order('due_at', { ascending: true }),
     supabase
       .from('tasks')
-      .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
+      .select(TASK_SELECT)
       .gt('due_at', endOfToday.toISOString())
       .lte('due_at', sevenDaysOut.toISOString())
+      .not('status', 'in', '("done","canceled")')
       .order('due_at', { ascending: true }),
+    supabase
+      .from('tasks')
+      .select(TASK_SELECT)
+      .gte('completed_at', startOfToday.toISOString())
+      .lte('completed_at', endOfToday.toISOString())
+      .order('completed_at', { ascending: false }),
   ]);
 
+  for (const [label, err] of [['overdue', e1], ['dueToday', e2], ['upcoming', e3], ['completedToday', e4]] as const) {
+    if (err) console.error(`[today:${label}] Task query failed:`, err.message);
+  }
+
   return {
-    overdue: overdue ?? [],
-    dueToday: dueToday ?? [],
-    upcoming: upcoming ?? [],
+    overdue: flattenTaskLabels(overdue ?? []),
+    dueToday: flattenTaskLabels(dueToday ?? []),
+    upcoming: flattenTaskLabels(upcoming ?? []),
+    completedToday: flattenTaskLabels(completedToday ?? []),
   };
 };
 

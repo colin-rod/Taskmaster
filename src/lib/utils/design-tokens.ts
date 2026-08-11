@@ -67,19 +67,21 @@ export const spacing = {
  * Border Radius
  */
 export const borderRadius = {
+  xs: '4px',
   sm: '6px',
-  md: '10px',
-  lg: '20px',
+  md: '8px',
+  lg: '12px',
+  xl: '16px',
 } as const;
 
 /**
  * Typography Scale
  */
 export const typography = {
-  pageTitle: 'text-page-title font-accent',
-  sectionHeader: 'text-section-header font-accent',
+  pageTitle: 'text-display page-title-accent',
+  sectionHeader: 'text-section',
   body: 'text-body font-ui',
-  metadata: 'text-metadata',
+  metadata: 'text-meta',
 } as const;
 
 /**
@@ -103,8 +105,44 @@ export const shadows = {
  * Priority Options
  */
 export const PRIORITY_OPTIONS = [
-  { level: 1, label: 'P1', desc: 'Urgent', color: 'text-destructive' },
-  { level: 2, label: 'P2', desc: 'High', color: 'text-orange-500' },
-  { level: 3, label: 'P3', desc: 'Medium', color: 'text-blue-500' },
-  { level: 4, label: 'P4', desc: 'Low', color: 'text-foreground-muted' },
+  { level: 1, label: 'P1', desc: 'Urgent', color: 'text-priority-p1',      bg: 'bg-priority-p1/10',  dot: 'bg-priority-p1',         selectClass: 'select-priority-1' },
+  { level: 2, label: 'P2', desc: 'High',   color: 'text-priority-p2',      bg: 'bg-priority-p2/10',  dot: 'bg-priority-p2',         selectClass: 'select-priority-2' },
+  { level: 3, label: 'P3', desc: 'Medium', color: 'text-priority-p3',      bg: 'bg-priority-p3/10',  dot: 'bg-priority-p3',         selectClass: 'select-priority-3' },
+  { level: 4, label: 'P4', desc: 'Low',    color: 'text-priority-p4',      bg: 'bg-surface-subtle',  dot: 'bg-priority-p4',         selectClass: 'select-priority-4' },
 ] as const;
+
+/**
+ * Returns the Tailwind bg-color class for a priority dot indicator.
+ * Returns 'hidden' for P4 (lowest priority — dot not shown).
+ */
+export function getPriorityDotClass(priority: number): string {
+  const map: Record<number, string> = {
+    1: 'bg-priority-p1',
+    2: 'bg-priority-p2',
+    3: 'bg-priority-p3',
+    4: 'hidden',
+  };
+  return map[priority] ?? 'hidden';
+}
+
+/**
+ * Status Options
+ */
+export const STATUS_OPTIONS = [
+  { value: 'todo',        label: 'Todo',        selectClass: 'select-status-todo',     dotColor: 'bg-status-todo' },
+  { value: 'in_progress', label: 'In Progress', selectClass: 'select-status-doing',    dotColor: 'bg-status-doing' },
+  { value: 'done',        label: 'Done',        selectClass: 'select-status-done',     dotColor: 'bg-status-done' },
+  { value: 'canceled',    label: 'Canceled',    selectClass: 'select-status-canceled', dotColor: 'bg-status-canceled' },
+] as const;
+
+/**
+ * Returns a CSS class name for due-date urgency coloring.
+ */
+export function getDueDateClass(due_at: string | null | undefined): string {
+  if (!due_at) return '';
+  const diff = (new Date(due_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
+  if (diff < 0)  return 'due-overdue';
+  if (diff < 1)  return 'due-today';
+  if (diff <= 3) return 'due-soon';
+  return '';
+}

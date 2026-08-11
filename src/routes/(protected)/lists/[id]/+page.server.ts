@@ -2,6 +2,7 @@ import { error, fail } from '@sveltejs/kit';
 
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
+import { TASK_SELECT, flattenTaskLabels } from '$lib/server/task-actions.js';
 import * as memberActions from '$lib/server/member-actions.js';
 
 export const load: PageServerLoad = async ({ params, locals: { supabase } }) => {
@@ -15,14 +16,22 @@ export const load: PageServerLoad = async ({ params, locals: { supabase } }) => 
     error(404, 'List not found');
   }
 
-  const { data: tasks } = await supabase
+  const { data: tasks, error: taskError } = await supabase
     .from('tasks')
-    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name)')
+    .select(TASK_SELECT)
     .eq('list_id', params.id)
     .order('sort_order', { ascending: true })
     .order('created_at', { ascending: false });
 
-  return { list, tasks: tasks ?? [] };
+  if (taskError) console.error('[list] Task query failed:', taskError.message);
+
+  const { data: labels } = await supabase
+    .from('labels')
+    .select('*')
+    .eq('list_id', params.id)
+    .order('sort_order', { ascending: true });
+
+  return { list, tasks: flattenTaskLabels(tasks ?? []), labels: labels ?? [] };
 };
 
 export const actions: Actions = {
@@ -39,21 +48,24 @@ export const actions: Actions = {
       try { recurrence_rule = JSON.parse(recurrence_rule_raw); } catch { /* ignore */ }
     }
 
+    const reminder_at = formData.get('reminder_at')?.toString() || null;
+
     if (!title) return fail(400, { error: 'Task title is required' });
 
-    const { error: err } = await supabase.from('tasks').insert({
+    const { data: newTask, error: err } = await supabase.from('tasks').insert({
       title,
       list_id: params.id,
       owner_id: profileId!,
       due_at,
+      reminder_at,
       status: 'todo',
       priority,
       is_recurring,
       recurrence_rule,
-    });
+    }).select('id').single();
 
     if (err) return fail(500, { error: err.message });
-    return { success: true };
+    return { success: true, taskId: newTask.id };
   },
 
   toggleTask: async ({ request, locals: { supabase } }) => {
