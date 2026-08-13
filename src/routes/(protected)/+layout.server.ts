@@ -17,7 +17,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
   const [
     { count: unreadCount },
-    { data: lists },
+    { data: lists, error: listsError },
     { count: todayCount },
     { count: overdueCount },
     { count: upcomingCount },
@@ -101,6 +101,8 @@ export const load: LayoutServerLoad = async ({ locals }) => {
       .select('list_id, role')
       .eq('user_id', locals.profileId),
   ]);
+
+  if (listsError) console.error('[layout] Sidebar list query failed:', listsError.message);
 
   // Build list count map from RPC aggregate rows
   const countMap: Record<string, number> = {};

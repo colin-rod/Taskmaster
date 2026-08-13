@@ -6,7 +6,9 @@ export type SortKey =
 	| 'due_asc'
 	| 'due_desc'
 	| 'priority_asc'
-	| 'priority_desc';
+	| 'priority_desc'
+	| 'completed_desc'
+	| 'completed_asc';
 
 export type DueFilter = 'overdue' | 'today' | 'this_week' | 'no_date' | null;
 
@@ -16,8 +18,32 @@ export const SORT_LABELS: Record<SortKey, string> = {
 	due_asc: 'Due date (earliest)',
 	due_desc: 'Due date (latest)',
 	priority_asc: 'Priority (highest)',
-	priority_desc: 'Priority (lowest)'
+	priority_desc: 'Priority (lowest)',
+	completed_desc: 'Completed (newest)',
+	completed_asc: 'Completed (oldest)'
 };
+
+/** Sort options shown on views of active tasks (completion date is meaningless there). */
+export const ACTIVE_SORT_KEYS: SortKey[] = [
+	'created_desc',
+	'created_asc',
+	'due_asc',
+	'due_desc',
+	'priority_asc',
+	'priority_desc'
+];
+
+/** Sort options shown on the Completed view. */
+export const COMPLETED_SORT_KEYS: SortKey[] = [
+	'completed_desc',
+	'completed_asc',
+	'due_asc',
+	'due_desc',
+	'priority_asc',
+	'priority_desc',
+	'created_desc',
+	'created_asc'
+];
 
 export const PRIORITY_LABELS = ['P1', 'P2', 'P3', 'P4'];
 
@@ -93,11 +119,22 @@ export function sortTasks(tasks: Task[], key: SortKey): Task[] {
 	const sorted = tasks.map((task) => ({
 		task,
 		createdMs: task.created_at ? new Date(task.created_at).getTime() : 0,
-		dueMs: task.due_at ? new Date(task.due_at).getTime() : Infinity
+		dueMs: task.due_at ? new Date(task.due_at).getTime() : Infinity,
+		completedMs: task.completed_at ? new Date(task.completed_at).getTime() : null
 	}));
 
 	sorted.sort((a, b) => {
 		switch (key) {
+			case 'completed_asc':
+			case 'completed_desc': {
+				// Tasks without a completion timestamp always sink to the bottom.
+				if (a.completedMs === null && b.completedMs === null) return 0;
+				if (a.completedMs === null) return 1;
+				if (b.completedMs === null) return -1;
+				return key === 'completed_asc'
+					? a.completedMs - b.completedMs
+					: b.completedMs - a.completedMs;
+			}
 			case 'created_asc':
 				return a.createdMs - b.createdMs;
 			case 'created_desc':

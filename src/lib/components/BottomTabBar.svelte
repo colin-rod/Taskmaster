@@ -10,7 +10,7 @@
     return pathname.startsWith(href);
   }
 
-  const moreRoutes = ['/more', '/calendar', '/search', '/overdue', '/upcoming', '/assigned', '/completed', '/settings'];
+  const moreRoutes = ['/more', '/calendar', '/search', '/overdue', '/assigned', '/completed', '/settings'];
 
   function isMoreActive(pathname: string): boolean {
     return moreRoutes.some((r) => pathname.startsWith(r));

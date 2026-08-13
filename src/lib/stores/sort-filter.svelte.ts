@@ -2,12 +2,17 @@ import type { Task } from '$lib/types/index.js';
 import {
 	filterTasks,
 	sortTasks,
+	ACTIVE_SORT_KEYS,
 	type SortKey,
 	type DueFilter
 } from '$lib/utils/sort-filter.js';
 
-export function createSortFilterState(tasksFn: () => Task[]) {
-	let sortKey = $state<SortKey>('due_asc');
+export function createSortFilterState(
+	tasksFn: () => Task[],
+	options: { defaultSort?: SortKey; sortKeys?: SortKey[] } = {}
+) {
+	const sortKeys = options.sortKeys ?? ACTIVE_SORT_KEYS;
+	let sortKey = $state<SortKey>(options.defaultSort ?? 'due_asc');
 	let filterPriority = $state<number | null>(null);
 	let filterDue = $state<DueFilter>(null);
 
@@ -16,6 +21,9 @@ export function createSortFilterState(tasksFn: () => Task[]) {
 	const activeFilterCount = $derived((filterPriority !== null ? 1 : 0) + (filterDue !== null ? 1 : 0));
 
 	return {
+		get sortKeys() {
+			return sortKeys;
+		},
 		get sortKey() {
 			return sortKey;
 		},

@@ -6,8 +6,7 @@
 		PRIORITY_LABELS,
 		DUE_FILTERS,
 		PRIORITY_ACTIVE_CLASSES,
-		DUE_ACTIVE_CLASSES,
-		type SortKey
+		DUE_ACTIVE_CLASSES
 	} from '$lib/utils/sort-filter.js';
 	import * as Popover from '$lib/components/ui/popover/index.js';
 	import { ChevronDown, SlidersHorizontal, X } from '@lucide/svelte';
@@ -78,12 +77,13 @@
 						</button>
 					</Popover.Trigger>
 					<Popover.Content class="w-52 p-1" align="start">
-						{#each Object.entries(SORT_LABELS) as [key, label]}
+						{#each filters.sortKeys as key}
+							{@const label = SORT_LABELS[key]}
 							<button
 								type="button"
 								class="flex items-center gap-2 w-full px-2 py-1.5 text-sm rounded hover:bg-surface-subtle transition-colors
 									{filters.sortKey === key ? 'bg-surface-subtle font-medium' : ''}"
-								onclick={() => { filters.sortKey = key as SortKey; sortOpen = false; }}
+								onclick={() => { filters.sortKey = key; sortOpen = false; }}
 							>
 								<span class="w-3.5 h-3.5 flex items-center justify-center text-primary text-xs">
 									{#if filters.sortKey === key}✓{/if}

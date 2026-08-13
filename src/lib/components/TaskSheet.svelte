@@ -487,8 +487,6 @@
         <!-- Metadata zone (priority, status, due, reminder, recurrence) -->
         <div class="pt-2 space-y-4">
 
-          <h3 class="section-header-bold mb-1">Details</h3>
-
           <!-- Priority + Status rows -->
           <div class="flex flex-col gap-3">
             <div>
