@@ -13,6 +13,7 @@
   import InlineEditTitle from '$lib/components/InlineEditTitle.svelte';
   import AssigneePicker from '$lib/components/AssigneePicker.svelte';
   import { formatDateOnly, formatShortDate } from '$lib/utils/dates.js';
+  import { REMINDER_PRESETS, describeReminderOffset, resolveReminderAt } from '$lib/utils/reminders.js';
   import { getDueDateClass, getPriorityDotClass } from '$lib/utils/design-tokens.js';
   import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -69,13 +70,26 @@
   let showDueChip = $derived(!isDone && !!task.due_at);
   let showPriorityDot = $derived(!isDone && (task.priority === 1 || task.priority === 2));
 
+  // Reminder tooltip text, covering both kinds: a relative reminder shows the
+  // offset plus the date it currently resolves to, since that date moves with
+  // the due date.
+  let reminderLabel = $derived.by(() => {
+    if (task.reminder_offset_minutes != null) {
+      const at = resolveReminderAt(task.due_at, task.reminder_offset_minutes);
+      const offset = describeReminderOffset(task.reminder_offset_minutes);
+      return at ? `${offset} (${formatDateOnly(at.toISOString())})` : offset;
+    }
+    if (task.reminder_at) return formatDateOnly(task.reminder_at);
+    return '';
+  });
+
   // "Does the row have inline metadata to show?" — drives the always-visible
   // strip that sits on the title line. Due date and labels are rendered
   // separately, so they're deliberately not part of this check.
   let hasHoverMeta = $derived(
     optimisticStatus === 'in_progress' ||
     task.is_recurring ||
-    !!task.reminder_at ||
+    !!reminderLabel ||
     checklistTotal > 0 ||
     task.progress_total != null ||
     !!task.assignee
@@ -384,8 +398,8 @@
                     <span class="sr-only">Recurring</span>
                   </span>
                 {/if}
-                {#if task.reminder_at}
-                  <span class="text-status-doing flex items-center" aria-label="Reminder set" title="Reminder: {formatDateOnly(task.reminder_at)}">
+                {#if reminderLabel}
+                  <span class="text-status-doing flex items-center" aria-label="Reminder set" title="Reminder: {reminderLabel}">
                     <Bell class="w-3.5 h-3.5" aria-hidden="true" />
                   </span>
                 {/if}
@@ -568,7 +582,7 @@
       <ContextMenu.Separator />
       <!-- Status -->
       <ContextMenu.Sub>
-        <ContextMenu.SubTrigger>Change Status</ContextMenu.SubTrigger>
+        <ContextMenu.SubTrigger>Status</ContextMenu.SubTrigger>
         <ContextMenu.SubContent>
           {#each [['todo', 'Todo'], ['in_progress', 'In Progress'], ['done', 'Done'], ['canceled', 'Canceled']] as [val, label]}
             <ContextMenu.Item onSelect={() => patchTask({ status: val })}>
@@ -585,7 +599,7 @@
 
       <!-- Priority -->
       <ContextMenu.Sub>
-        <ContextMenu.SubTrigger>Change Priority</ContextMenu.SubTrigger>
+        <ContextMenu.SubTrigger>Priority</ContextMenu.SubTrigger>
         <ContextMenu.SubContent>
           {#each [[1, 'P1 — Urgent'], [2, 'P2 — High'], [3, 'P3 — Medium'], [4, 'P4 — Low']] as [val, label]}
             <ContextMenu.Item onSelect={() => patchTask({ priority: val })}>
@@ -602,7 +616,7 @@
 
       <!-- Due Date -->
       <ContextMenu.Sub>
-        <ContextMenu.SubTrigger>Set Due Date</ContextMenu.SubTrigger>
+        <ContextMenu.SubTrigger>Due Date</ContextMenu.SubTrigger>
         <ContextMenu.SubContent>
           <ContextMenu.Item onSelect={() => patchTask({ due_at: quickDate(0) })}>Today</ContextMenu.Item>
           <ContextMenu.Item onSelect={() => patchTask({ due_at: quickDate(1) })}>
@@ -650,13 +664,18 @@
       <!-- Reminder (only show when task has a due date) -->
       {#if task.due_at}
         <ContextMenu.Sub>
-          <ContextMenu.SubTrigger>Set Reminder</ContextMenu.SubTrigger>
+          <ContextMenu.SubTrigger>Reminder</ContextMenu.SubTrigger>
           <ContextMenu.SubContent>
-            <ContextMenu.Item onSelect={() => patchTask({ reminder_at: quickDate(0) })}>Today</ContextMenu.Item>
-            <ContextMenu.Item onSelect={() => patchTask({ reminder_at: quickDate(1) })}>Tomorrow</ContextMenu.Item>
-            <ContextMenu.Item onSelect={() => patchTask({ reminder_at: quickDate(7) })}>Next week</ContextMenu.Item>
-            {#if task.reminder_at}
-              <ContextMenu.Item onSelect={() => patchTask({ reminder_at: null })}>Clear reminder</ContextMenu.Item>
+            {#each REMINDER_PRESETS as preset (preset.minutes)}
+              <ContextMenu.Item onSelect={() => patchTask({ reminder_offset_minutes: preset.minutes })}>
+                {preset.label}
+              </ContextMenu.Item>
+            {/each}
+            {#if task.reminder_at || task.reminder_offset_minutes != null}
+              <ContextMenu.Separator />
+              <ContextMenu.Item onSelect={() => patchTask({ reminder_at: null, reminder_offset_minutes: null })}>
+                Clear reminder
+              </ContextMenu.Item>
             {/if}
           </ContextMenu.SubContent>
         </ContextMenu.Sub>

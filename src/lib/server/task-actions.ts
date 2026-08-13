@@ -206,6 +206,10 @@ async function rollForwardRecurringTask(
     completed_at: null,
     last_completed_at: new Date().toISOString(),
     due_at: nextDue.toISOString(),
+    // Absolute reminders belonged to the occurrence that just completed, so
+    // they're dropped. A relative reminder (reminder_offset_minutes) is
+    // deliberately left in place: it re-resolves against the new due date,
+    // which is exactly why offsets exist.
     reminder_at: null,
     recurrence_rule: updatedRule,
   }).eq('id', taskId);
@@ -277,6 +281,21 @@ export async function updateTask(formData: FormData, supabase: SupabaseClient) {
   const reminder_at_raw = formData.get('reminder_at')?.toString() || null;
   const reminder_at = reminder_at_raw ? new Date(reminder_at_raw).toISOString() : null;
 
+  // Relative reminder (minutes before due_at). Mutually exclusive with
+  // reminder_at, and meaningless without a due date — the DB constraint
+  // enforces both, so normalise here rather than letting the write fail.
+  const reminder_offset_raw = formData.get('reminder_offset_minutes')?.toString();
+  const reminder_offset_parsed =
+    reminder_offset_raw != null && reminder_offset_raw !== '' ? Number(reminder_offset_raw) : null;
+  const reminder_offset_minutes =
+    reminder_at === null &&
+    due_at !== null &&
+    reminder_offset_parsed !== null &&
+    Number.isInteger(reminder_offset_parsed) &&
+    reminder_offset_parsed >= 0
+      ? reminder_offset_parsed
+      : null;
+
   if (!id || !title) return fail(400, { error: 'Task ID and title are required' });
 
   // If marking done and recurring, roll forward instead
@@ -291,7 +310,7 @@ export async function updateTask(formData: FormData, supabase: SupabaseClient) {
     }
   }
 
-  const updates: Record<string, unknown> = { title, notes, priority, due_at, status, is_recurring, recurrence_rule, reminder_at };
+  const updates: Record<string, unknown> = { title, notes, priority, due_at, status, is_recurring, recurrence_rule, reminder_at, reminder_offset_minutes };
   updates.completed_at = status === 'done' ? new Date().toISOString() : null;
 
   const { error } = await supabase.from('tasks').update(updates).eq('id', id);

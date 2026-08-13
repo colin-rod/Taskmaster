@@ -48,6 +48,12 @@ export interface Task {
   priority: TaskPriority;
   due_at: string | null;
   reminder_at: string | null;
+  /**
+   * Minutes before due_at to fire the reminder (0 = on the due date).
+   * Resolved at send time, so it follows due_at when that moves.
+   * Mutually exclusive with reminder_at.
+   */
+  reminder_offset_minutes: number | null;
   timezone: string | null;
   is_recurring: boolean;
   recurrence_rule: RecurrenceRule | null;

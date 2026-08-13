@@ -168,8 +168,14 @@
 
 <!-- Unified Quick Add surface — opened from header, FABs, and the `c` shortcut -->
 <Sheet.Root bind:open={quickAddOpen}>
-  <Sheet.Content side="bottom" class="rounded-t-xl px-4 pb-8 pt-4 md:pb-6">
-    <div class="mx-auto w-full max-w-2xl">
+  <Sheet.Content
+    side="bottom"
+    class="rounded-t-xl px-4 pb-8 pt-4
+           md:inset-x-auto md:start-1/2 md:bottom-auto md:top-1/2
+           md:w-full md:max-w-xl md:-translate-x-1/2 md:-translate-y-1/2
+           md:rounded-xl md:border md:pb-6"
+  >
+    <div class="mx-auto w-full">
       <Sheet.Header class="p-0">
         <Sheet.Title>Add task</Sheet.Title>
       </Sheet.Header>

@@ -21,7 +21,10 @@ export const GET: RequestHandler = async ({ params, locals }) => {
   return json({ task });
 };
 
-const ALLOWED_FIELDS = new Set(['title', 'priority', 'due_at', 'reminder_at', 'assigned_to_user_id', 'status', 'notes', 'is_recurring', 'recurrence_rule', 'progress_current', 'progress_total', 'list_id']);
+const ALLOWED_FIELDS = new Set(['title', 'priority', 'due_at', 'reminder_at', 'reminder_offset_minutes', 'assigned_to_user_id', 'status', 'notes', 'is_recurring', 'recurrence_rule', 'progress_current', 'progress_total', 'list_id']);
+
+// Matches the tasks_reminder_offset_valid check constraint (1 year in minutes).
+const MAX_REMINDER_OFFSET_MINUTES = 527040;
 
 export const PATCH: RequestHandler = async ({ params, request, locals }) => {
   if (!locals.profileId) {
@@ -92,6 +95,61 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
       const d = new Date(updates.due_at as string);
       updates.due_at = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}T00:00:00.000Z`;
     }
+  }
+
+  // Reminders come in two mutually exclusive flavours: an absolute instant
+  // (reminder_at) or an offset before the due date (reminder_offset_minutes),
+  // which is resolved at send time. Setting either one clears the other, both
+  // so the DB check constraint is satisfied and so switching kinds in the UI
+  // doesn't leave a stale reminder of the other kind behind.
+  if ('reminder_offset_minutes' in updates) {
+    const raw = updates.reminder_offset_minutes;
+    if (raw === null) {
+      updates.reminder_offset_minutes = null;
+    } else {
+      const offset = Number(raw);
+      if (!Number.isInteger(offset) || offset < 0 || offset > MAX_REMINDER_OFFSET_MINUTES) {
+        return json(
+          { error: `reminder_offset_minutes must be an integer between 0 and ${MAX_REMINDER_OFFSET_MINUTES}, or null` },
+          { status: 400 }
+        );
+      }
+      updates.reminder_offset_minutes = offset;
+
+      // A relative reminder needs something to be relative to. The due date is
+      // either being set in this same request or already on the row.
+      let dueAt = 'due_at' in updates ? (updates.due_at as string | null) : undefined;
+      if (dueAt === undefined) {
+        const { data: existing } = await locals.supabase
+          .from('tasks')
+          .select('due_at')
+          .eq('id', id)
+          .single();
+        dueAt = existing?.due_at ?? null;
+      }
+      if (!dueAt) {
+        return json({ error: 'A relative reminder requires the task to have a due date' }, { status: 400 });
+      }
+
+      updates.reminder_at = null;
+    }
+  }
+
+  if ('reminder_at' in updates) {
+    if (updates.reminder_at !== null && typeof updates.reminder_at !== 'string') {
+      return json({ error: 'reminder_at must be an ISO string or null' }, { status: 400 });
+    }
+    if (updates.reminder_at !== null) {
+      if (Number.isNaN(new Date(updates.reminder_at as string).getTime())) {
+        return json({ error: 'reminder_at must be a valid ISO date string' }, { status: 400 });
+      }
+      updates.reminder_offset_minutes = null;
+    }
+  }
+
+  // Clearing the due date strands any relative reminder attached to it.
+  if ('due_at' in updates && updates.due_at === null) {
+    updates.reminder_offset_minutes = null;
   }
 
   if ('progress_current' in updates) {

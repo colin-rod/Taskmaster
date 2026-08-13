@@ -25,6 +25,7 @@
   import LabelBadge from '$lib/components/LabelBadge.svelte';
   import { getUpcomingOccurrences } from '$lib/utils/recurrence.js';
   import { formatDateOnly } from '$lib/utils/dates.js';
+  import { REMINDER_PRESETS, resolveReminderAt } from '$lib/utils/reminders.js';
 
   let {
     task = $bindable<Task | null>(null),
@@ -68,6 +69,7 @@
   let preDragOrder = $state<string[]>([]);
   let reorderFormEl = $state<HTMLFormElement | null>(null);
   let reminderDate = $state('');   // ISO date string (for DatePickerPopover)
+  let reminderOffset = $state<number | null>(null); // minutes before due_at, or null
   let editIsRecurring = $state(false);
   let editRecurrenceRule = $state<RecurrenceRule | null>(null);
 
@@ -165,6 +167,7 @@
       editDueAt = task.due_at ? task.due_at.slice(0, 10) : '';
       editStatus = task.status;
       reminderDate = task.reminder_at ?? '';
+      reminderOffset = task.reminder_offset_minutes ?? null;
       editIsRecurring = task.is_recurring;
       editRecurrenceRule = task.recurrence_rule;
       editProgressCurrent = task.progress_current ?? null;
@@ -177,7 +180,7 @@
       // Progressive disclosure: auto-expand fields that have values, but only when switching to a new task
       if (task.id !== initializedTaskId) {
         notesExpanded     = !!(task.notes && task.notes.trim() !== '');
-        showReminder      = reminderDate !== '';
+        showReminder      = reminderDate !== '' || reminderOffset != null;
         showRecurring     = editIsRecurring;
         showChecklist     = (task.checklist_items?.length ?? 0) > 0;
         showLabels        = (task.labels?.length ?? 0) > 0;
@@ -258,8 +261,26 @@
     if (!isInitialized || !task) return;
     const newVal = reminderDate ? reminderDate : null;
     const currentVal = task.reminder_at ?? null;
-    if (newVal !== currentVal) autoSave({ reminder_at: newVal });
+    if (newVal === currentVal) return;
+    // An absolute reminder replaces any relative one.
+    if (newVal !== null) reminderOffset = null;
+    autoSave({ reminder_at: newVal, reminder_offset_minutes: null });
   }
+
+  // Toggle a relative preset: picking the active one clears it.
+  function setReminderOffset(minutes: number) {
+    if (!task || isViewer) return;
+    const next = reminderOffset === minutes ? null : minutes;
+    reminderOffset = next;
+    if (next !== null) reminderDate = '';
+    autoSave({ reminder_offset_minutes: next, reminder_at: null });
+  }
+
+  let resolvedReminderLabel = $derived.by(() => {
+    if (reminderOffset == null || !editDueAt) return '';
+    const at = resolveReminderAt(`${editDueAt}T00:00:00.000Z`, reminderOffset);
+    return at ? formatDateOnly(at.toISOString()) : '';
+  });
 
   let checklistItems = $derived(
     (task?.checklist_items ?? []).slice().sort((a, b) => a.position - b.position)
@@ -642,13 +663,45 @@
                     class="text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle flex items-center justify-center min-w-11 min-h-11"
                     aria-label="Remove reminder"
                     onclick={() => {
-                      if (reminderDate) autoSave({ reminder_at: null });
-                      reminderDate = ''; showReminder = false;
+                      if (reminderDate || reminderOffset != null) {
+                        autoSave({ reminder_at: null, reminder_offset_minutes: null });
+                      }
+                      reminderDate = ''; reminderOffset = null; showReminder = false;
                     }}
                   ><X class="size-3.5" /></button>
                 {/if}
               </div>
-              <div class="mt-1">
+              <!--
+                Two ways to express a reminder. A relative one tracks the due
+                date when it moves (including across recurrences), so it's
+                offered first and only when there's a due date to anchor to.
+                Picking one clears the other — they're mutually exclusive.
+              -->
+              {#if editDueAt}
+                <div class="mt-1 flex flex-wrap gap-1.5">
+                  {#each REMINDER_PRESETS as preset (preset.minutes)}
+                    <button
+                      type="button"
+                      disabled={isViewer}
+                      aria-pressed={reminderOffset === preset.minutes}
+                      onclick={() => setReminderOffset(preset.minutes)}
+                      class="px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 min-h-8 disabled:opacity-50 {reminderOffset === preset.minutes
+                        ? 'border-primary bg-primary-tint text-primary'
+                        : 'border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40'}"
+                    >{preset.label}</button>
+                  {/each}
+                </div>
+                {#if reminderOffset != null && resolvedReminderLabel}
+                  <p class="mt-1.5 text-xs text-foreground-muted">
+                    Fires {resolvedReminderLabel} — follows the due date if it changes.
+                  </p>
+                {/if}
+              {/if}
+
+              <div class="mt-2">
+                {#if editDueAt}
+                  <p class="text-xs text-foreground-muted mb-1">Or pick a specific date</p>
+                {/if}
                 <DatePickerPopover
                   bind:value={reminderDate}
                   mode="controlled"
