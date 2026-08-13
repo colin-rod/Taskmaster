@@ -7,6 +7,7 @@
  */
 import {
   AlertCircle,
+  Calendar,
   CalendarDays,
   CalendarRange,
   CheckCheck,
@@ -43,12 +44,13 @@ export const inboxNavItem: NavItem & { countKey: FilterCountKey } = {
 };
 
 /** The smart views, in canonical order. Consumers compose their own full nav
- *  around this (e.g. Sidebar prepends Inbox; the More page adds Calendar/Search/
+ *  around this (e.g. Sidebar prepends Inbox; the More page adds Search/
  *  Settings). */
 export const smartViewNavItems: NavItem[] = [
   { label: 'Overdue', href: '/overdue', icon: AlertCircle, countKey: 'overdue' },
   { label: 'Today', href: '/today', icon: CalendarDays, countKey: 'today' },
   { label: 'Upcoming', href: '/upcoming', icon: CalendarRange, countKey: 'upcoming' },
+  { label: 'Calendar', href: '/calendar', icon: Calendar },
   { label: 'Assigned to Me', href: '/assigned', icon: UserCheck, countKey: 'assigned' },
   { label: 'Completed', href: '/completed', icon: CheckCheck, countKey: 'completed' },
 ];

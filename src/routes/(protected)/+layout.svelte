@@ -11,6 +11,7 @@
   import QuickAdd from '$lib/components/QuickAdd.svelte';
   import TaskSheet from '$lib/components/TaskSheet.svelte';
   import * as Sheet from '$lib/components/ui/sheet/index.js';
+  import { Button } from '$lib/components/ui/button/index.js';
   import type { Task } from '$lib/types/index.js';
 
   const { children, data } = $props();
@@ -80,17 +81,17 @@
         Taskmaster
       </h1>
       <div class="hidden md:flex items-center gap-1 min-w-0 ml-auto">
-        <div class="flex items-center">
-          <button
-            type="button"
-            class="flex items-center gap-1.5 pl-2.5 pr-3 py-2 rounded-lg text-sm font-medium text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
+        <div class="flex items-center mr-1">
+          <Button
+            size="sm"
+            class="gap-1.5 rounded-lg"
             onclick={openQuickAdd}
             aria-label="Add task"
           >
             <Plus class="w-4 h-4" />
             <span>Add task</span>
-            <kbd class="ml-1 hidden lg:inline-flex items-center rounded border border-border bg-surface px-1.5 text-[10px] font-medium text-foreground-muted">C</kbd>
-          </button>
+            <kbd class="ml-0.5 hidden lg:inline-flex items-center rounded border border-primary-foreground/30 bg-primary-foreground/15 px-1.5 text-[10px] font-medium">C</kbd>
+          </Button>
         </div>
         <div class="flex items-center">
           {#if searchOpen}
@@ -168,12 +169,14 @@
 
 <!-- Unified Quick Add surface — opened from header, FABs, and the `c` shortcut -->
 <Sheet.Root bind:open={quickAddOpen}>
-  <Sheet.Content side="bottom" class="rounded-t-xl px-4 pb-8 pt-4">
-    <Sheet.Header>
-      <Sheet.Title>Add task</Sheet.Title>
-    </Sheet.Header>
-    <div class="mx-auto mt-2 w-full max-w-2xl">
-      <QuickAdd action="/inbox?/createTask" onClose={() => { quickAddOpen = false; }} />
+  <Sheet.Content side="bottom" class="rounded-t-xl px-4 pb-8 pt-4 md:pb-6">
+    <div class="mx-auto w-full max-w-2xl">
+      <Sheet.Header class="p-0">
+        <Sheet.Title>Add task</Sheet.Title>
+      </Sheet.Header>
+      <div class="mt-2">
+        <QuickAdd action="/inbox?/createTask" onClose={() => { quickAddOpen = false; }} />
+      </div>
     </div>
   </Sheet.Content>
 </Sheet.Root>

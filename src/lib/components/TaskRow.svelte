@@ -1,5 +1,6 @@
 <script lang="ts">
   import { enhance } from '$app/forms';
+  import { on } from 'svelte/events';
   import { invalidate, invalidateAll } from '$app/navigation';
   import { toast } from 'svelte-sonner';
   import { fly } from 'svelte/transition';
@@ -10,11 +11,9 @@
   import LabelBadge from '$lib/components/LabelBadge.svelte';
   import LabelPicker from '$lib/components/LabelPicker.svelte';
   import InlineEditTitle from '$lib/components/InlineEditTitle.svelte';
-  import PriorityPicker from '$lib/components/PriorityPicker.svelte';
-  import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
   import AssigneePicker from '$lib/components/AssigneePicker.svelte';
   import { formatDateOnly, formatShortDate } from '$lib/utils/dates.js';
-  import { PRIORITY_OPTIONS, getDueDateClass, getPriorityDotClass } from '$lib/utils/design-tokens.js';
+  import { getDueDateClass, getPriorityDotClass } from '$lib/utils/design-tokens.js';
   import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
   import * as Popover from '$lib/components/ui/popover/index.js';
@@ -67,20 +66,19 @@
   // Resting-state "primary signal": the single most important piece of metadata
   // shown when the row is not hovered. Precedence: urgent due date → P1/P2 → none.
   let dueClass = $derived(getDueDateClass(task.due_at)); // '' unless overdue/today/≤3d
-  let showDueChip = $derived(!isDone && !!task.due_at && dueClass !== '');
+  let showDueChip = $derived(!isDone && !!task.due_at);
   let showPriorityDot = $derived(!isDone && (task.priority === 1 || task.priority === 2));
 
-  // "Does the row have any extra metadata worth revealing on hover?" — if not,
-  // the hover metadata line never renders and the row stays compact even on hover.
+  // "Does the row have inline metadata to show?" — drives the always-visible
+  // strip that sits on the title line. Due date and labels are rendered
+  // separately, so they're deliberately not part of this check.
   let hasHoverMeta = $derived(
     optimisticStatus === 'in_progress' ||
-    !!task.due_at ||
     task.is_recurring ||
     !!task.reminder_at ||
     checklistTotal > 0 ||
     task.progress_total != null ||
-    !!task.assignee ||
-    (task.labels?.length ?? 0) > 0
+    !!task.assignee
   );
 
   // Relative "Completed Nh ago" label for done rows.
@@ -105,7 +103,6 @@
   let progressPopoverOpen = $state(false);
   let progressInputValue = $state(0);
   let progressShowLeft = $state(false);
-  let reminderPopoverOpen = $state(false);
   let labelPickerOpen = $state(false);
 
   async function patchTask(fields: Record<string, unknown>) {
@@ -144,6 +141,28 @@
     deleteAlertOpen = true;
   }
 
+  // Right-click parity for the inline checklist popover. There's no REST route
+  // for checklist items, so this posts to the same `?/toggleChecklistItem` form
+  // action every task page exposes.
+  async function toggleChecklistItem(itemId: string, currentlyDone: boolean) {
+    optimisticChecklist[itemId] = !currentlyDone;
+    const body = new FormData();
+    body.set('id', itemId);
+    body.set('task_id', task.id);
+    body.set('is_completed', String(currentlyDone));
+    const res = await fetch('?/toggleChecklistItem', {
+      method: 'POST',
+      headers: { 'x-sveltekit-action': 'true' },
+      body,
+    });
+    if (!res.ok) {
+      optimisticChecklist[itemId] = currentlyDone;
+      toast.error('Change not saved — please try again.');
+      return;
+    }
+    await invalidate('app:tasks');
+  }
+
   async function toggleLabel(labelId: string) {
     const attached = (task.labels ?? []).some((l) => l.id === labelId);
     const res = await fetch(`/api/tasks/${task.id}/labels`, {
@@ -160,6 +179,19 @@
 
   // Reference to the checkbox toggle form so keyboard shortcuts can complete a task.
   let toggleForm = $state<HTMLFormElement | undefined>(undefined);
+
+  // The row is a ContextMenu.Trigger, so its own onclick arrives via a spread
+  // ({...props}) and is attached as a real DOM property. A plain onclick on this
+  // button would instead be *delegated* — replayed later from the root listener —
+  // so anything that sets cancelBubble on the way up kills the walk before it
+  // reaches us and the menu never opens. Attaching directly restores the
+  // natural ordering: this fires on the button, before the row sees the click.
+  function attachOpenDetails(node: HTMLElement) {
+    return on(node, 'click', (e) => {
+      e.stopPropagation();
+      onselect(task);
+    });
+  }
 
   function handleRowClick(e: MouseEvent) {
     if (!isTouchDevice) return; // pointer devices open via dblclick / ellipsis
@@ -263,10 +295,14 @@
             <input type="hidden" name="id" value={task.id} />
             <input type="hidden" name="current_status" value={task.status} />
             <button
-              type="submit"
+              type="button"
               class="tap-target shrink-0 flex items-center justify-center"
               disabled={toggling}
-              onclick={(e) => e.stopPropagation()}
+              onpointerdown={(e) => e.stopPropagation()}
+              onclick={(e) => {
+                e.stopPropagation();
+                toggleForm?.requestSubmit();
+              }}
               aria-label={optimisticStatus === 'done' ? 'Reopen task' : 'Complete task'}
             >
               <span
@@ -291,25 +327,23 @@
             <div class="flex-1 min-w-0 overflow-hidden {optimisticStatus === 'done' ? (justCompleted ? 'task-done-title' : 'line-through') + ' text-foreground-muted/70 text-[14px]' : 'font-[510] text-[15px] text-foreground tracking-[-0.01em]'}">
               <InlineEditTitle taskId={task.id} value={task.title} disabled={!canEdit} />
             </div>
-            <!-- Labels — revealed on hover (desktop) only; hidden at rest & on touch -->
-            {#if !isDone}
+            <!-- Labels — always visible when the task has them, so the row height
+                 never changes on hover. Adding/removing labels lives in the
+                 right-click menu and the detail sheet. -->
+            {#if !isDone && task.labels?.length}
               {#if canEdit}
-                <div class="relative hidden md:group-hover:flex md:group-focus-within:flex items-center">
+                <div class="relative flex items-center shrink-0">
                   <button
                     type="button"
                     class="flex items-center gap-1 rounded hover:opacity-80 transition-opacity"
                     onclick={(e) => { e.stopPropagation(); labelPickerOpen = true; }}
                     aria-label="Edit labels"
                   >
-                    {#if task.labels?.length}
-                      {#each task.labels.slice(0, 3) as label (label.id)}
-                        <LabelBadge {label} size="sm" />
-                      {/each}
-                      {#if task.labels.length > 3}
-                        <span class="text-[10px] text-foreground-muted">+{task.labels.length - 3}</span>
-                      {/if}
-                    {:else}
-                      <span class="text-[10px] text-foreground-muted/50 hover:text-foreground-muted transition-colors px-0.5">+ label</span>
+                    {#each task.labels.slice(0, 3) as label (label.id)}
+                      <LabelBadge {label} size="sm" />
+                    {/each}
+                    {#if task.labels.length > 3}
+                      <span class="text-[10px] text-foreground-muted">+{task.labels.length - 3}</span>
                     {/if}
                   </button>
                   <!-- LabelPicker anchors its popover here; its own trigger is hidden -->
@@ -323,8 +357,8 @@
                     />
                   </span>
                 </div>
-              {:else if task.labels?.length}
-                <div class="hidden md:group-hover:flex items-center gap-1">
+              {:else}
+                <div class="flex items-center gap-1 shrink-0">
                   {#each task.labels.slice(0, 3) as label (label.id)}
                     <LabelBadge {label} size="sm" />
                   {/each}
@@ -334,254 +368,182 @@
                 </div>
               {/if}
             {/if}
-          </div>
-          <!-- Metadata line — revealed on hover (desktop) only, and only when the
-               task actually has extra metadata. Never shown at rest or on touch;
-               touch users get this via the detail sheet (tap row to open). -->
-          {#if hasHoverMeta && !isDone}
-          <div class="hidden md:group-hover:flex md:group-focus-within:flex items-center gap-2 mt-1" data-row-interactive>
-            {#if optimisticStatus === 'in_progress'}
-              <span
-                class="text-xs text-status-doing flex items-center gap-1 px-1 py-0.5 rounded-full"
-                aria-label="In progress"
-                title="In progress"
-              >
-                <CircleDot class="w-3 h-3" aria-hidden="true" />
-              </span>
-            {/if}
-            {#if canEdit}
-              <DatePickerPopover taskId={task.id} value={task.due_at} />
-            {:else if task.due_at}
-              <span class="text-xs {getDueDateClass(task.due_at) || 'text-foreground-secondary'}">
-                {formatDateOnly(task.due_at)}
-              </span>
-            {/if}
-            {#if task.is_recurring}
-              <span class="text-xs text-accent flex items-center gap-1 px-1 py-0.5 rounded-full" title={task.recurrence_rule ? describeRecurrence(task.recurrence_rule) : 'Recurring'}>
-                <Repeat2 class="w-3 h-3" aria-hidden="true" />
-                <span class="sr-only">Recurring</span>
-              </span>
-            {/if}
+            <!-- Inline metadata strip — always visible (never hover-revealed), so
+                 the row height is constant. Interactive editing of each item lives
+                 in the right-click menu and the detail sheet. -->
+            {#if hasHoverMeta && !isDone}
+              <div class="flex items-center gap-1.5 shrink-0" data-row-interactive>
+                {#if optimisticStatus === 'in_progress'}
+                  <span class="text-status-doing flex items-center" aria-label="In progress" title="In progress">
+                    <CircleDot class="w-3.5 h-3.5" aria-hidden="true" />
+                  </span>
+                {/if}
+                {#if task.is_recurring}
+                  <span class="text-accent flex items-center" title={task.recurrence_rule ? describeRecurrence(task.recurrence_rule) : 'Recurring'}>
+                    <Repeat2 class="w-3.5 h-3.5" aria-hidden="true" />
+                    <span class="sr-only">Recurring</span>
+                  </span>
+                {/if}
+                {#if task.reminder_at}
+                  <span class="text-status-doing flex items-center" aria-label="Reminder set" title="Reminder: {formatDateOnly(task.reminder_at)}">
+                    <Bell class="w-3.5 h-3.5" aria-hidden="true" />
+                  </span>
+                {/if}
 
-            <!-- Reminder bell — clickable popover for editors -->
-            {#if canEdit}
-              <Popover.Root bind:open={reminderPopoverOpen}>
-                <Popover.Trigger>
-                  <button
-                    type="button"
-                    onclick={(e) => { e.stopPropagation(); reminderPopoverOpen = true; }}
-                    class="text-xs flex items-center gap-1 px-1 py-0.5 rounded-full transition-colors
-                      {task.reminder_at
-                        ? 'text-status-doing'
-                        : 'text-transparent group-hover:text-foreground-muted/40 hover:text-foreground-muted!'}"
-                    aria-label={task.reminder_at ? 'Edit reminder' : 'Set reminder'}
-                    title={task.reminder_at
-                      ? formatDateOnly(task.reminder_at)
-                      : 'Set reminder'}
-                  >
-                    <Bell class="w-3 h-3" aria-hidden="true" />
-                  </button>
-                </Popover.Trigger>
-                <Popover.Content class="w-52 p-3 space-y-2" align="start" side="top" sideOffset={6}>
-                  <p class="text-xs font-medium text-foreground-muted">Reminder</p>
-                  <input
-                    type="date"
-                    aria-label="Reminder date"
-                    class="w-full text-xs rounded border border-border bg-surface px-2 py-1 outline-none focus:border-primary/60"
-                    value={task.reminder_at ? task.reminder_at.slice(0, 10) : ''}
-                    onclick={(e) => e.stopPropagation()}
-                    onchange={(e) => {
-                      const dateVal = e.currentTarget.value;
-                      if (!dateVal) return;
-                      patchTask({ reminder_at: `${dateVal}T00:00:00.000Z` });
-                    }}
-                  />
-                  {#if task.reminder_at}
-                    <button
-                      type="button"
-                      class="w-full text-xs text-destructive hover:text-destructive/80 text-left pt-1 border-t border-border"
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        reminderPopoverOpen = false;
-                        patchTask({ reminder_at: null });
-                      }}
-                    >Clear reminder</button>
-                  {/if}
-                </Popover.Content>
-              </Popover.Root>
-            {:else if task.reminder_at}
-              <span
-                class="text-xs text-status-doing flex items-center gap-1 px-1 py-0.5 rounded-full"
-                aria-label="Reminder set"
-                title={formatDateOnly(task.reminder_at)}
-              >
-                <Bell class="w-3 h-3" aria-hidden="true" />
-              </span>
-            {/if}
-
-            <!-- Checklist badge — interactive popover -->
-            {#if checklistTotal > 0}
-              <Popover.Root>
-                <Popover.Trigger>
-                  <button
-                    type="button"
-                    class="text-xs flex items-center gap-1 px-1.5 py-0.5 rounded-full cursor-pointer {checklistDone === checklistTotal ? 'bg-status-done/10 text-status-done' : 'bg-background text-foreground-muted/80 border border-border/50'}"
-                    aria-label="Checklist: {checklistDone} of {checklistTotal} complete"
-                    onclick={(e) => e.stopPropagation()}
-                  >
-                    <svg class="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-                      <path d="M3 8h10M3 4h10M3 12h10" />
-                    </svg>
-                    {checklistDone}/{checklistTotal}
-                  </button>
-                </Popover.Trigger>
-                <Popover.Content class="w-60 p-2 space-y-1" align="start" side="top" sideOffset={6}>
-                  {#each sortedChecklistItems as item (item.id)}
-                    {#if canEdit}
-                      <form
-                        method="POST"
-                        action="?/toggleChecklistItem"
-                        use:enhance={() => {
-                          const prev = optimisticChecklist[item.id];
-                          optimisticChecklist[item.id] = !prev;
-                          return async ({ result, update }) => {
-                            if (result.type !== 'success') {
-                              optimisticChecklist[item.id] = prev;
-                            }
-                            await update();
-                          };
-                        }}
+                <!-- Checklist badge — interactive popover -->
+                {#if checklistTotal > 0}
+                  <Popover.Root>
+                    <Popover.Trigger>
+                      <button
+                        type="button"
+                        class="text-[11px] flex items-center gap-1 px-1.5 py-0.5 rounded-full cursor-pointer {checklistDone === checklistTotal ? 'bg-status-done/10 text-status-done' : 'bg-background text-foreground-muted/80 border border-border/50'}"
+                        aria-label="Checklist: {checklistDone} of {checklistTotal} complete"
+                        onclick={(e) => e.stopPropagation()}
                       >
-                        <input type="hidden" name="id" value={item.id} />
-                        <input type="hidden" name="task_id" value={task.id} />
-                        <input type="hidden" name="is_completed" value={String(optimisticChecklist[item.id] ?? item.is_completed)} />
-                        <button
-                          type="submit"
-                          class="flex items-start gap-2 text-xs w-full text-left hover:bg-surface-subtle rounded px-1 py-0.5 transition-colors"
-                          onclick={(e) => e.stopPropagation()}
-                        >
-                          <div class="mt-0.5 w-3.5 h-3.5 rounded-sm border shrink-0 flex items-center justify-center {(optimisticChecklist[item.id] ?? item.is_completed) ? 'bg-primary border-primary' : 'border-foreground-muted'}">
-                            {#if optimisticChecklist[item.id] ?? item.is_completed}
-                              <svg class="w-2 h-2 text-primary-foreground" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M1 4l2 2 4-4" />
-                              </svg>
-                            {/if}
+                        <svg class="w-3 h-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                          <path d="M3 8h10M3 4h10M3 12h10" />
+                        </svg>
+                        {checklistDone}/{checklistTotal}
+                      </button>
+                    </Popover.Trigger>
+                    <Popover.Content class="w-60 p-2 space-y-1" align="start" side="top" sideOffset={6}>
+                      {#each sortedChecklistItems as item (item.id)}
+                        {#if canEdit}
+                          <form
+                            method="POST"
+                            action="?/toggleChecklistItem"
+                            use:enhance={() => {
+                              const prev = optimisticChecklist[item.id];
+                              optimisticChecklist[item.id] = !prev;
+                              return async ({ result, update }) => {
+                                if (result.type !== 'success') {
+                                  optimisticChecklist[item.id] = prev;
+                                }
+                                await update();
+                              };
+                            }}
+                          >
+                            <input type="hidden" name="id" value={item.id} />
+                            <input type="hidden" name="task_id" value={task.id} />
+                            <input type="hidden" name="is_completed" value={String(optimisticChecklist[item.id] ?? item.is_completed)} />
+                            <button
+                              type="submit"
+                              class="flex items-start gap-2 text-xs w-full text-left hover:bg-surface-subtle rounded px-1 py-0.5 transition-colors"
+                              onclick={(e) => e.stopPropagation()}
+                            >
+                              <div class="mt-0.5 w-3.5 h-3.5 rounded-sm border shrink-0 flex items-center justify-center {(optimisticChecklist[item.id] ?? item.is_completed) ? 'bg-primary border-primary' : 'border-foreground-muted'}">
+                                {#if optimisticChecklist[item.id] ?? item.is_completed}
+                                  <svg class="w-2 h-2 text-primary-foreground" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M1 4l2 2 4-4" />
+                                  </svg>
+                                {/if}
+                              </div>
+                              <span class="{(optimisticChecklist[item.id] ?? item.is_completed) ? 'line-through text-foreground-muted' : 'text-foreground'}">
+                                {item.label}
+                              </span>
+                            </button>
+                          </form>
+                        {:else}
+                          <div class="flex items-start gap-2 text-xs">
+                            <div class="mt-0.5 w-3.5 h-3.5 rounded-sm border shrink-0 flex items-center justify-center {item.is_completed ? 'bg-primary border-primary' : 'border-foreground-muted'}">
+                              {#if item.is_completed}
+                                <svg class="w-2 h-2 text-primary-foreground" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="2">
+                                  <path d="M1 4l2 2 4-4" />
+                                </svg>
+                              {/if}
+                            </div>
+                            <span class="{item.is_completed ? 'line-through text-foreground-muted' : 'text-foreground'}">
+                              {item.label}
+                            </span>
                           </div>
-                          <span class="{(optimisticChecklist[item.id] ?? item.is_completed) ? 'line-through text-foreground-muted' : 'text-foreground'}">
-                            {item.label}
-                          </span>
-                        </button>
-                      </form>
-                    {:else}
-                      <div class="flex items-start gap-2 text-xs">
-                        <div class="mt-0.5 w-3.5 h-3.5 rounded-sm border shrink-0 flex items-center justify-center {item.is_completed ? 'bg-primary border-primary' : 'border-foreground-muted'}">
-                          {#if item.is_completed}
-                            <svg class="w-2 h-2 text-primary-foreground" viewBox="0 0 8 8" fill="none" stroke="currentColor" stroke-width="2">
-                              <path d="M1 4l2 2 4-4" />
-                            </svg>
-                          {/if}
-                        </div>
-                        <span class="{item.is_completed ? 'line-through text-foreground-muted' : 'text-foreground'}">
-                          {item.label}
-                        </span>
-                      </div>
-                    {/if}
-                  {/each}
-                </Popover.Content>
-              </Popover.Root>
-            {/if}
+                        {/if}
+                      {/each}
+                    </Popover.Content>
+                  </Popover.Root>
+                {/if}
 
-            {#if task.progress_total != null}
-              {@const isComplete = (task.progress_current ?? 0) >= task.progress_total! && task.progress_total! > 0}
-              {@const badgeClasses = isComplete ? 'bg-status-done/10 text-status-done' : 'bg-background text-foreground-muted/80 border border-border/50'}
-              {@const displayValue = progressShowLeft ? (task.progress_total! - (task.progress_current ?? 0)) : (task.progress_current ?? 0)}
-              <Popover.Root bind:open={progressPopoverOpen}>
-                <div class="flex items-center">
-                  <button
-                    type="button"
-                    onclick={() => { progressShowLeft = !progressShowLeft; }}
-                    class="text-xs flex items-center gap-1 px-1.5 py-0.5 rounded-l-full cursor-pointer {badgeClasses} border-r-0"
-                    aria-label="{progressShowLeft ? 'Remaining' : 'Progress'}: {displayValue} of {task.progress_total}"
-                    title={progressShowLeft ? 'Showing remaining — tap to show done' : 'Showing done — tap to show remaining'}
-                  >
-                    <BarChart2 class="w-3 h-3" aria-hidden="true" />
-                    {displayValue}/{task.progress_total}{#if progressShowLeft}<span class="text-[9px] opacity-60 ml-0.5">left</span>{/if}
-                  </button>
-                  <Popover.Trigger>
-                    <button
-                      type="button"
-                      onclick={() => { progressInputValue = task.progress_current ?? 0; }}
-                      class="text-xs px-1 py-0.5 rounded-r-full cursor-pointer {badgeClasses} border-l-0"
-                      aria-label="Edit progress"
-                    >
-                      <Pencil class="w-2.5 h-2.5" />
-                    </button>
-                  </Popover.Trigger>
-                </div>
-                <Popover.Content class="w-52 p-3" align="start" side="top" sideOffset={6}>
-                  <p class="text-xs text-foreground-muted mb-2">Update progress (total: {task.progress_total})</p>
-                  <div class="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min="0"
-                      bind:value={progressInputValue}
-                      class="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-primary/60"
-                      onclick={(e) => e.stopPropagation()}
-                      onkeydown={(e) => {
-                        if (e.key === 'Enter') {
-                          progressPopoverOpen = false;
-                          patchTask({ progress_current: Math.max(0, progressInputValue) });
-                        }
-                      }}
-                    />
-                    <button
-                      type="button"
-                      class="text-xs font-medium text-primary hover:text-primary-hover"
-                      onclick={(e) => {
-                        e.stopPropagation();
-                        progressPopoverOpen = false;
-                        patchTask({ progress_current: Math.max(0, progressInputValue) });
-                      }}
-                    >Save</button>
-                  </div>
-                </Popover.Content>
-              </Popover.Root>
+                {#if task.progress_total != null}
+                  {@const isComplete = (task.progress_current ?? 0) >= task.progress_total! && task.progress_total! > 0}
+                  {@const badgeClasses = isComplete ? 'bg-status-done/10 text-status-done' : 'bg-background text-foreground-muted/80 border border-border/50'}
+                  {@const displayValue = progressShowLeft ? (task.progress_total! - (task.progress_current ?? 0)) : (task.progress_current ?? 0)}
+                  <Popover.Root bind:open={progressPopoverOpen}>
+                    <div class="flex items-center">
+                      <button
+                        type="button"
+                        onclick={() => { progressShowLeft = !progressShowLeft; }}
+                        class="text-[11px] flex items-center gap-1 px-1.5 py-0.5 rounded-l-full cursor-pointer {badgeClasses} border-r-0"
+                        aria-label="{progressShowLeft ? 'Remaining' : 'Progress'}: {displayValue} of {task.progress_total}"
+                        title={progressShowLeft ? 'Showing remaining — tap to show done' : 'Showing done — tap to show remaining'}
+                      >
+                        <BarChart2 class="w-3 h-3" aria-hidden="true" />
+                        {displayValue}/{task.progress_total}{#if progressShowLeft}<span class="text-[9px] opacity-60 ml-0.5">left</span>{/if}
+                      </button>
+                      <Popover.Trigger>
+                        <button
+                          type="button"
+                          onclick={() => { progressInputValue = task.progress_current ?? 0; }}
+                          class="text-[11px] px-1 py-0.5 rounded-r-full cursor-pointer {badgeClasses} border-l-0"
+                          aria-label="Edit progress"
+                        >
+                          <Pencil class="w-2.5 h-2.5" />
+                        </button>
+                      </Popover.Trigger>
+                    </div>
+                    <Popover.Content class="w-52 p-3" align="start" side="top" sideOffset={6}>
+                      <p class="text-xs text-foreground-muted mb-2">Update progress (total: {task.progress_total})</p>
+                      <div class="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min="0"
+                          bind:value={progressInputValue}
+                          class="flex-1 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-primary/60"
+                          onclick={(e) => e.stopPropagation()}
+                          onkeydown={(e) => {
+                            if (e.key === 'Enter') {
+                              progressPopoverOpen = false;
+                              patchTask({ progress_current: Math.max(0, progressInputValue) });
+                            }
+                          }}
+                        />
+                        <button
+                          type="button"
+                          class="text-xs font-medium text-primary hover:text-primary-hover"
+                          onclick={(e) => {
+                            e.stopPropagation();
+                            progressPopoverOpen = false;
+                            patchTask({ progress_current: Math.max(0, progressInputValue) });
+                          }}
+                        >Save</button>
+                      </div>
+                    </Popover.Content>
+                  </Popover.Root>
+                {/if}
+
+                {#if task.assignee}
+                  <AssigneePicker
+                    taskId={task.id}
+                    assignee={task.assignee}
+                    {members}
+                    disabled={!canEdit}
+                  />
+                {/if}
+              </div>
             {/if}
-            <AssigneePicker
-              taskId={task.id}
-              assignee={task.assignee}
-              {members}
-              disabled={!canEdit}
-            />
           </div>
-          {/if}
         </div>
 
-        <!-- Resting signal: completion time on done rows; else one right-aligned
-             signal (urgent due chip → P1/P2 dot). Hidden on hover so the full
-             priority picker / metadata line take over. -->
+        <!-- Right-aligned signals: completion time on done rows; else due date +
+             P1/P2 dot. Always visible — nothing swaps in or out on hover, so the
+             row never changes size. -->
         {#if isDone}
           <span class="shrink-0 text-[12.5px] text-foreground-muted tabular-nums whitespace-nowrap">{completedLabel}</span>
         {:else}
-          <div class="flex items-center gap-2 shrink-0 md:group-hover:hidden md:group-focus-within:hidden">
+          <div class="flex items-center gap-2 shrink-0">
             {#if showDueChip}
-              <span class="text-[12.5px] font-medium whitespace-nowrap {dueClass}">{formatDateOnly(task.due_at)}</span>
+              <span class="text-[12.5px] font-medium whitespace-nowrap {dueClass || 'text-foreground-muted'}">{formatDateOnly(task.due_at)}</span>
             {/if}
             {#if showPriorityDot}
               <span class="w-1.5 h-1.5 rounded-full {getPriorityDotClass(task.priority)}" aria-label="Priority P{task.priority}" title="Priority P{task.priority}"></span>
-            {/if}
-          </div>
-
-          <!-- Priority badge — full picker, revealed on hover (desktop) -->
-          <div class="hidden md:group-hover:block md:group-focus-within:block shrink-0" data-row-interactive>
-            {#if canEdit}
-              <PriorityPicker taskId={task.id} value={task.priority} />
-            {:else}
-              {@const p = PRIORITY_OPTIONS.find(p => p.level === task.priority)}
-              <span class="inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full shrink-0 {p?.bg ?? 'bg-surface-subtle'} {p?.color ?? 'text-foreground-muted'}" aria-label="Priority {p?.desc ?? task.priority}">
-                <span class="inline-block w-1.5 h-1.5 rounded-full {p?.dot ?? 'bg-foreground-disabled'}"></span>
-                P{task.priority}
-              </span>
             {/if}
           </div>
         {/if}
@@ -591,7 +553,7 @@
           type="button"
           class="tap-target shrink-0 flex items-center justify-center rounded-md text-foreground-muted/50 md:text-transparent md:group-hover:text-foreground-muted md:group-focus-within:text-foreground-muted hover:text-primary! hover:bg-primary/10 transition-all duration-150"
           data-row-interactive
-          onclick={(e) => { e.stopPropagation(); onselect(task); }}
+          {@attach attachOpenDetails}
           aria-label="Task details"
         >
           <Ellipsis class="w-4 h-4" />
@@ -696,6 +658,45 @@
             {#if task.reminder_at}
               <ContextMenu.Item onSelect={() => patchTask({ reminder_at: null })}>Clear reminder</ContextMenu.Item>
             {/if}
+          </ContextMenu.SubContent>
+        </ContextMenu.Sub>
+      {/if}
+
+      <!-- Checklist — toggle items without opening the detail sheet -->
+      {#if checklistTotal > 0}
+        <ContextMenu.Sub>
+          <ContextMenu.SubTrigger>Checklist ({checklistDone}/{checklistTotal})</ContextMenu.SubTrigger>
+          <ContextMenu.SubContent>
+            {#each sortedChecklistItems as item (item.id)}
+              {@const done = optimisticChecklist[item.id] ?? item.is_completed}
+              <ContextMenu.Item onSelect={() => toggleChecklistItem(item.id, done)}>
+                {#if done}
+                  <Check class="w-3 h-3 mr-2 shrink-0" />
+                {:else}
+                  <span class="w-3 h-3 mr-2 shrink-0 inline-block"></span>
+                {/if}
+                <span class={done ? 'line-through text-foreground-muted' : ''}>{item.label}</span>
+              </ContextMenu.Item>
+            {/each}
+          </ContextMenu.SubContent>
+        </ContextMenu.Sub>
+      {/if}
+
+      <!-- Progress -->
+      {#if task.progress_total != null}
+        <ContextMenu.Sub>
+          <ContextMenu.SubTrigger>Progress ({task.progress_current ?? 0}/{task.progress_total})</ContextMenu.SubTrigger>
+          <ContextMenu.SubContent>
+            <ContextMenu.Item onSelect={() => patchTask({ progress_current: Math.min(task.progress_total!, (task.progress_current ?? 0) + 1) })}>
+              +1
+            </ContextMenu.Item>
+            <ContextMenu.Item onSelect={() => patchTask({ progress_current: Math.max(0, (task.progress_current ?? 0) - 1) })}>
+              −1
+            </ContextMenu.Item>
+            <ContextMenu.Item onSelect={() => patchTask({ progress_current: task.progress_total })}>
+              Mark complete
+            </ContextMenu.Item>
+            <ContextMenu.Item onSelect={() => patchTask({ progress_current: 0 })}>Reset to 0</ContextMenu.Item>
           </ContextMenu.SubContent>
         </ContextMenu.Sub>
       {/if}
