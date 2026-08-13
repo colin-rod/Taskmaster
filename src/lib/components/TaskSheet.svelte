@@ -15,7 +15,7 @@
   import { formatStatus, PRIORITY_OPTIONS, STATUS_OPTIONS, getDueDateClass } from '$lib/utils/design-tokens.js';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
-  import { Plus, Loader, Check, AlertCircle, X, BarChart2 } from '@lucide/svelte';
+  import { Plus, Loader, Check, AlertCircle, X, BarChart2, FileText, Bell, Repeat, ListChecks, Tag } from '@lucide/svelte';
   import { slide, scale, fly, fade } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -485,7 +485,7 @@
       <div class="space-y-4 mt-2">
 
         <!-- Metadata zone (priority, status, due, reminder, recurrence) -->
-        <div class="border-t border-border-divider pt-4 space-y-4">
+        <div class="pt-2 space-y-4">
 
           <h3 class="section-header-bold mb-1">Details</h3>
 
@@ -555,7 +555,7 @@
                   onclick={() => { notesExpanded = true; }}
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
                   aria-label="Add notes"
-                >+ Notes</button>
+                ><FileText class="w-3 h-3" />+ Notes</button>
               {/if}
               {#if showReminderPill}
                 <button
@@ -564,7 +564,7 @@
                   onclick={() => { showReminder = true; }}
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
                   aria-label="Add a reminder"
-                >+ Reminder</button>
+                ><Bell class="w-3 h-3" />+ Reminder</button>
               {/if}
               {#if showRecurringPill}
                 <button
@@ -573,7 +573,7 @@
                   onclick={() => { showRecurring = true; editIsRecurring = true; }}
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
                   aria-label="Make this task recurring"
-                >+ Recurring</button>
+                ><Repeat class="w-3 h-3" />+ Recurring</button>
               {/if}
               {#if showChecklistPill}
                 <button
@@ -582,7 +582,7 @@
                   onclick={() => { showChecklist = true; }}
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
                   aria-label="Add a checklist"
-                >+ Checklist</button>
+                ><ListChecks class="w-3 h-3" />+ Checklist</button>
               {/if}
               {#if showLabelsPill}
                 <button
@@ -591,7 +591,7 @@
                   onclick={() => { showLabels = true; }}
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
                   aria-label="Add labels"
-                >+ Labels</button>
+                ><Tag class="w-3 h-3" />+ Labels</button>
               {/if}
               {#if showProgressPill}
                 <button

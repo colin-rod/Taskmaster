@@ -84,13 +84,12 @@
         <div class="flex items-center mr-1">
           <Button
             size="sm"
-            class="gap-1.5 rounded-lg"
+            class="h-9 w-9 p-0 rounded-full"
             onclick={openQuickAdd}
             aria-label="Add task"
+            title="Add task (C)"
           >
             <Plus class="w-4 h-4" />
-            <span>Add task</span>
-            <kbd class="ml-0.5 hidden lg:inline-flex items-center rounded border border-primary-foreground/30 bg-primary-foreground/15 px-1.5 text-[10px] font-medium">C</kbd>
           </Button>
         </div>
         <div class="flex items-center">

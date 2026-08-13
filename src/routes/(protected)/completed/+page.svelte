@@ -12,7 +12,7 @@
   let { data }: { data: PageData } = $props();
 </script>
 
-<SmartViewShell title="Completed" count={data.tasks.length} roleMap={data.roleMap}>
+<SmartViewShell title="Completed" roleMap={data.roleMap}>
   {#snippet body({ openTask, taskRole }: { openTask: (task: Task) => void; taskRole: (task: Task) => ListRole })}
     {#if data.tasks.length === 0}
       <EmptyState title="No completed tasks yet." subtitle="Tasks you finish will appear here.">
