@@ -50,6 +50,7 @@
 
 <div
   role="search"
+  class="relative"
   onfocusout={(e) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       onClose();
@@ -80,7 +81,7 @@
   </div>
 
   {#if query.trim() && (results.length > 0 || loading)}
-    <div class="mt-1 rounded-md border border-border bg-surface shadow-sm overflow-hidden">
+    <div class="absolute left-0 right-0 top-full z-50 mt-1 max-h-[70vh] overflow-y-auto rounded-md border border-border bg-surface shadow-lg">
       {#if loading}
         <div class="px-3 py-2 text-xs text-foreground-muted">Searching…</div>
       {:else}
@@ -116,6 +117,6 @@
       {/if}
     </div>
   {:else if query.trim() && !loading}
-    <div class="mt-1 px-3 py-2 text-xs text-foreground-muted">No tasks found</div>
+    <div class="absolute left-0 right-0 top-full z-50 mt-1 rounded-md border border-border bg-surface shadow-lg px-3 py-2 text-xs text-foreground-muted">No tasks found</div>
   {/if}
 </div>

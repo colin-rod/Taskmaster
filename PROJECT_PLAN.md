@@ -40,10 +40,14 @@ _Last updated: 2026-10-02_
 - **Packing list** — `origin/claude/add-packing-list-feature-bOyHj` (2026-05-09)
   only adds a packing list to seed data; unmerged. Decide whether it should
   become a real feature (list templates?) or be deleted.
-- add years to dates in inbox
-- add task button popup shows up full width.
+- add task button popup shows up full width on desktop
 - Create calender feed so that tasks can be seen in other calenar apps.
-
+- on calender view allow pinch to zoom on web,mobile and double click to zoom on desktop
+- change reminders to be relative to due date in additon to absolute (like current)
+- move dark mode button from navbar to settings
+- Allow to select multiple priorties or dates on the buttons in then sort and filter section
+- Add a section on the right panel to view 
+- switch backend from supabase to different hosting
 
 
 ## 🔮 Future work (known, deferred)
@@ -60,6 +64,9 @@ _Last updated: 2026-10-02_
 
 ## ✅ Recently done (rolling, last ~10)
 
+- [x] **Years on task dates (2026-10-02)** — `formatDateOnly` now includes the
+  year ("Fri, Oct 9, 2026"), so Inbox and every other task row, the date picker
+  trigger and reminder labels show it. "Today" / "Tomorrow" are unchanged.
 - [x] **Private and shared tasks for a second person (2026-10-02)** — per-task
   `is_shared` flag; every view, count, search and write scoped to "owner,
   assignee, or shared"; lists scoped to their members; share toggle in the task

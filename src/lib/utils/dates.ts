@@ -19,7 +19,7 @@ export function formatDateOnly(due_at: string | null): string {
   const tomorrowMs = Date.UTC(todayY, todayM, todayD + 1);
   const dateMs = Date.UTC(dateY, dateM, dateD);
   if (dateMs === tomorrowMs) return 'Tomorrow';
-  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', timeZone: 'UTC' });
+  return date.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric', timeZone: 'UTC' });
 }
 
 export function formatDisplay(due_at: string | null): string {
