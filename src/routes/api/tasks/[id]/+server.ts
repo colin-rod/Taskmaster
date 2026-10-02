@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { flattenTaskLabels } from '$lib/server/task-actions.js';
+import { getAccessibleTask, getListRole, isTaskVisibleTo } from '$lib/server/task-visibility.js';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ params, locals }) => {
@@ -9,11 +10,12 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 
   const { data: task, error: err } = await locals.supabase
     .from('tasks')
-    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name, avatar_color), list:task_lists(id, name, color, owner_id, sort_order, created_at, updated_at), task_labels(label:labels(*))')
+    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name, avatar_color), owner:profiles!owner_id(id, display_name, avatar_color), list:task_lists(id, name, color, owner_id, sort_order, created_at, updated_at), task_labels(label:labels(*))')
     .eq('id', params.id)
     .single();
 
-  if (err || !task) {
+  // A task the profile can't see is reported the same as a missing one.
+  if (err || !task || !isTaskVisibleTo(task, locals.profileId)) {
     return json({ error: 'Task not found' }, { status: 404 });
   }
 
@@ -21,7 +23,7 @@ export const GET: RequestHandler = async ({ params, locals }) => {
   return json({ task });
 };
 
-const ALLOWED_FIELDS = new Set(['title', 'priority', 'due_at', 'reminder_at', 'reminder_offset_minutes', 'assigned_to_user_id', 'status', 'notes', 'is_recurring', 'recurrence_rule', 'progress_current', 'progress_total', 'list_id']);
+const ALLOWED_FIELDS = new Set(['title', 'priority', 'due_at', 'reminder_at', 'reminder_offset_minutes', 'assigned_to_user_id', 'status', 'notes', 'is_recurring', 'recurrence_rule', 'progress_current', 'progress_total', 'list_id', 'is_shared']);
 
 // Matches the tasks_reminder_offset_valid check constraint (1 year in minutes).
 const MAX_REMINDER_OFFSET_MINUTES = 527040;
@@ -34,6 +36,11 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
   const { id } = params;
   if (!id) {
     return json({ error: 'Task ID is required' }, { status: 400 });
+  }
+
+  const existingTask = await getAccessibleTask(locals.supabase, id, locals.profileId);
+  if (!existingTask) {
+    return json({ error: 'Task not found' }, { status: 404 });
   }
 
   let body: Record<string, unknown>;
@@ -56,6 +63,17 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
   }
 
   // Validate specific fields
+  if ('is_shared' in updates) {
+    if (typeof updates.is_shared !== 'boolean') {
+      return json({ error: 'is_shared must be a boolean' }, { status: 400 });
+    }
+    // Sharing is the owner's call: someone a task was shared with or assigned
+    // to can work on it, but can't change who else sees it.
+    if (existingTask.owner_id !== locals.profileId) {
+      return json({ error: 'Only the task owner can change sharing' }, { status: 403 });
+    }
+  }
+
   if ('title' in updates && (typeof updates.title !== 'string' || !updates.title.trim())) {
     return json({ error: 'Title must be a non-empty string' }, { status: 400 });
   }
@@ -212,6 +230,14 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
     const listId = updates.list_id;
     if (listId !== null && (typeof listId !== 'string' || !/^[0-9a-f-]{36}$/i.test(listId))) {
       return json({ error: 'list_id must be a valid UUID or null' }, { status: 400 });
+    }
+    // Lists are membership-scoped, so a task can only be moved into a list
+    // the profile can add tasks to.
+    if (typeof listId === 'string') {
+      const role = await getListRole(locals.supabase, listId, locals.profileId);
+      if (role !== 'owner' && role !== 'editor') {
+        return json({ error: 'List not found' }, { status: 404 });
+      }
     }
   }
 

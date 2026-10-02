@@ -2,12 +2,13 @@ import { fail } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { RecurrenceRule } from '$lib/types/index.js';
 import { computeNextDue } from '$lib/utils/recurrence.js';
+import { getAccessibleTask } from './task-visibility.js';
 
 // =============================================================================
 // Task Select Helpers
 // =============================================================================
 
-export const TASK_SELECT = '*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name), task_labels(label:labels(*))';
+export const TASK_SELECT = '*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name), owner:profiles!owner_id(id, display_name, avatar_color), task_labels(label:labels(*))';
 
 export function flattenTaskLabels<T extends Record<string, unknown>>(tasks: T[]): T[] {
   for (const task of tasks) {
@@ -40,14 +41,40 @@ export async function buildRoleMap(
 }
 
 // =============================================================================
+// Access Guards
+//
+// Every action below checks the task against the visibility rule first. A task
+// the profile can't see is reported as not found, the same as a missing one.
+// =============================================================================
+
+const NOT_FOUND = { error: 'Task not found' };
+
+/** Task id owning a checklist item, if the profile can see that task. */
+async function getAccessibleChecklistTaskId(
+  supabase: SupabaseClient,
+  itemId: string,
+  profileId: string
+): Promise<string | null> {
+  const { data: item } = await supabase
+    .from('checklist_items')
+    .select('task_id')
+    .eq('id', itemId)
+    .maybeSingle();
+
+  if (!item) return null;
+  return (await getAccessibleTask(supabase, item.task_id, profileId)) ? item.task_id : null;
+}
+
+// =============================================================================
 // Checklist Item Actions
 // =============================================================================
 
-export async function addChecklistItem(formData: FormData, supabase: SupabaseClient) {
+export async function addChecklistItem(formData: FormData, supabase: SupabaseClient, profileId: string) {
   const task_id = formData.get('task_id')?.toString();
   const label = formData.get('label')?.toString()?.trim();
 
   if (!task_id || !label) return fail(400, { error: 'Task ID and label are required' });
+  if (!(await getAccessibleTask(supabase, task_id, profileId))) return fail(404, NOT_FOUND);
 
   // Get next position
   const { data: existing } = await supabase
@@ -67,12 +94,15 @@ export async function addChecklistItem(formData: FormData, supabase: SupabaseCli
   return { success: true };
 }
 
-export async function toggleChecklistItem(formData: FormData, supabase: SupabaseClient) {
+export async function toggleChecklistItem(formData: FormData, supabase: SupabaseClient, profileId: string) {
   const id = formData.get('id')?.toString();
   const task_id = formData.get('task_id')?.toString();
   const is_completed = formData.get('is_completed') === 'true';
 
   if (!id || !task_id) return fail(400, { error: 'Item ID and task ID are required' });
+  // The item must belong to the task named in the form, so the status updates
+  // below can't be pointed at a task the profile can't see.
+  if ((await getAccessibleChecklistTaskId(supabase, id, profileId)) !== task_id) return fail(404, NOT_FOUND);
 
   const newCompleted = !is_completed;
 
@@ -119,11 +149,12 @@ export async function toggleChecklistItem(formData: FormData, supabase: Supabase
   return { success: true };
 }
 
-export async function editChecklistItem(formData: FormData, supabase: SupabaseClient) {
+export async function editChecklistItem(formData: FormData, supabase: SupabaseClient, profileId: string) {
   const id = formData.get('id')?.toString();
   const label = formData.get('label')?.toString()?.trim();
 
   if (!id || !label) return fail(400, { error: 'ID and label are required' });
+  if (!(await getAccessibleChecklistTaskId(supabase, id, profileId))) return fail(404, NOT_FOUND);
 
   const { error } = await supabase.from('checklist_items').update({ label }).eq('id', id);
 
@@ -131,10 +162,11 @@ export async function editChecklistItem(formData: FormData, supabase: SupabaseCl
   return { success: true };
 }
 
-export async function deleteChecklistItem(formData: FormData, supabase: SupabaseClient) {
+export async function deleteChecklistItem(formData: FormData, supabase: SupabaseClient, profileId: string) {
   const id = formData.get('id')?.toString();
 
   if (!id) return fail(400, { error: 'Item ID is required' });
+  if (!(await getAccessibleChecklistTaskId(supabase, id, profileId))) return fail(404, NOT_FOUND);
 
   const { error } = await supabase.from('checklist_items').delete().eq('id', id);
 
@@ -142,12 +174,18 @@ export async function deleteChecklistItem(formData: FormData, supabase: Supabase
   return { success: true };
 }
 
-export async function reorderChecklistItems(formData: FormData, supabase: SupabaseClient) {
+export async function reorderChecklistItems(formData: FormData, supabase: SupabaseClient, profileId: string) {
   const itemIds = formData.get('item_ids')?.toString();
 
   if (!itemIds) return fail(400, { error: 'Item IDs are required' });
 
   const ids = JSON.parse(itemIds) as string[];
+
+  // All items belong to one task in practice; check each distinct task once.
+  const { data: owners } = await supabase.from('checklist_items').select('task_id').in('id', ids);
+  for (const taskId of new Set((owners ?? []).map((o) => o.task_id))) {
+    if (!(await getAccessibleTask(supabase, taskId, profileId))) return fail(404, NOT_FOUND);
+  }
 
   // Update positions in order
   for (let i = 0; i < ids.length; i++) {
@@ -228,11 +266,12 @@ async function rollForwardRecurringTask(
 // Task Actions
 // =============================================================================
 
-export async function toggleTask(formData: FormData, supabase: SupabaseClient) {
+export async function toggleTask(formData: FormData, supabase: SupabaseClient, profileId: string) {
   const id = formData.get('id')?.toString();
   const currentStatus = formData.get('current_status')?.toString();
 
   if (!id) return fail(400, { error: 'Task ID is required' });
+  if (!(await getAccessibleTask(supabase, id, profileId))) return fail(404, NOT_FOUND);
 
   if (currentStatus !== 'done') {
     // Completing the task — check if recurring
@@ -267,7 +306,7 @@ export async function toggleTask(formData: FormData, supabase: SupabaseClient) {
   return { success: true };
 }
 
-export async function updateTask(formData: FormData, supabase: SupabaseClient) {
+export async function updateTask(formData: FormData, supabase: SupabaseClient, profileId: string) {
   const id = formData.get('id')?.toString();
   const title = formData.get('title')?.toString()?.trim();
   const notes = formData.get('notes')?.toString() || null;
@@ -297,6 +336,7 @@ export async function updateTask(formData: FormData, supabase: SupabaseClient) {
       : null;
 
   if (!id || !title) return fail(400, { error: 'Task ID and title are required' });
+  if (!(await getAccessibleTask(supabase, id, profileId))) return fail(404, NOT_FOUND);
 
   // If marking done and recurring, roll forward instead
   if (status === 'done' && is_recurring && recurrence_rule) {
@@ -319,10 +359,11 @@ export async function updateTask(formData: FormData, supabase: SupabaseClient) {
   return { success: true };
 }
 
-export async function deleteTask(formData: FormData, supabase: SupabaseClient) {
+export async function deleteTask(formData: FormData, supabase: SupabaseClient, profileId: string) {
   const id = formData.get('id')?.toString();
 
   if (!id) return fail(400, { error: 'Task ID is required' });
+  if (!(await getAccessibleTask(supabase, id, profileId))) return fail(404, NOT_FOUND);
 
   const { error } = await supabase.from('tasks').delete().eq('id', id);
 
@@ -335,6 +376,7 @@ export async function assignTask(formData: FormData, supabase: SupabaseClient, s
   const assigned_to_user_id = formData.get('assigned_to_user_id')?.toString() || null;
 
   if (!id) return fail(400, { error: 'Task ID is required' });
+  if (!(await getAccessibleTask(supabase, id, sessionUserId))) return fail(404, NOT_FOUND);
 
   const { error } = await supabase
     .from('tasks')

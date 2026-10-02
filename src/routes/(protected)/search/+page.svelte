@@ -95,6 +95,17 @@
             <div class="w-2.5 h-2.5 flex-shrink-0"></div>
           {/if}
           <span class="flex-1 text-sm truncate">{result.title}</span>
+          {#if result.owner && result.owner_id !== data.profileId}
+            <span
+              class="shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-semibold text-white"
+              style="background-color: {result.owner.avatar_color ?? 'hsl(var(--foreground-muted))'}"
+              role="img"
+              aria-label="Shared by {result.owner.display_name ?? 'someone else'}"
+              title="Shared by {result.owner.display_name ?? 'someone else'}"
+            >
+              {(result.owner.display_name ?? '?').charAt(0).toUpperCase()}
+            </span>
+          {/if}
           {#if result.list}
             <span class="text-xs text-foreground-muted truncate max-w-[100px]">{result.list.name}</span>
           {/if}

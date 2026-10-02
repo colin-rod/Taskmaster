@@ -2,6 +2,7 @@
   import { tick } from 'svelte';
   import { enhance } from '$app/forms';
   import { invalidate } from '$app/navigation';
+  import { page } from '$app/state';
   import { toast } from 'svelte-sonner';
   import {
     Sheet,
@@ -15,7 +16,7 @@
   import { formatStatus, PRIORITY_OPTIONS, STATUS_OPTIONS, getDueDateClass } from '$lib/utils/design-tokens.js';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
-  import { Plus, Loader, Check, AlertCircle, X, BarChart2, FileText, Bell, Repeat, ListChecks, Tag } from '@lucide/svelte';
+  import { Plus, Loader, Check, AlertCircle, X, BarChart2, FileText, Bell, Repeat, ListChecks, Tag, Users, Lock } from '@lucide/svelte';
   import { slide, scale, fly, fade } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -26,6 +27,7 @@
   import { getUpcomingOccurrences } from '$lib/utils/recurrence.js';
   import { formatDateOnly } from '$lib/utils/dates.js';
   import { REMINDER_PRESETS, resolveReminderAt } from '$lib/utils/reminders.js';
+  import { patchTask } from '$lib/utils/api.js';
 
   let {
     task = $bindable<Task | null>(null),
@@ -47,6 +49,27 @@
       ? members.find(m => m.user_id === task!.assigned_to_user_id)?.profile ?? null
       : null
   );
+  // Sharing. Only the owner can change it; everyone else sees whose task it is.
+  let isMine = $derived(!!task && task.owner_id === page.data.profileId);
+  let shared = $state(false);
+  let savingShared = $state(false);
+  $effect(() => { shared = task?.is_shared ?? false; });
+
+  async function setShared(value: boolean) {
+    if (!task || value === shared || savingShared) return;
+    const previous = shared;
+    shared = value;
+    savingShared = true;
+    const ok = await patchTask(task.id, { is_shared: value }, 'Couldn\'t update sharing — try again.');
+    savingShared = false;
+    if (!ok) {
+      shared = previous;
+      return;
+    }
+    if (task) task.is_shared = value;
+    toast.success(value ? 'Shared with your household' : 'Now private to you');
+  }
+
   let upcomingOccurrences = $derived(
     task?.is_recurring && task?.recurrence_rule && task?.due_at
       ? getUpcomingOccurrences(task.due_at, task.recurrence_rule, 5)
@@ -736,6 +759,50 @@
 
         </div><!-- end metadata zone -->
 
+      </div>
+
+      <!-- Sharing: Private / Shared. Full-width 44px segments in the mobile
+           bottom sheet, compact in the desktop side sheet. -->
+      <div class="mt-4 pt-4 border-t border-border-divider">
+        <span id="task-sharing-label" class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Visibility</span>
+        {#if isMine}
+          <div
+            role="radiogroup"
+            aria-labelledby="task-sharing-label"
+            class="mt-2 grid grid-cols-2 gap-1 rounded-lg bg-surface-subtle p-1 md:inline-grid"
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={!shared}
+              disabled={savingShared}
+              class="min-h-11 md:min-h-0 md:py-1.5 px-3 inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary {!shared ? 'bg-surface text-foreground shadow-sm' : 'text-foreground-secondary hover:text-foreground'}"
+              onclick={() => setShared(false)}
+            >
+              <Lock class="size-3.5" />
+              Private
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={shared}
+              disabled={savingShared}
+              class="min-h-11 md:min-h-0 md:py-1.5 px-3 inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary {shared ? 'bg-surface text-primary shadow-sm' : 'text-foreground-secondary hover:text-foreground'}"
+              onclick={() => setShared(true)}
+            >
+              <Users class="size-3.5" />
+              Shared
+            </button>
+          </div>
+          <p class="mt-1.5 text-xs text-foreground-muted">
+            {shared ? 'Everyone in your household can see and edit this task.' : 'Only you can see this task.'}
+          </p>
+        {:else}
+          <p class="mt-1.5 text-sm text-foreground-secondary flex items-center gap-1.5">
+            <Users class="size-3.5 shrink-0" />
+            {shared ? 'Shared' : 'Assigned to you'} by {task.owner?.display_name ?? 'someone else'}
+          </p>
+        {/if}
       </div>
 
       <!-- Assign to (only for shared lists with >1 member, hidden for viewers) -->

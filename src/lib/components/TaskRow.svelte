@@ -2,12 +2,13 @@
   import { enhance } from '$app/forms';
   import { on } from 'svelte/events';
   import { invalidate, invalidateAll } from '$app/navigation';
+  import { page } from '$app/state';
   import { toast } from 'svelte-sonner';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
   import type { Task, ListRole, Profile, Label, TaskList } from '$lib/types/index.js';
   import { describeRecurrence } from '$lib/utils/recurrence.js';
-  import { Repeat2, Ellipsis, Check, Bell, CircleDot, BarChart2, Pencil } from '@lucide/svelte';
+  import { Repeat2, Ellipsis, Check, Bell, CircleDot, BarChart2, Pencil, Users } from '@lucide/svelte';
   import LabelBadge from '$lib/components/LabelBadge.svelte';
   import LabelPicker from '$lib/components/LabelPicker.svelte';
   import InlineEditTitle from '$lib/components/InlineEditTitle.svelte';
@@ -46,6 +47,11 @@
   let justCompleted = $state(false);
   let completedTimeout: ReturnType<typeof setTimeout>;
   let canEdit = $derived(userRole !== 'viewer');
+
+  // Sharing: only the owner can change it. Someone else's task shows their
+  // initial so it's clear whose it is without hovering.
+  let isMine = $derived(task.owner_id === page.data.profileId);
+  let ownerName = $derived(task.owner?.display_name ?? 'someone else');
   let optimisticStatus = $state('');
   $effect(() => { optimisticStatus = task.status; });
 
@@ -549,6 +555,21 @@
         <!-- Right-aligned signals: completion time on done rows; else due date +
              P1/P2 dot. Always visible — nothing swaps in or out on hover, so the
              row never changes size. -->
+        {#if !isMine}
+          <span
+            class="shrink-0 w-5 h-5 rounded-full flex items-center justify-center text-[10px] font-semibold text-white"
+            style="background-color: {task.owner?.avatar_color ?? 'hsl(var(--foreground-muted))'}"
+            role="img"
+            aria-label="Shared by {ownerName}"
+            title="Shared by {ownerName}"
+          >
+            {ownerName.charAt(0).toUpperCase()}
+          </span>
+        {:else if task.is_shared}
+          <span class="shrink-0 text-foreground-muted" role="img" aria-label="Shared with your household" title="Shared with your household">
+            <Users class="w-3.5 h-3.5" />
+          </span>
+        {/if}
         {#if isDone}
           <span class="shrink-0 text-[12.5px] text-foreground-muted tabular-nums whitespace-nowrap">{completedLabel}</span>
         {:else}
@@ -760,6 +781,14 @@
             {/if}
           </ContextMenu.SubContent>
         </ContextMenu.Sub>
+      {/if}
+
+      <!-- Share / make private (owner only). Desktop shortcut; the detail
+           sheet has the same control for touch. -->
+      {#if isMine}
+        <ContextMenu.Item onSelect={() => patchTask({ is_shared: !task.is_shared })}>
+          {task.is_shared ? 'Make private' : 'Share with household'}
+        </ContextMenu.Item>
       {/if}
 
       <!-- Move to List -->

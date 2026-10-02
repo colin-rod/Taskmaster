@@ -60,6 +60,11 @@ export interface Task {
   last_completed_at: string | null;
   completed_at: string | null;
   assigned_to_user_id: string | null;
+  /**
+   * Shared with the whole household. Private tasks are visible only to their
+   * owner and assignee (see src/lib/server/task-visibility.ts).
+   */
+  is_shared: boolean;
   progress_current: number | null;
   progress_total: number | null;
   sort_order: number;
@@ -69,6 +74,7 @@ export interface Task {
   list?: TaskList;
   checklist_items?: ChecklistItem[];
   assignee?: Profile;
+  owner?: Pick<Profile, 'id' | 'display_name' | 'avatar_color'>;
   labels?: Label[];
 }
 
@@ -126,6 +132,9 @@ export interface SearchResult {
   status: TaskStatus;
   due_at: string | null;
   list: { name: string; color: string | null } | null;
+  owner_id?: string;
+  is_shared?: boolean;
+  owner?: Pick<Profile, 'id' | 'display_name' | 'avatar_color'> | null;
 }
 
 // Label colors for auto-assignment

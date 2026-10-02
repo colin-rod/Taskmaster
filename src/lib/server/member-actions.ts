@@ -1,5 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
+import { isUuid } from './task-visibility.js';
 
 async function verifyOwner(supabase: SupabaseClient, listId: string, userId: string) {
   const { data } = await supabase
@@ -14,24 +15,26 @@ async function verifyOwner(supabase: SupabaseClient, listId: string, userId: str
 
 export async function addMember(formData: FormData, supabase: SupabaseClient, sessionUserId: string) {
   const list_id = formData.get('list_id')?.toString();
-  const email = formData.get('email')?.toString()?.trim()?.toLowerCase();
+  const user_id = formData.get('user_id')?.toString();
   const role = formData.get('role')?.toString();
 
-  if (!list_id || !email || !role) return fail(400, { error: 'List ID, email, and role are required' });
+  if (!list_id || !user_id || !role) return fail(400, { error: 'List ID, profile, and role are required' });
+  if (!isUuid(user_id)) return fail(400, { error: 'Invalid profile' });
   if (role !== 'editor' && role !== 'viewer') return fail(400, { error: 'Role must be editor or viewer' });
 
   if (!(await verifyOwner(supabase, list_id, sessionUserId))) {
     return fail(403, { error: 'Only the list owner can manage members' });
   }
 
-  // Look up profile by email
+  // Members are picked from the household's profiles (profiles created at
+  // /pick-profile have no email, so there is nothing to look up by).
   const { data: profile } = await supabase
     .from('profiles')
     .select('id')
-    .eq('email', email)
-    .single();
+    .eq('id', user_id)
+    .maybeSingle();
 
-  if (!profile) return fail(404, { error: 'No account found with that email' });
+  if (!profile) return fail(404, { error: 'That profile no longer exists' });
 
   // Check not already a member
   const { data: existing } = await supabase
@@ -39,9 +42,9 @@ export async function addMember(formData: FormData, supabase: SupabaseClient, se
     .select('user_id')
     .eq('list_id', list_id)
     .eq('user_id', profile.id)
-    .single();
+    .maybeSingle();
 
-  if (existing) return fail(409, { error: 'This user is already a member' });
+  if (existing) return fail(409, { error: 'This person is already a member' });
 
   const { error } = await supabase
     .from('task_list_members')

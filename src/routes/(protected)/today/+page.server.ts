@@ -3,9 +3,10 @@ import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
 import { TASK_SELECT, flattenTaskLabels } from '$lib/server/task-actions.js';
+import { visibleTo, resolveIsShared } from '$lib/server/task-visibility.js';
 
 export const load: PageServerLoad = async (event) => {
-  const { locals: { supabase } } = event;
+  const { locals: { supabase, profileId } } = event;
   event.depends('app:tasks');
   const now = new Date();
   const startOfToday = new Date(now);
@@ -18,29 +19,21 @@ export const load: PageServerLoad = async (event) => {
 
   // Fetch overdue, due-today, upcoming, and completed-today in parallel
   const [{ data: overdue, error: e1 }, { data: dueToday, error: e2 }, { data: upcoming, error: e3 }, { data: completedToday, error: e4 }] = await Promise.all([
-    supabase
-      .from('tasks')
-      .select(TASK_SELECT)
+    visibleTo(supabase.from('tasks').select(TASK_SELECT), profileId!)
       .lt('due_at', startOfToday.toISOString())
       .not('status', 'in', '("done","canceled")')
       .order('due_at', { ascending: true }),
-    supabase
-      .from('tasks')
-      .select(TASK_SELECT)
+    visibleTo(supabase.from('tasks').select(TASK_SELECT), profileId!)
       .gte('due_at', startOfToday.toISOString())
       .lte('due_at', endOfToday.toISOString())
       .not('status', 'in', '("done","canceled")')
       .order('due_at', { ascending: true }),
-    supabase
-      .from('tasks')
-      .select(TASK_SELECT)
+    visibleTo(supabase.from('tasks').select(TASK_SELECT), profileId!)
       .gt('due_at', endOfToday.toISOString())
       .lte('due_at', sevenDaysOut.toISOString())
       .not('status', 'in', '("done","canceled")')
       .order('due_at', { ascending: true }),
-    supabase
-      .from('tasks')
-      .select(TASK_SELECT)
+    visibleTo(supabase.from('tasks').select(TASK_SELECT), profileId!)
       .gte('completed_at', startOfToday.toISOString())
       .lte('completed_at', endOfToday.toISOString())
       .order('completed_at', { ascending: false }),
@@ -74,10 +67,13 @@ export const actions: Actions = {
 
     if (!title) return fail(400, { error: 'Task title is required' });
 
+    const is_shared = await resolveIsShared(supabase, formData.get('is_shared'), null);
+
     const { error } = await supabase.from('tasks').insert({
       title,
       list_id: null,
       owner_id: profileId!,
+      is_shared,
       due_at,
       status: 'todo',
       priority,
@@ -88,29 +84,29 @@ export const actions: Actions = {
     if (error) return fail(500, { error: error.message });
     return { success: true };
   },
-  toggleTask: async ({ request, locals: { supabase } }) => {
-    return taskActions.toggleTask(await request.formData(), supabase);
+  toggleTask: async ({ request, locals: { supabase, profileId } }) => {
+    return taskActions.toggleTask(await request.formData(), supabase, profileId!);
   },
-  updateTask: async ({ request, locals: { supabase } }) => {
-    return taskActions.updateTask(await request.formData(), supabase);
+  updateTask: async ({ request, locals: { supabase, profileId } }) => {
+    return taskActions.updateTask(await request.formData(), supabase, profileId!);
   },
-  deleteTask: async ({ request, locals: { supabase } }) => {
-    return taskActions.deleteTask(await request.formData(), supabase);
+  deleteTask: async ({ request, locals: { supabase, profileId } }) => {
+    return taskActions.deleteTask(await request.formData(), supabase, profileId!);
   },
-  addChecklistItem: async ({ request, locals: { supabase } }) => {
-    return taskActions.addChecklistItem(await request.formData(), supabase);
+  addChecklistItem: async ({ request, locals: { supabase, profileId } }) => {
+    return taskActions.addChecklistItem(await request.formData(), supabase, profileId!);
   },
-  toggleChecklistItem: async ({ request, locals: { supabase } }) => {
-    return taskActions.toggleChecklistItem(await request.formData(), supabase);
+  toggleChecklistItem: async ({ request, locals: { supabase, profileId } }) => {
+    return taskActions.toggleChecklistItem(await request.formData(), supabase, profileId!);
   },
-  deleteChecklistItem: async ({ request, locals: { supabase } }) => {
-    return taskActions.deleteChecklistItem(await request.formData(), supabase);
+  deleteChecklistItem: async ({ request, locals: { supabase, profileId } }) => {
+    return taskActions.deleteChecklistItem(await request.formData(), supabase, profileId!);
   },
-  editChecklistItem: async ({ request, locals: { supabase } }) => {
-    return taskActions.editChecklistItem(await request.formData(), supabase);
+  editChecklistItem: async ({ request, locals: { supabase, profileId } }) => {
+    return taskActions.editChecklistItem(await request.formData(), supabase, profileId!);
   },
-  reorderChecklistItems: async ({ request, locals: { supabase } }) => {
-    return taskActions.reorderChecklistItems(await request.formData(), supabase);
+  reorderChecklistItems: async ({ request, locals: { supabase, profileId } }) => {
+    return taskActions.reorderChecklistItems(await request.formData(), supabase, profileId!);
   },
   assignTask: async ({ request, locals: { supabase, profileId } }) => {
     return taskActions.assignTask(await request.formData(), supabase, profileId!);

@@ -1,6 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 
 import type { LayoutServerLoad } from './$types';
+import { visibleTo } from '$lib/server/task-visibility.js';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
   if (!locals.profileId) {
@@ -14,6 +15,12 @@ export const load: LayoutServerLoad = async ({ locals }) => {
   endOfToday.setHours(23, 59, 59, 999);
   const endOfWeek = new Date(startOfToday);
   endOfWeek.setDate(endOfWeek.getDate() + 7);
+
+  const profileId = locals.profileId;
+
+  // Count queries only ever cover tasks this profile can see.
+  const visibleTasks = () =>
+    visibleTo(locals.supabase.from('tasks').select('*', { count: 'exact', head: true }), profileId);
 
   const [
     { count: unreadCount },
@@ -35,7 +42,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
       .eq('user_id', locals.profileId)
       .eq('is_read', false),
 
-    // User's lists (exclude archived)
+    // Lists (exclude archived); narrowed to this profile's memberships below
     locals.supabase
       .from('task_lists')
       .select('id, name, color, icon, owner_id, sort_order, task_list_members(count)')
@@ -43,50 +50,38 @@ export const load: LayoutServerLoad = async ({ locals }) => {
       .order('sort_order', { ascending: true }),
 
     // Today count (due today, not done/canceled)
-    locals.supabase
-      .from('tasks')
-      .select('*', { count: 'exact', head: true })
+    visibleTasks()
       .gte('due_at', startOfToday.toISOString())
       .lte('due_at', endOfToday.toISOString())
       .not('status', 'in', '(done,canceled)'),
 
     // Overdue count
-    locals.supabase
-      .from('tasks')
-      .select('*', { count: 'exact', head: true })
+    visibleTasks()
       .lt('due_at', startOfToday.toISOString())
       .not('status', 'in', '(done,canceled)'),
 
     // Upcoming count (next 7 days, excluding today)
-    locals.supabase
-      .from('tasks')
-      .select('*', { count: 'exact', head: true })
+    visibleTasks()
       .gt('due_at', endOfToday.toISOString())
       .lte('due_at', endOfWeek.toISOString())
       .not('status', 'in', '(done,canceled)'),
 
     // Inbox count (no list)
-    locals.supabase
-      .from('tasks')
-      .select('*', { count: 'exact', head: true })
+    visibleTasks()
       .is('list_id', null)
       .not('status', 'in', '(done,canceled)'),
 
     // Assigned to me count
-    locals.supabase
-      .from('tasks')
-      .select('*', { count: 'exact', head: true })
+    visibleTasks()
       .eq('assigned_to_user_id', locals.profileId)
       .not('status', 'in', '(done,canceled)'),
 
     // Completed count (all done/canceled tasks)
-    locals.supabase
-      .from('tasks')
-      .select('*', { count: 'exact', head: true })
+    visibleTasks()
       .in('status', ['done', 'canceled']),
 
     // Task counts per list via aggregate RPC
-    locals.supabase.rpc('get_list_task_counts'),
+    locals.supabase.rpc('get_list_task_counts', { p_profile_id: profileId }),
 
     // Current profile data
     locals.supabase
@@ -119,7 +114,8 @@ export const load: LayoutServerLoad = async ({ locals }) => {
     profile: profileData ?? null,
     unreadCount: unreadCount ?? 0,
     roleMap,
-    lists: (lists ?? []).map((l) => ({
+    // Lists are membership-scoped: only the ones this profile belongs to.
+    lists: (lists ?? []).filter((l) => l.id in roleMap).map((l) => ({
       ...l,
       taskCount: countMap[l.id] ?? 0,
       isShared: ((l.task_list_members as { count: number }[] | null)?.[0]?.count ?? 1) > 1,

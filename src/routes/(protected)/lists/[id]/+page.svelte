@@ -146,7 +146,7 @@
   </div>
 
   <div class="mb-6">
-    <QuickAdd action="?/createTask" listId={data.list.id} />
+    <QuickAdd action="?/createTask" listId={data.list.id} defaultShared={(data.list.members ?? []).length > 1} />
   </div>
 
   {#if activeTasks.length > 0}
@@ -201,5 +201,5 @@
 
 <TaskSheet bind:task={selectedTask} bind:open={sheetOpen} {userRole} members={data.list.members ?? []} />
 {#if isOwner}
-  <MemberManager list={data.list} bind:open={membersOpen} />
+  <MemberManager list={data.list} addableProfiles={data.addableProfiles} bind:open={membersOpen} />
 {/if}

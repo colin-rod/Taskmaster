@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from '$app/state';
   import { Search, X } from '@lucide/svelte';
   import type { SearchResult } from '$lib/types/index.js';
 
@@ -96,6 +97,17 @@
               ></div>
             {/if}
             <span class="flex-1 truncate">{result.title}</span>
+            {#if result.owner && result.owner_id !== page.data.profileId}
+              <span
+                class="shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-semibold text-white"
+                style="background-color: {result.owner.avatar_color ?? 'hsl(var(--foreground-muted))'}"
+                role="img"
+                aria-label="Shared by {result.owner.display_name ?? 'someone else'}"
+                title="Shared by {result.owner.display_name ?? 'someone else'}"
+              >
+                {(result.owner.display_name ?? '?').charAt(0).toUpperCase()}
+              </span>
+            {/if}
             {#if result.list}
               <span class="text-xs text-foreground-muted truncate max-w-[80px]">{result.list.name}</span>
             {/if}
