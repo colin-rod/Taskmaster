@@ -17,11 +17,11 @@ export const load: PageServerLoad = async (event) => {
 };
 
 export const actions: Actions = {
-  toggleTask: async ({ request, locals: { supabase, profileId } }) => {
-    return taskActions.toggleTask(await request.formData(), supabase, profileId!);
+  toggleTask: async ({ request, locals: { supabase, profileId, timeZone } }) => {
+    return taskActions.toggleTask(await request.formData(), supabase, profileId!, timeZone);
   },
-  updateTask: async ({ request, locals: { supabase, profileId } }) => {
-    return taskActions.updateTask(await request.formData(), supabase, profileId!);
+  updateTask: async ({ request, locals: { supabase, profileId, timeZone } }) => {
+    return taskActions.updateTask(await request.formData(), supabase, profileId!, timeZone);
   },
   deleteTask: async ({ request, locals: { supabase, profileId } }) => {
     return taskActions.deleteTask(await request.formData(), supabase, profileId!);
@@ -29,8 +29,8 @@ export const actions: Actions = {
   addChecklistItem: async ({ request, locals: { supabase, profileId } }) => {
     return taskActions.addChecklistItem(await request.formData(), supabase, profileId!);
   },
-  toggleChecklistItem: async ({ request, locals: { supabase, profileId } }) => {
-    return taskActions.toggleChecklistItem(await request.formData(), supabase, profileId!);
+  toggleChecklistItem: async ({ request, locals: { supabase, profileId, timeZone } }) => {
+    return taskActions.toggleChecklistItem(await request.formData(), supabase, profileId!, timeZone);
   },
   deleteChecklistItem: async ({ request, locals: { supabase, profileId } }) => {
     return taskActions.deleteChecklistItem(await request.formData(), supabase, profileId!);

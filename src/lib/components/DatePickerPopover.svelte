@@ -1,6 +1,6 @@
 <script lang="ts">
   import * as Popover from '$lib/components/ui/popover/index.js';
-  import { toDateString, formatDateOnly, formatShortDate } from '$lib/utils/dates.js';
+  import { toDateString, toDateInputValue, formatDateOnly, formatShortDate, daysFromToday, quickDate, quickDateNextMonth } from '$lib/utils/dates.js';
   import { patchTask } from '$lib/utils/api.js';
   import { CalendarDays } from '@lucide/svelte';
 
@@ -25,18 +25,7 @@
   } = $props();
 
   function isOverdue(due_at: string | null): boolean {
-    if (!due_at) return false;
-    return new Date(due_at) < new Date();
-  }
-
-  // Get YYYY-MM-DD from current value (for <input type="date">)
-  function getCurrentDateValue(): string {
-    if (!value) return '';
-    const d = new Date(value);
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
+    return (daysFromToday(due_at) ?? 0) < 0;
   }
 
   async function setDate(due_at: string | null) {
@@ -47,18 +36,6 @@
     } else {
       await patchTask(taskId!, { due_at }, "Couldn't save date. Try again.");
     }
-  }
-
-  function quickDate(offset: number): string {
-    const d = new Date();
-    d.setDate(d.getDate() + offset);
-    return toDateString(d);
-  }
-
-  function quickDateNextMonth(): string {
-    const d = new Date();
-    d.setMonth(d.getMonth() + 1);
-    return toDateString(d);
   }
 
   const DAY_ABBR = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'] as const;
@@ -163,7 +140,7 @@
     <div class="border-t border-border-divider mt-1 pt-1 space-y-1">
       <input
         type="date"
-        value={getCurrentDateValue()}
+        value={toDateInputValue(value)}
         class="w-full px-2 py-1.5 text-sm rounded bg-transparent border-0 outline-none"
         onchange={handleCustomDate}
       />

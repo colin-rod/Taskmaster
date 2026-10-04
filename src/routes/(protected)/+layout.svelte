@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { invalidateAll } from '$app/navigation';
   import { Toaster } from 'svelte-sonner';
   import { Settings, Search, Plus, Sun, Moon } from '@lucide/svelte';
   import { theme, toggleTheme } from '$lib/stores/theme.js';
@@ -17,6 +19,16 @@
   const { children, data } = $props();
 
   let unreadCount = $derived(data.unreadCount ?? 0);
+
+  // "Today" is the local date, which the server can only work out if it knows
+  // this device's time zone. Report it in a cookie, and reload the data if the
+  // server rendered this page with a different one (first visit, or travel).
+  onMount(() => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!tz || tz === data.timeZone) return;
+    document.cookie = `tz=${encodeURIComponent(tz)}; path=/; max-age=31536000; samesite=lax`;
+    invalidateAll();
+  });
 
   let showCreateListDialog = $state(false);
   let searchOpen = $state(false);

@@ -5,6 +5,8 @@
  * Taskmaster uses the same design system as NorthStar.
  */
 
+import { daysFromToday } from './dates.js';
+
 /**
  * Task Status Colors
  */
@@ -139,10 +141,10 @@ export const STATUS_OPTIONS = [
  * Returns a CSS class name for due-date urgency coloring.
  */
 export function getDueDateClass(due_at: string | null | undefined): string {
-  if (!due_at) return '';
-  const diff = (new Date(due_at).getTime() - Date.now()) / (1000 * 60 * 60 * 24);
-  if (diff < 0)  return 'due-overdue';
-  if (diff < 1)  return 'due-today';
-  if (diff <= 3) return 'due-soon';
+  const days = daysFromToday(due_at);
+  if (days === null) return '';
+  if (days < 0)   return 'due-overdue';
+  if (days === 0) return 'due-today';
+  if (days <= 3)  return 'due-soon';
   return '';
 }

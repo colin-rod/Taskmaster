@@ -2,6 +2,7 @@ import { fail } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { RecurrenceRule } from '$lib/types/index.js';
 import { computeNextDue } from '$lib/utils/recurrence.js';
+import { dateKeyToIso, todayKey } from '$lib/utils/dates.js';
 import { getAccessibleTask } from './task-visibility.js';
 
 // =============================================================================
@@ -94,7 +95,7 @@ export async function addChecklistItem(formData: FormData, supabase: SupabaseCli
   return { success: true };
 }
 
-export async function toggleChecklistItem(formData: FormData, supabase: SupabaseClient, profileId: string) {
+export async function toggleChecklistItem(formData: FormData, supabase: SupabaseClient, profileId: string, timeZone: string) {
   const id = formData.get('id')?.toString();
   const task_id = formData.get('task_id')?.toString();
   const is_completed = formData.get('is_completed') === 'true';
@@ -134,7 +135,7 @@ export async function toggleChecklistItem(formData: FormData, supabase: Supabase
     // Auto-complete: if all items are now completed, mark the task as done
     if (items && items.length > 0 && items.every((item) => item.is_completed)) {
       if (task?.is_recurring && task.recurrence_rule) {
-        const result = await rollForwardRecurringTask(task_id, task, supabase);
+        const result = await rollForwardRecurringTask(task_id, task, supabase, timeZone);
         if (result.rolled) return { success: true, rolled: true };
       } else {
         await supabase
@@ -207,15 +208,18 @@ export async function reorderChecklistItems(formData: FormData, supabase: Supaba
 async function rollForwardRecurringTask(
   taskId: string,
   task: { due_at: string | null; recurrence_rule: RecurrenceRule },
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  timeZone: string
 ): Promise<{ rolled: boolean }> {
   const scheduleType = task.recurrence_rule.schedule_type ?? 'due_date';
+  // "Completed today" is the profile's local date, not the server's UTC date.
+  const today = new Date(dateKeyToIso(todayKey(timeZone)));
   const baseDate =
     scheduleType === 'completion_date'
-      ? new Date()
+      ? today
       : task.due_at
         ? new Date(task.due_at)
-        : new Date();
+        : today;
   const nextDue = computeNextDue(baseDate, task.recurrence_rule);
 
   if (!nextDue) {
@@ -266,7 +270,7 @@ async function rollForwardRecurringTask(
 // Task Actions
 // =============================================================================
 
-export async function toggleTask(formData: FormData, supabase: SupabaseClient, profileId: string) {
+export async function toggleTask(formData: FormData, supabase: SupabaseClient, profileId: string, timeZone: string) {
   const id = formData.get('id')?.toString();
   const currentStatus = formData.get('current_status')?.toString();
 
@@ -282,7 +286,7 @@ export async function toggleTask(formData: FormData, supabase: SupabaseClient, p
       .single();
 
     if (task?.is_recurring && task.recurrence_rule) {
-      const result = await rollForwardRecurringTask(id, task, supabase);
+      const result = await rollForwardRecurringTask(id, task, supabase, timeZone);
       if (result.rolled) {
         return { success: true, rolled: true };
       }
@@ -306,7 +310,7 @@ export async function toggleTask(formData: FormData, supabase: SupabaseClient, p
   return { success: true };
 }
 
-export async function updateTask(formData: FormData, supabase: SupabaseClient, profileId: string) {
+export async function updateTask(formData: FormData, supabase: SupabaseClient, profileId: string, timeZone: string) {
   const id = formData.get('id')?.toString();
   const title = formData.get('title')?.toString()?.trim();
   const notes = formData.get('notes')?.toString() || null;
@@ -344,7 +348,7 @@ export async function updateTask(formData: FormData, supabase: SupabaseClient, p
     const fieldUpdates: Record<string, unknown> = { title, notes, priority, is_recurring, recurrence_rule };
     await supabase.from('tasks').update(fieldUpdates).eq('id', id);
 
-    const result = await rollForwardRecurringTask(id, { due_at, recurrence_rule }, supabase);
+    const result = await rollForwardRecurringTask(id, { due_at, recurrence_rule }, supabase, timeZone);
     if (result.rolled) {
       return { success: true, rolled: true };
     }

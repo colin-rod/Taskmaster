@@ -10,14 +10,16 @@ import {
   computeWeekRange,
   computeDayRange,
 } from '$lib/utils/calendar.js';
+import { dateKeyToIso, localDateKey, todayKey } from '$lib/utils/dates.js';
 
 export const load: PageServerLoad = async (event) => {
-  const { locals: { supabase, profileId }, url } = event;
+  const { locals: { supabase, profileId, timeZone }, url } = event;
   event.depends('app:tasks');
 
   const view = url.searchParams.get('view') ?? 'month';
   const dateParam = url.searchParams.get('date');
-  const anchor = parseDateParam(dateParam, new Date());
+  // With no date in the URL the calendar opens on the profile's local today.
+  const anchor = parseDateParam(dateParam ?? todayKey(timeZone), new Date());
 
   const { start, end } = view === 'week'
     ? computeWeekRange(anchor)
@@ -26,8 +28,8 @@ export const load: PageServerLoad = async (event) => {
       : computeMonthGridRange(anchor);
 
   const { data: dueTasks, error: e1 } = await visibleTo(supabase.from('tasks').select(TASK_SELECT), profileId!)
-    .gte('due_at', start.toISOString())
-    .lte('due_at', end.toISOString())
+    .gte('due_at', dateKeyToIso(localDateKey(start)))
+    .lte('due_at', dateKeyToIso(localDateKey(end)))
     .neq('status', 'done')
     .neq('status', 'canceled')
     .order('due_at', { ascending: true });
@@ -39,7 +41,9 @@ export const load: PageServerLoad = async (event) => {
   return {
     tasks,
     view,
-    anchorIso: anchor.toISOString(),
+    // A calendar date, not an instant: the browser rebuilds it in its own
+    // time zone, so it can't land on the neighbouring day.
+    anchorDate: localDateKey(anchor),
   };
 };
 
@@ -76,11 +80,11 @@ export const actions: Actions = {
     if (error) return fail(500, { error: error.message });
     return { success: true };
   },
-  toggleTask: async ({ request, locals: { supabase, profileId } }) => {
-    return taskActions.toggleTask(await request.formData(), supabase, profileId!);
+  toggleTask: async ({ request, locals: { supabase, profileId, timeZone } }) => {
+    return taskActions.toggleTask(await request.formData(), supabase, profileId!, timeZone);
   },
-  updateTask: async ({ request, locals: { supabase, profileId } }) => {
-    return taskActions.updateTask(await request.formData(), supabase, profileId!);
+  updateTask: async ({ request, locals: { supabase, profileId, timeZone } }) => {
+    return taskActions.updateTask(await request.formData(), supabase, profileId!, timeZone);
   },
   deleteTask: async ({ request, locals: { supabase, profileId } }) => {
     return taskActions.deleteTask(await request.formData(), supabase, profileId!);
@@ -88,8 +92,8 @@ export const actions: Actions = {
   addChecklistItem: async ({ request, locals: { supabase, profileId } }) => {
     return taskActions.addChecklistItem(await request.formData(), supabase, profileId!);
   },
-  toggleChecklistItem: async ({ request, locals: { supabase, profileId } }) => {
-    return taskActions.toggleChecklistItem(await request.formData(), supabase, profileId!);
+  toggleChecklistItem: async ({ request, locals: { supabase, profileId, timeZone } }) => {
+    return taskActions.toggleChecklistItem(await request.formData(), supabase, profileId!, timeZone);
   },
   deleteChecklistItem: async ({ request, locals: { supabase, profileId } }) => {
     return taskActions.deleteChecklistItem(await request.formData(), supabase, profileId!);

@@ -31,6 +31,13 @@ Tailwind v4, bits-ui primitives, deployed on Vercel. Dev server runs on port
 - **Reminder cron** is a GitHub Actions workflow
   (`.github/workflows/reminder-cron.yml`, every 5 min) hitting
   `/api/cron/notifications` with `CRON_SECRET` — not a Vercel cron (Hobby plan).
+- **"Today" is the user's local date, not the UTC date.** Due dates are
+  calendar dates stored as midnight UTC, so compare them as `YYYY-MM-DD` keys
+  with the helpers in `src/lib/utils/dates.ts` (`todayKey`, `daysFromToday`,
+  `dateKeyToIso`). In the browser they use the device clock; on the server pass
+  `locals.timeZone`, which comes from the `tz` cookie the protected layout
+  sets. Don't derive "today" from `new Date()` + `setHours`/`toISOString` —
+  the server runs in UTC.
 - **Recurrence** engine is `src/lib/utils/recurrence.ts`; completing a
   recurring task rolls it forward.
 - Smart-view nav items are defined once in `src/lib/config/nav.ts` and shared by

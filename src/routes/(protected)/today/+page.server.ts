@@ -4,38 +4,39 @@ import type { Actions, PageServerLoad } from './$types';
 import * as taskActions from '$lib/server/task-actions.js';
 import { TASK_SELECT, flattenTaskLabels } from '$lib/server/task-actions.js';
 import { visibleTo, resolveIsShared } from '$lib/server/task-visibility.js';
+import { addDaysToKey, dateKeyToIso, startOfDayInZone, todayKey } from '$lib/utils/dates.js';
 
 export const load: PageServerLoad = async (event) => {
-  const { locals: { supabase, profileId } } = event;
+  const { locals: { supabase, profileId, timeZone } } = event;
   event.depends('app:tasks');
-  const now = new Date();
-  const startOfToday = new Date(now);
-  startOfToday.setHours(0, 0, 0, 0);
-  const endOfToday = new Date(now);
-  endOfToday.setHours(23, 59, 59, 999);
-  const sevenDaysOut = new Date(now);
-  sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
-  sevenDaysOut.setHours(23, 59, 59, 999);
+  // "Today" is the profile's local date. Due dates are calendar dates stored
+  // as midnight UTC; completed_at is a real instant, so that range is the
+  // local day's actual start and end.
+  const today = todayKey(timeZone);
+  const tomorrow = addDaysToKey(today, 1);
+  const todayIso = dateKeyToIso(today);
+  const tomorrowIso = dateKeyToIso(tomorrow);
+  const sevenDaysOutIso = dateKeyToIso(addDaysToKey(today, 7));
 
   // Fetch overdue, due-today, upcoming, and completed-today in parallel
   const [{ data: overdue, error: e1 }, { data: dueToday, error: e2 }, { data: upcoming, error: e3 }, { data: completedToday, error: e4 }] = await Promise.all([
     visibleTo(supabase.from('tasks').select(TASK_SELECT), profileId!)
-      .lt('due_at', startOfToday.toISOString())
+      .lt('due_at', todayIso)
       .not('status', 'in', '("done","canceled")')
       .order('due_at', { ascending: true }),
     visibleTo(supabase.from('tasks').select(TASK_SELECT), profileId!)
-      .gte('due_at', startOfToday.toISOString())
-      .lte('due_at', endOfToday.toISOString())
+      .gte('due_at', todayIso)
+      .lt('due_at', tomorrowIso)
       .not('status', 'in', '("done","canceled")')
       .order('due_at', { ascending: true }),
     visibleTo(supabase.from('tasks').select(TASK_SELECT), profileId!)
-      .gt('due_at', endOfToday.toISOString())
-      .lte('due_at', sevenDaysOut.toISOString())
+      .gte('due_at', tomorrowIso)
+      .lte('due_at', sevenDaysOutIso)
       .not('status', 'in', '("done","canceled")')
       .order('due_at', { ascending: true }),
     visibleTo(supabase.from('tasks').select(TASK_SELECT), profileId!)
-      .gte('completed_at', startOfToday.toISOString())
-      .lte('completed_at', endOfToday.toISOString())
+      .gte('completed_at', startOfDayInZone(today, timeZone).toISOString())
+      .lt('completed_at', startOfDayInZone(tomorrow, timeZone).toISOString())
       .order('completed_at', { ascending: false }),
   ]);
 
@@ -84,11 +85,11 @@ export const actions: Actions = {
     if (error) return fail(500, { error: error.message });
     return { success: true };
   },
-  toggleTask: async ({ request, locals: { supabase, profileId } }) => {
-    return taskActions.toggleTask(await request.formData(), supabase, profileId!);
+  toggleTask: async ({ request, locals: { supabase, profileId, timeZone } }) => {
+    return taskActions.toggleTask(await request.formData(), supabase, profileId!, timeZone);
   },
-  updateTask: async ({ request, locals: { supabase, profileId } }) => {
-    return taskActions.updateTask(await request.formData(), supabase, profileId!);
+  updateTask: async ({ request, locals: { supabase, profileId, timeZone } }) => {
+    return taskActions.updateTask(await request.formData(), supabase, profileId!, timeZone);
   },
   deleteTask: async ({ request, locals: { supabase, profileId } }) => {
     return taskActions.deleteTask(await request.formData(), supabase, profileId!);
@@ -96,8 +97,8 @@ export const actions: Actions = {
   addChecklistItem: async ({ request, locals: { supabase, profileId } }) => {
     return taskActions.addChecklistItem(await request.formData(), supabase, profileId!);
   },
-  toggleChecklistItem: async ({ request, locals: { supabase, profileId } }) => {
-    return taskActions.toggleChecklistItem(await request.formData(), supabase, profileId!);
+  toggleChecklistItem: async ({ request, locals: { supabase, profileId, timeZone } }) => {
+    return taskActions.toggleChecklistItem(await request.formData(), supabase, profileId!, timeZone);
   },
   deleteChecklistItem: async ({ request, locals: { supabase, profileId } }) => {
     return taskActions.deleteChecklistItem(await request.formData(), supabase, profileId!);

@@ -64,11 +64,21 @@ _Last updated: 2026-10-04_
 
 ## ✅ Recently done (rolling, last ~10)
 
+- [x] **"Today" is the local date everywhere (2026-10-04)** — the browser
+  reports its time zone in a `tz` cookie (`locals.timeZone`), and the sidebar
+  counts, Today / Overdue views, calendar, due filters, due-date colours,
+  Today/Tomorrow labels, quick-date buttons and completion-based recurrence all
+  compare a task's stored date against the local date instead of the UTC one.
+  Also fixes a task due today being coloured "overdue", and calendar cells
+  being a day off east of UTC. Helpers and tests in `src/lib/utils/dates.ts`.
+  Reminder send times are unchanged (still a fixed UTC hour).
 - [x] **Fixed due-date save from the task sheet (2026-10-04)** — the sheet kept
   `YYYY-MM-DD` and appended a time suffix, but the date picker writes back a
   full ISO string, so the PATCH sent a doubled suffix and Postgres rejected
   `NaN-NaN-NaN…`. The sheet now holds the ISO string, and
-  `PATCH /api/tasks/[id]` rejects an unparseable `due_at` with a 400.
+  `PATCH /api/tasks/[id]` rejects an unparseable `due_at` with a 400. The
+  picker's custom date field also reads the UTC date now, so it no longer shows
+  the previous day west of UTC.
 - [x] **Years on task dates (2026-10-02)** — `formatDateOnly` now includes the
   year ("Fri, Oct 9, 2026"), so Inbox and every other task row, the date picker
   trigger and reminder labels show it. "Today" / "Tomorrow" are unchanged.
@@ -92,4 +102,3 @@ _Last updated: 2026-10-04_
   tokens, simplified TaskRow, unified Quick Add + global `c` shortcut, re-skinned
   nav + empty states, `SmartViewShell` + shared nav config, `Button` primitive,
   dark mode, command palette.
-- [x] **Upcoming recurrences on task detail (2026-05-04)**

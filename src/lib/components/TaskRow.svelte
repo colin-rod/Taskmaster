@@ -13,7 +13,7 @@
   import LabelPicker from '$lib/components/LabelPicker.svelte';
   import InlineEditTitle from '$lib/components/InlineEditTitle.svelte';
   import AssigneePicker from '$lib/components/AssigneePicker.svelte';
-  import { formatDateOnly, formatShortDate } from '$lib/utils/dates.js';
+  import { formatDateOnly, formatShortDate, quickDate, quickDateNextMonth } from '$lib/utils/dates.js';
   import { REMINDER_PRESETS, describeReminderOffset, resolveReminderAt } from '$lib/utils/reminders.js';
   import { getDueDateClass, getPriorityDotClass } from '$lib/utils/design-tokens.js';
   import * as ContextMenu from '$lib/components/ui/context-menu/index.js';
@@ -114,7 +114,8 @@
     if (hrs < 24) return `Completed ${hrs}h ago`;
     const days = Math.round(hrs / 24);
     if (days < 7) return `Completed ${days}d ago`;
-    return `Completed ${formatShortDate(ts)}`;
+    // completed_at is an instant, so show the local date it happened on.
+    return `Completed ${new Date(ts).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
   });
 
   let deleteForm = $state<HTMLFormElement | undefined>(undefined);
@@ -141,20 +142,6 @@
     } else {
       await invalidate('app:tasks');
     }
-  }
-
-  function quickDate(daysFromNow: number): string {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() + daysFromNow);
-    d.setUTCHours(0, 0, 0, 0);
-    return d.toISOString();
-  }
-
-  function quickDateNextMonth(): string {
-    const d = new Date();
-    d.setMonth(d.getMonth() + 1);
-    d.setUTCHours(0, 0, 0, 0);
-    return d.toISOString();
   }
 
   function deleteTaskFromContext() {

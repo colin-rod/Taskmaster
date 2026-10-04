@@ -1,4 +1,5 @@
 import type { Task } from '$lib/types/index.js';
+import { daysFromToday } from './dates.js';
 
 export type SortKey =
 	| 'created_desc'
@@ -68,18 +69,6 @@ export const DUE_ACTIVE_CLASSES: Record<string, string> = {
 	no_date: 'bg-surface-subtle text-foreground-secondary border-border'
 };
 
-function dayBounds() {
-	const now = new Date();
-	const start = new Date(now);
-	start.setHours(0, 0, 0, 0);
-	const end = new Date(now);
-	end.setHours(23, 59, 59, 999);
-	const weekEnd = new Date(now);
-	weekEnd.setDate(weekEnd.getDate() + 7);
-	weekEnd.setHours(23, 59, 59, 999);
-	return { startMs: start.getTime(), endMs: end.getTime(), weekEndMs: weekEnd.getTime() };
-}
-
 export function filterTasks(
 	tasks: Task[],
 	priority: number | null,
@@ -91,25 +80,19 @@ export function filterTasks(
 		result = result.filter((t) => t.priority === priority);
 	}
 
-	if (due !== null) {
-		const { startMs, endMs, weekEndMs } = dayBounds();
-		if (due === 'overdue') {
-			result = result.filter((t) => t.due_at && new Date(t.due_at).getTime() < startMs);
-		} else if (due === 'today') {
-			result = result.filter((t) => {
-				if (!t.due_at) return false;
-				const ms = new Date(t.due_at).getTime();
-				return ms >= startMs && ms <= endMs;
-			});
-		} else if (due === 'this_week') {
-			result = result.filter((t) => {
-				if (!t.due_at) return false;
-				const ms = new Date(t.due_at).getTime();
-				return ms > endMs && ms <= weekEndMs;
-			});
-		} else if (due === 'no_date') {
-			result = result.filter((t) => !t.due_at);
-		}
+	if (due === 'no_date') {
+		result = result.filter((t) => !t.due_at);
+	} else if (due !== null) {
+		// Whole days from the user's local today to each task's due date.
+		const matches: Record<Exclude<DueFilter, 'no_date' | null>, (days: number) => boolean> = {
+			overdue: (days) => days < 0,
+			today: (days) => days === 0,
+			this_week: (days) => days >= 1 && days <= 7
+		};
+		result = result.filter((t) => {
+			const days = daysFromToday(t.due_at);
+			return days !== null && matches[due](days);
+		});
 	}
 
 	return result;

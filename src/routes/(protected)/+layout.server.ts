@@ -2,19 +2,19 @@ import { redirect } from '@sveltejs/kit';
 
 import type { LayoutServerLoad } from './$types';
 import { visibleTo } from '$lib/server/task-visibility.js';
+import { addDaysToKey, dateKeyToIso, todayKey } from '$lib/utils/dates.js';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
   if (!locals.profileId) {
     redirect(303, '/pick-profile');
   }
 
-  const now = new Date();
-  const startOfToday = new Date(now);
-  startOfToday.setHours(0, 0, 0, 0);
-  const endOfToday = new Date(now);
-  endOfToday.setHours(23, 59, 59, 999);
-  const endOfWeek = new Date(startOfToday);
-  endOfWeek.setDate(endOfWeek.getDate() + 7);
+  // Due dates are stored as midnight UTC of a calendar date; "today" is the
+  // profile's local date.
+  const today = todayKey(locals.timeZone);
+  const todayIso = dateKeyToIso(today);
+  const tomorrowIso = dateKeyToIso(addDaysToKey(today, 1));
+  const endOfWeekIso = dateKeyToIso(addDaysToKey(today, 7));
 
   const profileId = locals.profileId;
 
@@ -51,19 +51,19 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
     // Today count (due today, not done/canceled)
     visibleTasks()
-      .gte('due_at', startOfToday.toISOString())
-      .lte('due_at', endOfToday.toISOString())
+      .gte('due_at', todayIso)
+      .lt('due_at', tomorrowIso)
       .not('status', 'in', '(done,canceled)'),
 
     // Overdue count
     visibleTasks()
-      .lt('due_at', startOfToday.toISOString())
+      .lt('due_at', todayIso)
       .not('status', 'in', '(done,canceled)'),
 
     // Upcoming count (next 7 days, excluding today)
     visibleTasks()
-      .gt('due_at', endOfToday.toISOString())
-      .lte('due_at', endOfWeek.toISOString())
+      .gte('due_at', tomorrowIso)
+      .lte('due_at', endOfWeekIso)
       .not('status', 'in', '(done,canceled)'),
 
     // Inbox count (no list)
@@ -111,6 +111,7 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
   return {
     profileId: locals.profileId,
+    timeZone: locals.timeZone,
     profile: profileData ?? null,
     unreadCount: unreadCount ?? 0,
     roleMap,
