@@ -9,7 +9,7 @@
 > (Idea → Upcoming → Outstanding → Done) rather than being rewritten. Link to a
 > `docs/plans/*.md` when one exists so this file stays scannable.
 
-_Last updated: 2026-10-02_
+_Last updated: 2026-10-04_
 
 ---
 
@@ -64,6 +64,11 @@ _Last updated: 2026-10-02_
 
 ## ✅ Recently done (rolling, last ~10)
 
+- [x] **Fixed due-date save from the task sheet (2026-10-04)** — the sheet kept
+  `YYYY-MM-DD` and appended a time suffix, but the date picker writes back a
+  full ISO string, so the PATCH sent a doubled suffix and Postgres rejected
+  `NaN-NaN-NaN…`. The sheet now holds the ISO string, and
+  `PATCH /api/tasks/[id]` rejects an unparseable `due_at` with a 400.
 - [x] **Years on task dates (2026-10-02)** — `formatDateOnly` now includes the
   year ("Fri, Oct 9, 2026"), so Inbox and every other task row, the date picker
   trigger and reminder labels show it. "Today" / "Tomorrow" are unchanged.
@@ -88,4 +93,3 @@ _Last updated: 2026-10-02_
   nav + empty states, `SmartViewShell` + shared nav config, `Button` primitive,
   dark mode, command palette.
 - [x] **Upcoming recurrences on task detail (2026-05-04)**
-- [x] **Archive / delete lists with confirmation dialogs (2026-04-14)**

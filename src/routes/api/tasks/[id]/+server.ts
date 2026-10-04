@@ -111,6 +111,9 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
     if (updates.due_at !== null) {
       // Strip time component — store as midnight UTC
       const d = new Date(updates.due_at as string);
+      if (Number.isNaN(d.getTime())) {
+        return json({ error: 'due_at must be a valid ISO date string' }, { status: 400 });
+      }
       updates.due_at = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}T00:00:00.000Z`;
     }
   }

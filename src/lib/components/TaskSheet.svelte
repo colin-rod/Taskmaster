@@ -187,7 +187,7 @@
       editTitle = task.title;
       editNotes = task.notes || '';
       editPriority = task.priority;
-      editDueAt = task.due_at ? task.due_at.slice(0, 10) : '';
+      editDueAt = task.due_at ?? '';
       editStatus = task.status;
       reminderDate = task.reminder_at ?? '';
       reminderOffset = task.reminder_offset_minutes ?? null;
@@ -275,9 +275,10 @@
 
   function handleDueBlur() {
     if (!isInitialized || !task) return;
-    const newDueAt = editDueAt ? `${editDueAt}T00:00:00.000Z` : null;
+    // editDueAt is bound to DatePickerPopover, which writes a full ISO string.
+    const newDueAt = editDueAt || null;
     const currentDueAt = task.due_at ?? null;
-    if (newDueAt !== currentDueAt) autoSave({ due_at: newDueAt });
+    if (newDueAt?.slice(0, 10) !== currentDueAt?.slice(0, 10)) autoSave({ due_at: newDueAt });
   }
 
   function handleReminderBlur() {
@@ -301,7 +302,7 @@
 
   let resolvedReminderLabel = $derived.by(() => {
     if (reminderOffset == null || !editDueAt) return '';
-    const at = resolveReminderAt(`${editDueAt}T00:00:00.000Z`, reminderOffset);
+    const at = resolveReminderAt(editDueAt, reminderOffset);
     return at ? formatDateOnly(at.toISOString()) : '';
   });
 
