@@ -9,7 +9,7 @@
 > (Idea → Upcoming → Outstanding → Done) rather than being rewritten. Link to a
 > `docs/plans/*.md` when one exists so this file stays scannable.
 
-_Last updated: 2026-10-04_
+_Last updated: 2026-10-05_
 
 ---
 
@@ -21,6 +21,17 @@ _Last updated: 2026-10-04_
   run the two-profile and responsive checks in
   [docs/plans/2026-10-02-task-sharing.md](docs/plans/2026-10-02-task-sharing.md)
   (not yet done against a live database).
+
+- [ ] **Production is stuck on `f9144f2` (2026-08-13).** Every push to `main`
+  since then has been built by Vercel as a *preview*, not promoted to
+  production, so the live site is missing the relative reminders, task sharing,
+  the due-date and local-"today" fixes — and the desktop add-task popup, which
+  is why it still shows as a full-width bottom sheet there (`main` has rendered
+  it as a centred 576px dialog since `03d43ba`; checked in Chrome at 1440 /
+  1024 / 800px on 2026-10-05). Promote the latest `main` deployment and fix the
+  project's production branch / auto-promotion setting so it stops happening —
+  but only after the sharing migration above is confirmed on the production
+  database. Related: the branch-hygiene item below.
 
 ## 🟡 Upcoming (next up)
 
@@ -40,7 +51,6 @@ _Last updated: 2026-10-04_
 - **Packing list** — `origin/claude/add-packing-list-feature-bOyHj` (2026-05-09)
   only adds a packing list to seed data; unmerged. Decide whether it should
   become a real feature (list templates?) or be deleted.
-- add task button popup shows up full width on desktop
 - Create calender feed so that tasks can be seen in other calenar apps.
 - on calender view allow pinch to zoom on web,mobile and double click to zoom on desktop
 - change reminders to be relative to due date in additon to absolute (like current)
