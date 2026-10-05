@@ -14,7 +14,9 @@
     formatMonthLabel,
     formatWeekLabel,
     formatDayLabel,
+    parseDateParam,
   } from '$lib/utils/calendar.js';
+  import { localDateKey } from '$lib/utils/dates.js';
   import { createOnboardingStore } from '$lib/stores/onboarding.js';
 
   let { data }: { data: PageData } = $props();
@@ -29,7 +31,7 @@
   let selectedTaskRole = $state<ListRole>('owner');
   let sheetOpen = $state(false);
 
-  const anchor = $derived(new Date(data.anchorIso));
+  const anchor = $derived(parseDateParam(data.anchorDate, new Date()));
   const view = $derived(data.view as 'month' | 'week' | 'day');
 
   const calendarDays = $derived.by(() => {
@@ -77,7 +79,7 @@
     const dateStr =
       view === 'month'
         ? `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`
-        : d.toISOString().slice(0, 10);
+        : localDateKey(d);
     goto(`/calendar?view=${view}&date=${dateStr}`);
   }
 
@@ -86,7 +88,7 @@
     const dateStr =
       newView === 'month'
         ? `${anchor.getFullYear()}-${String(anchor.getMonth() + 1).padStart(2, '0')}`
-        : anchor.toISOString().slice(0, 10);
+        : localDateKey(anchor);
     goto(`/calendar?view=${newView}&date=${dateStr}`);
   }
 

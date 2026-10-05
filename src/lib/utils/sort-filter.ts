@@ -1,4 +1,5 @@
 import type { Task } from '$lib/types/index.js';
+import { daysFromToday } from './dates.js';
 
 export type SortKey =
 	| 'created_desc'
@@ -6,7 +7,9 @@ export type SortKey =
 	| 'due_asc'
 	| 'due_desc'
 	| 'priority_asc'
-	| 'priority_desc';
+	| 'priority_desc'
+	| 'completed_desc'
+	| 'completed_asc';
 
 export type DueFilter = 'overdue' | 'today' | 'this_week' | 'no_date' | null;
 
@@ -16,8 +19,32 @@ export const SORT_LABELS: Record<SortKey, string> = {
 	due_asc: 'Due date (earliest)',
 	due_desc: 'Due date (latest)',
 	priority_asc: 'Priority (highest)',
-	priority_desc: 'Priority (lowest)'
+	priority_desc: 'Priority (lowest)',
+	completed_desc: 'Completed (newest)',
+	completed_asc: 'Completed (oldest)'
 };
+
+/** Sort options shown on views of active tasks (completion date is meaningless there). */
+export const ACTIVE_SORT_KEYS: SortKey[] = [
+	'created_desc',
+	'created_asc',
+	'due_asc',
+	'due_desc',
+	'priority_asc',
+	'priority_desc'
+];
+
+/** Sort options shown on the Completed view. */
+export const COMPLETED_SORT_KEYS: SortKey[] = [
+	'completed_desc',
+	'completed_asc',
+	'due_asc',
+	'due_desc',
+	'priority_asc',
+	'priority_desc',
+	'created_desc',
+	'created_asc'
+];
 
 export const PRIORITY_LABELS = ['P1', 'P2', 'P3', 'P4'];
 
@@ -42,18 +69,6 @@ export const DUE_ACTIVE_CLASSES: Record<string, string> = {
 	no_date: 'bg-surface-subtle text-foreground-secondary border-border'
 };
 
-function dayBounds() {
-	const now = new Date();
-	const start = new Date(now);
-	start.setHours(0, 0, 0, 0);
-	const end = new Date(now);
-	end.setHours(23, 59, 59, 999);
-	const weekEnd = new Date(now);
-	weekEnd.setDate(weekEnd.getDate() + 7);
-	weekEnd.setHours(23, 59, 59, 999);
-	return { startMs: start.getTime(), endMs: end.getTime(), weekEndMs: weekEnd.getTime() };
-}
-
 export function filterTasks(
 	tasks: Task[],
 	priority: number | null,
@@ -65,25 +80,19 @@ export function filterTasks(
 		result = result.filter((t) => t.priority === priority);
 	}
 
-	if (due !== null) {
-		const { startMs, endMs, weekEndMs } = dayBounds();
-		if (due === 'overdue') {
-			result = result.filter((t) => t.due_at && new Date(t.due_at).getTime() < startMs);
-		} else if (due === 'today') {
-			result = result.filter((t) => {
-				if (!t.due_at) return false;
-				const ms = new Date(t.due_at).getTime();
-				return ms >= startMs && ms <= endMs;
-			});
-		} else if (due === 'this_week') {
-			result = result.filter((t) => {
-				if (!t.due_at) return false;
-				const ms = new Date(t.due_at).getTime();
-				return ms > endMs && ms <= weekEndMs;
-			});
-		} else if (due === 'no_date') {
-			result = result.filter((t) => !t.due_at);
-		}
+	if (due === 'no_date') {
+		result = result.filter((t) => !t.due_at);
+	} else if (due !== null) {
+		// Whole days from the user's local today to each task's due date.
+		const matches: Record<Exclude<DueFilter, 'no_date' | null>, (days: number) => boolean> = {
+			overdue: (days) => days < 0,
+			today: (days) => days === 0,
+			this_week: (days) => days >= 1 && days <= 7
+		};
+		result = result.filter((t) => {
+			const days = daysFromToday(t.due_at);
+			return days !== null && matches[due](days);
+		});
 	}
 
 	return result;
@@ -93,11 +102,22 @@ export function sortTasks(tasks: Task[], key: SortKey): Task[] {
 	const sorted = tasks.map((task) => ({
 		task,
 		createdMs: task.created_at ? new Date(task.created_at).getTime() : 0,
-		dueMs: task.due_at ? new Date(task.due_at).getTime() : Infinity
+		dueMs: task.due_at ? new Date(task.due_at).getTime() : Infinity,
+		completedMs: task.completed_at ? new Date(task.completed_at).getTime() : null
 	}));
 
 	sorted.sort((a, b) => {
 		switch (key) {
+			case 'completed_asc':
+			case 'completed_desc': {
+				// Tasks without a completion timestamp always sink to the bottom.
+				if (a.completedMs === null && b.completedMs === null) return 0;
+				if (a.completedMs === null) return 1;
+				if (b.completedMs === null) return -1;
+				return key === 'completed_asc'
+					? a.completedMs - b.completedMs
+					: b.completedMs - a.completedMs;
+			}
 			case 'created_asc':
 				return a.createdMs - b.createdMs;
 			case 'created_desc':

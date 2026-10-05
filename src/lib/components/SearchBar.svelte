@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from '$app/state';
   import { Search, X } from '@lucide/svelte';
   import type { SearchResult } from '$lib/types/index.js';
 
@@ -49,6 +50,7 @@
 
 <div
   role="search"
+  class="relative"
   onfocusout={(e) => {
     if (!e.currentTarget.contains(e.relatedTarget as Node)) {
       onClose();
@@ -79,7 +81,7 @@
   </div>
 
   {#if query.trim() && (results.length > 0 || loading)}
-    <div class="mt-1 rounded-md border border-border bg-surface shadow-sm overflow-hidden">
+    <div class="absolute left-0 right-0 top-full z-50 mt-1 max-h-[70vh] overflow-y-auto rounded-md border border-border bg-surface shadow-lg">
       {#if loading}
         <div class="px-3 py-2 text-xs text-foreground-muted">Searching…</div>
       {:else}
@@ -96,6 +98,17 @@
               ></div>
             {/if}
             <span class="flex-1 truncate">{result.title}</span>
+            {#if result.owner && result.owner_id !== page.data.profileId}
+              <span
+                class="shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-semibold text-white"
+                style="background-color: {result.owner.avatar_color ?? 'hsl(var(--foreground-muted))'}"
+                role="img"
+                aria-label="Shared by {result.owner.display_name ?? 'someone else'}"
+                title="Shared by {result.owner.display_name ?? 'someone else'}"
+              >
+                {(result.owner.display_name ?? '?').charAt(0).toUpperCase()}
+              </span>
+            {/if}
             {#if result.list}
               <span class="text-xs text-foreground-muted truncate max-w-[80px]">{result.list.name}</span>
             {/if}
@@ -104,6 +117,6 @@
       {/if}
     </div>
   {:else if query.trim() && !loading}
-    <div class="mt-1 px-3 py-2 text-xs text-foreground-muted">No tasks found</div>
+    <div class="absolute left-0 right-0 top-full z-50 mt-1 rounded-md border border-border bg-surface shadow-lg px-3 py-2 text-xs text-foreground-muted">No tasks found</div>
   {/if}
 </div>

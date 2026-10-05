@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { invalidateAll } from '$app/navigation';
   import { Toaster } from 'svelte-sonner';
   import { Settings, Search, Plus, Sun, Moon } from '@lucide/svelte';
   import { theme, toggleTheme } from '$lib/stores/theme.js';
@@ -11,11 +13,22 @@
   import QuickAdd from '$lib/components/QuickAdd.svelte';
   import TaskSheet from '$lib/components/TaskSheet.svelte';
   import * as Sheet from '$lib/components/ui/sheet/index.js';
+  import { Button } from '$lib/components/ui/button/index.js';
   import type { Task } from '$lib/types/index.js';
 
   const { children, data } = $props();
 
   let unreadCount = $derived(data.unreadCount ?? 0);
+
+  // "Today" is the local date, which the server can only work out if it knows
+  // this device's time zone. Report it in a cookie, and reload the data if the
+  // server rendered this page with a different one (first visit, or travel).
+  onMount(() => {
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    if (!tz || tz === data.timeZone) return;
+    document.cookie = `tz=${encodeURIComponent(tz)}; path=/; max-age=31536000; samesite=lax`;
+    invalidateAll();
+  });
 
   let showCreateListDialog = $state(false);
   let searchOpen = $state(false);
@@ -80,17 +93,16 @@
         Taskmaster
       </h1>
       <div class="hidden md:flex items-center gap-1 min-w-0 ml-auto">
-        <div class="flex items-center">
-          <button
-            type="button"
-            class="flex items-center gap-1.5 pl-2.5 pr-3 py-2 rounded-lg text-sm font-medium text-foreground-secondary hover:text-foreground hover:bg-surface-subtle transition-colors"
+        <div class="flex items-center mr-1">
+          <Button
+            size="sm"
+            class="h-9 w-9 p-0 rounded-full"
             onclick={openQuickAdd}
             aria-label="Add task"
+            title="Add task (C)"
           >
             <Plus class="w-4 h-4" />
-            <span>Add task</span>
-            <kbd class="ml-1 hidden lg:inline-flex items-center rounded border border-border bg-surface px-1.5 text-[10px] font-medium text-foreground-muted">C</kbd>
-          </button>
+          </Button>
         </div>
         <div class="flex items-center">
           {#if searchOpen}
@@ -168,12 +180,20 @@
 
 <!-- Unified Quick Add surface — opened from header, FABs, and the `c` shortcut -->
 <Sheet.Root bind:open={quickAddOpen}>
-  <Sheet.Content side="bottom" class="rounded-t-xl px-4 pb-8 pt-4">
-    <Sheet.Header>
-      <Sheet.Title>Add task</Sheet.Title>
-    </Sheet.Header>
-    <div class="mx-auto mt-2 w-full max-w-2xl">
-      <QuickAdd action="/inbox?/createTask" onClose={() => { quickAddOpen = false; }} />
+  <Sheet.Content
+    side="bottom"
+    class="rounded-t-xl px-4 pb-8 pt-4
+           md:inset-x-auto md:start-1/2 md:bottom-auto md:top-1/2
+           md:w-full md:max-w-xl md:-translate-x-1/2 md:-translate-y-1/2
+           md:rounded-xl md:border md:pb-6"
+  >
+    <div class="mx-auto w-full">
+      <Sheet.Header class="p-0">
+        <Sheet.Title>Add task</Sheet.Title>
+      </Sheet.Header>
+      <div class="mt-2">
+        <QuickAdd action="/inbox?/createTask" onClose={() => { quickAddOpen = false; }} />
+      </div>
     </div>
   </Sheet.Content>
 </Sheet.Root>

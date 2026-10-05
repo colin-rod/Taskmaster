@@ -2,6 +2,7 @@
   import { tick } from 'svelte';
   import { enhance } from '$app/forms';
   import { invalidate } from '$app/navigation';
+  import { page } from '$app/state';
   import { toast } from 'svelte-sonner';
   import {
     Sheet,
@@ -15,7 +16,7 @@
   import { formatStatus, PRIORITY_OPTIONS, STATUS_OPTIONS, getDueDateClass } from '$lib/utils/design-tokens.js';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
-  import { Plus, Loader, Check, AlertCircle, X, BarChart2 } from '@lucide/svelte';
+  import { Plus, Loader, Check, AlertCircle, X, BarChart2, FileText, Bell, Repeat, ListChecks, Tag, Users, Lock } from '@lucide/svelte';
   import { slide, scale, fly, fade } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
   import * as AlertDialog from '$lib/components/ui/alert-dialog/index.js';
@@ -25,6 +26,8 @@
   import LabelBadge from '$lib/components/LabelBadge.svelte';
   import { getUpcomingOccurrences } from '$lib/utils/recurrence.js';
   import { formatDateOnly } from '$lib/utils/dates.js';
+  import { REMINDER_PRESETS, resolveReminderAt } from '$lib/utils/reminders.js';
+  import { patchTask } from '$lib/utils/api.js';
 
   let {
     task = $bindable<Task | null>(null),
@@ -46,6 +49,27 @@
       ? members.find(m => m.user_id === task!.assigned_to_user_id)?.profile ?? null
       : null
   );
+  // Sharing. Only the owner can change it; everyone else sees whose task it is.
+  let isMine = $derived(!!task && task.owner_id === page.data.profileId);
+  let shared = $state(false);
+  let savingShared = $state(false);
+  $effect(() => { shared = task?.is_shared ?? false; });
+
+  async function setShared(value: boolean) {
+    if (!task || value === shared || savingShared) return;
+    const previous = shared;
+    shared = value;
+    savingShared = true;
+    const ok = await patchTask(task.id, { is_shared: value }, 'Couldn\'t update sharing — try again.');
+    savingShared = false;
+    if (!ok) {
+      shared = previous;
+      return;
+    }
+    if (task) task.is_shared = value;
+    toast.success(value ? 'Shared with your household' : 'Now private to you');
+  }
+
   let upcomingOccurrences = $derived(
     task?.is_recurring && task?.recurrence_rule && task?.due_at
       ? getUpcomingOccurrences(task.due_at, task.recurrence_rule, 5)
@@ -68,6 +92,7 @@
   let preDragOrder = $state<string[]>([]);
   let reorderFormEl = $state<HTMLFormElement | null>(null);
   let reminderDate = $state('');   // ISO date string (for DatePickerPopover)
+  let reminderOffset = $state<number | null>(null); // minutes before due_at, or null
   let editIsRecurring = $state(false);
   let editRecurrenceRule = $state<RecurrenceRule | null>(null);
 
@@ -162,9 +187,10 @@
       editTitle = task.title;
       editNotes = task.notes || '';
       editPriority = task.priority;
-      editDueAt = task.due_at ? task.due_at.slice(0, 10) : '';
+      editDueAt = task.due_at ?? '';
       editStatus = task.status;
       reminderDate = task.reminder_at ?? '';
+      reminderOffset = task.reminder_offset_minutes ?? null;
       editIsRecurring = task.is_recurring;
       editRecurrenceRule = task.recurrence_rule;
       editProgressCurrent = task.progress_current ?? null;
@@ -177,7 +203,7 @@
       // Progressive disclosure: auto-expand fields that have values, but only when switching to a new task
       if (task.id !== initializedTaskId) {
         notesExpanded     = !!(task.notes && task.notes.trim() !== '');
-        showReminder      = reminderDate !== '';
+        showReminder      = reminderDate !== '' || reminderOffset != null;
         showRecurring     = editIsRecurring;
         showChecklist     = (task.checklist_items?.length ?? 0) > 0;
         showLabels        = (task.labels?.length ?? 0) > 0;
@@ -249,17 +275,36 @@
 
   function handleDueBlur() {
     if (!isInitialized || !task) return;
-    const newDueAt = editDueAt ? `${editDueAt}T00:00:00.000Z` : null;
+    // editDueAt is bound to DatePickerPopover, which writes a full ISO string.
+    const newDueAt = editDueAt || null;
     const currentDueAt = task.due_at ?? null;
-    if (newDueAt !== currentDueAt) autoSave({ due_at: newDueAt });
+    if (newDueAt?.slice(0, 10) !== currentDueAt?.slice(0, 10)) autoSave({ due_at: newDueAt });
   }
 
   function handleReminderBlur() {
     if (!isInitialized || !task) return;
     const newVal = reminderDate ? reminderDate : null;
     const currentVal = task.reminder_at ?? null;
-    if (newVal !== currentVal) autoSave({ reminder_at: newVal });
+    if (newVal === currentVal) return;
+    // An absolute reminder replaces any relative one.
+    if (newVal !== null) reminderOffset = null;
+    autoSave({ reminder_at: newVal, reminder_offset_minutes: null });
   }
+
+  // Toggle a relative preset: picking the active one clears it.
+  function setReminderOffset(minutes: number) {
+    if (!task || isViewer) return;
+    const next = reminderOffset === minutes ? null : minutes;
+    reminderOffset = next;
+    if (next !== null) reminderDate = '';
+    autoSave({ reminder_offset_minutes: next, reminder_at: null });
+  }
+
+  let resolvedReminderLabel = $derived.by(() => {
+    if (reminderOffset == null || !editDueAt) return '';
+    const at = resolveReminderAt(editDueAt, reminderOffset);
+    return at ? formatDateOnly(at.toISOString()) : '';
+  });
 
   let checklistItems = $derived(
     (task?.checklist_items ?? []).slice().sort((a, b) => a.position - b.position)
@@ -485,9 +530,7 @@
       <div class="space-y-4 mt-2">
 
         <!-- Metadata zone (priority, status, due, reminder, recurrence) -->
-        <div class="border-t border-border-divider pt-4 space-y-4">
-
-          <h3 class="section-header-bold mb-1">Details</h3>
+        <div class="pt-2 space-y-4">
 
           <!-- Priority + Status rows -->
           <div class="flex flex-col gap-3">
@@ -555,7 +598,7 @@
                   onclick={() => { notesExpanded = true; }}
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
                   aria-label="Add notes"
-                >+ Notes</button>
+                ><FileText class="w-3 h-3" />+ Notes</button>
               {/if}
               {#if showReminderPill}
                 <button
@@ -564,7 +607,7 @@
                   onclick={() => { showReminder = true; }}
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
                   aria-label="Add a reminder"
-                >+ Reminder</button>
+                ><Bell class="w-3 h-3" />+ Reminder</button>
               {/if}
               {#if showRecurringPill}
                 <button
@@ -573,7 +616,7 @@
                   onclick={() => { showRecurring = true; editIsRecurring = true; }}
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
                   aria-label="Make this task recurring"
-                >+ Recurring</button>
+                ><Repeat class="w-3 h-3" />+ Recurring</button>
               {/if}
               {#if showChecklistPill}
                 <button
@@ -582,7 +625,7 @@
                   onclick={() => { showChecklist = true; }}
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
                   aria-label="Add a checklist"
-                >+ Checklist</button>
+                ><ListChecks class="w-3 h-3" />+ Checklist</button>
               {/if}
               {#if showLabelsPill}
                 <button
@@ -591,7 +634,7 @@
                   onclick={() => { showLabels = true; }}
                   class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-dashed border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40 hover:border-solid transition-all duration-150 min-h-8"
                   aria-label="Add labels"
-                >+ Labels</button>
+                ><Tag class="w-3 h-3" />+ Labels</button>
               {/if}
               {#if showProgressPill}
                 <button
@@ -644,13 +687,45 @@
                     class="text-foreground-muted hover:text-foreground-secondary transition-colors p-1 rounded hover:bg-surface-subtle flex items-center justify-center min-w-11 min-h-11"
                     aria-label="Remove reminder"
                     onclick={() => {
-                      if (reminderDate) autoSave({ reminder_at: null });
-                      reminderDate = ''; showReminder = false;
+                      if (reminderDate || reminderOffset != null) {
+                        autoSave({ reminder_at: null, reminder_offset_minutes: null });
+                      }
+                      reminderDate = ''; reminderOffset = null; showReminder = false;
                     }}
                   ><X class="size-3.5" /></button>
                 {/if}
               </div>
-              <div class="mt-1">
+              <!--
+                Two ways to express a reminder. A relative one tracks the due
+                date when it moves (including across recurrences), so it's
+                offered first and only when there's a due date to anchor to.
+                Picking one clears the other — they're mutually exclusive.
+              -->
+              {#if editDueAt}
+                <div class="mt-1 flex flex-wrap gap-1.5">
+                  {#each REMINDER_PRESETS as preset (preset.minutes)}
+                    <button
+                      type="button"
+                      disabled={isViewer}
+                      aria-pressed={reminderOffset === preset.minutes}
+                      onclick={() => setReminderOffset(preset.minutes)}
+                      class="px-2.5 py-1 rounded-full text-xs font-medium border transition-all duration-150 min-h-8 disabled:opacity-50 {reminderOffset === preset.minutes
+                        ? 'border-primary bg-primary-tint text-primary'
+                        : 'border-border bg-surface/60 text-foreground-secondary hover:bg-primary-tint hover:text-primary hover:border-primary/40'}"
+                    >{preset.label}</button>
+                  {/each}
+                </div>
+                {#if reminderOffset != null && resolvedReminderLabel}
+                  <p class="mt-1.5 text-xs text-foreground-muted">
+                    Fires {resolvedReminderLabel} — follows the due date if it changes.
+                  </p>
+                {/if}
+              {/if}
+
+              <div class="mt-2">
+                {#if editDueAt}
+                  <p class="text-xs text-foreground-muted mb-1">Or pick a specific date</p>
+                {/if}
                 <DatePickerPopover
                   bind:value={reminderDate}
                   mode="controlled"
@@ -685,6 +760,50 @@
 
         </div><!-- end metadata zone -->
 
+      </div>
+
+      <!-- Sharing: Private / Shared. Full-width 44px segments in the mobile
+           bottom sheet, compact in the desktop side sheet. -->
+      <div class="mt-4 pt-4 border-t border-border-divider">
+        <span id="task-sharing-label" class="text-xs font-semibold tracking-widest uppercase text-foreground-secondary">Visibility</span>
+        {#if isMine}
+          <div
+            role="radiogroup"
+            aria-labelledby="task-sharing-label"
+            class="mt-2 grid grid-cols-2 gap-1 rounded-lg bg-surface-subtle p-1 md:inline-grid"
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={!shared}
+              disabled={savingShared}
+              class="min-h-11 md:min-h-0 md:py-1.5 px-3 inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary {!shared ? 'bg-surface text-foreground shadow-sm' : 'text-foreground-secondary hover:text-foreground'}"
+              onclick={() => setShared(false)}
+            >
+              <Lock class="size-3.5" />
+              Private
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={shared}
+              disabled={savingShared}
+              class="min-h-11 md:min-h-0 md:py-1.5 px-3 inline-flex items-center justify-center gap-1.5 rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary {shared ? 'bg-surface text-primary shadow-sm' : 'text-foreground-secondary hover:text-foreground'}"
+              onclick={() => setShared(true)}
+            >
+              <Users class="size-3.5" />
+              Shared
+            </button>
+          </div>
+          <p class="mt-1.5 text-xs text-foreground-muted">
+            {shared ? 'Everyone in your household can see and edit this task.' : 'Only you can see this task.'}
+          </p>
+        {:else}
+          <p class="mt-1.5 text-sm text-foreground-secondary flex items-center gap-1.5">
+            <Users class="size-3.5 shrink-0" />
+            {shared ? 'Shared' : 'Assigned to you'} by {task.owner?.display_name ?? 'someone else'}
+          </p>
+        {/if}
       </div>
 
       <!-- Assign to (only for shared lists with >1 member, hidden for viewers) -->

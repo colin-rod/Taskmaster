@@ -48,12 +48,23 @@ export interface Task {
   priority: TaskPriority;
   due_at: string | null;
   reminder_at: string | null;
+  /**
+   * Minutes before due_at to fire the reminder (0 = on the due date).
+   * Resolved at send time, so it follows due_at when that moves.
+   * Mutually exclusive with reminder_at.
+   */
+  reminder_offset_minutes: number | null;
   timezone: string | null;
   is_recurring: boolean;
   recurrence_rule: RecurrenceRule | null;
   last_completed_at: string | null;
   completed_at: string | null;
   assigned_to_user_id: string | null;
+  /**
+   * Shared with the whole household. Private tasks are visible only to their
+   * owner and assignee (see src/lib/server/task-visibility.ts).
+   */
+  is_shared: boolean;
   progress_current: number | null;
   progress_total: number | null;
   sort_order: number;
@@ -63,6 +74,7 @@ export interface Task {
   list?: TaskList;
   checklist_items?: ChecklistItem[];
   assignee?: Profile;
+  owner?: Pick<Profile, 'id' | 'display_name' | 'avatar_color'>;
   labels?: Label[];
 }
 
@@ -120,6 +132,9 @@ export interface SearchResult {
   status: TaskStatus;
   due_at: string | null;
   list: { name: string; color: string | null } | null;
+  owner_id?: string;
+  is_shared?: boolean;
+  owner?: Pick<Profile, 'id' | 'display_name' | 'avatar_color'> | null;
 }
 
 // Label colors for auto-assignment

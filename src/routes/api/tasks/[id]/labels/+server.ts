@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import type { RequestHandler } from './$types';
+import { getAccessibleTask } from '$lib/server/task-visibility.js';
 
 export const POST: RequestHandler = async ({ params, request, locals }) => {
   if (!locals.profileId) {
@@ -15,6 +16,10 @@ export const POST: RequestHandler = async ({ params, request, locals }) => {
 
   if (!body.label_id) {
     return json({ error: 'label_id is required' }, { status: 400 });
+  }
+
+  if (!(await getAccessibleTask(locals.supabase, params.id, locals.profileId))) {
+    return json({ error: 'Task not found' }, { status: 404 });
   }
 
   const { error } = await locals.supabase
@@ -42,6 +47,10 @@ export const DELETE: RequestHandler = async ({ params, request, locals }) => {
 
   if (!body.label_id) {
     return json({ error: 'label_id is required' }, { status: 400 });
+  }
+
+  if (!(await getAccessibleTask(locals.supabase, params.id, locals.profileId))) {
+    return json({ error: 'Task not found' }, { status: 404 });
   }
 
   const { error } = await locals.supabase

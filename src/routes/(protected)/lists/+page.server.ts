@@ -1,14 +1,18 @@
 import { fail } from '@sveltejs/kit';
 
 import type { Actions, PageServerLoad } from './$types';
+import { getListRole } from '$lib/server/task-visibility.js';
 
-export const load: PageServerLoad = async ({ locals: { supabase } }) => {
+export const load: PageServerLoad = async ({ locals: { supabase, profileId } }) => {
   const { data: lists } = await supabase
     .from('task_lists')
     .select('*, members:task_list_members(user_id, role, profile:profiles(email, display_name))')
     .order('sort_order', { ascending: true });
 
-  const all = lists ?? [];
+  // Lists are membership-scoped: only the ones this profile belongs to.
+  const all = (lists ?? []).filter((l) =>
+    (l.members as { user_id: string }[] | null)?.some((m) => m.user_id === profileId)
+  );
 
   return {
     lists: all.filter((l) => !l.archived_at),
@@ -45,7 +49,7 @@ export const actions: Actions = {
     return { success: true };
   },
 
-  updateList: async ({ request, locals: { supabase } }) => {
+  updateList: async ({ request, locals: { supabase, profileId } }) => {
     const formData = await request.formData();
     const id = formData.get('id')?.toString();
     const name = formData.get('name')?.toString()?.trim();
@@ -54,6 +58,10 @@ export const actions: Actions = {
 
     if (!id || !name) {
       return fail(400, { error: 'List ID and name are required' });
+    }
+
+    if ((await getListRole(supabase, id, profileId!)) !== 'owner') {
+      return fail(403, { error: 'Only the list owner can do that' });
     }
 
     const { error } = await supabase
@@ -68,12 +76,16 @@ export const actions: Actions = {
     return { success: true };
   },
 
-  archiveList: async ({ request, locals: { supabase } }) => {
+  archiveList: async ({ request, locals: { supabase, profileId } }) => {
     const formData = await request.formData();
     const id = formData.get('id')?.toString();
 
     if (!id) {
       return fail(400, { error: 'List ID is required' });
+    }
+
+    if ((await getListRole(supabase, id, profileId!)) !== 'owner') {
+      return fail(403, { error: 'Only the list owner can do that' });
     }
 
     const { error } = await supabase
@@ -88,12 +100,16 @@ export const actions: Actions = {
     return { success: true };
   },
 
-  unarchiveList: async ({ request, locals: { supabase } }) => {
+  unarchiveList: async ({ request, locals: { supabase, profileId } }) => {
     const formData = await request.formData();
     const id = formData.get('id')?.toString();
 
     if (!id) {
       return fail(400, { error: 'List ID is required' });
+    }
+
+    if ((await getListRole(supabase, id, profileId!)) !== 'owner') {
+      return fail(403, { error: 'Only the list owner can do that' });
     }
 
     const { error } = await supabase
@@ -108,12 +124,16 @@ export const actions: Actions = {
     return { success: true };
   },
 
-  deleteList: async ({ request, locals: { supabase } }) => {
+  deleteList: async ({ request, locals: { supabase, profileId } }) => {
     const formData = await request.formData();
     const id = formData.get('id')?.toString();
 
     if (!id) {
       return fail(400, { error: 'List ID is required' });
+    }
+
+    if ((await getListRole(supabase, id, profileId!)) !== 'owner') {
+      return fail(403, { error: 'Only the list owner can do that' });
     }
 
     // Move tasks to inbox (list_id = null) before deleting

@@ -8,7 +8,7 @@
   import { createSortFilterState } from '$lib/stores/sort-filter.svelte.js';
   import { fly } from 'svelte/transition';
   import { cubicOut } from 'svelte/easing';
-  import { CalendarDays, Layers } from '@lucide/svelte';
+  import { Layers } from '@lucide/svelte';
   import { getListIcon } from '$lib/utils/icons.js';
 
   const motionDuration = typeof window !== 'undefined' && window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 200;
@@ -67,14 +67,6 @@
         <Layers class="w-3.5 h-3.5" />
         <span class="hidden sm:inline">Lists</span>
       </button>
-      <a
-        href="/calendar"
-        class="flex items-center gap-1.5 text-xs px-3 py-2 rounded-md border border-border text-foreground-secondary hover:border-foreground hover:text-foreground transition-colors"
-        aria-label="Open calendar view"
-      >
-        <CalendarDays class="w-3.5 h-3.5" />
-        <span class="hidden sm:inline">Calendar</span>
-      </a>
     {/snippet}
   </SortFilterAccordion>
 

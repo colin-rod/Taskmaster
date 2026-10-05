@@ -1,5 +1,6 @@
 import { json } from '@sveltejs/kit';
 import { flattenTaskLabels } from '$lib/server/task-actions.js';
+import { getAccessibleTask, getListRole, isTaskVisibleTo } from '$lib/server/task-visibility.js';
 import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ params, locals }) => {
@@ -9,11 +10,12 @@ export const GET: RequestHandler = async ({ params, locals }) => {
 
   const { data: task, error: err } = await locals.supabase
     .from('tasks')
-    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name, avatar_color), list:task_lists(id, name, color, owner_id, sort_order, created_at, updated_at), task_labels(label:labels(*))')
+    .select('*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name, avatar_color), owner:profiles!owner_id(id, display_name, avatar_color), list:task_lists(id, name, color, owner_id, sort_order, created_at, updated_at), task_labels(label:labels(*))')
     .eq('id', params.id)
     .single();
 
-  if (err || !task) {
+  // A task the profile can't see is reported the same as a missing one.
+  if (err || !task || !isTaskVisibleTo(task, locals.profileId)) {
     return json({ error: 'Task not found' }, { status: 404 });
   }
 
@@ -21,7 +23,10 @@ export const GET: RequestHandler = async ({ params, locals }) => {
   return json({ task });
 };
 
-const ALLOWED_FIELDS = new Set(['title', 'priority', 'due_at', 'reminder_at', 'assigned_to_user_id', 'status', 'notes', 'is_recurring', 'recurrence_rule', 'progress_current', 'progress_total', 'list_id']);
+const ALLOWED_FIELDS = new Set(['title', 'priority', 'due_at', 'reminder_at', 'reminder_offset_minutes', 'assigned_to_user_id', 'status', 'notes', 'is_recurring', 'recurrence_rule', 'progress_current', 'progress_total', 'list_id', 'is_shared']);
+
+// Matches the tasks_reminder_offset_valid check constraint (1 year in minutes).
+const MAX_REMINDER_OFFSET_MINUTES = 527040;
 
 export const PATCH: RequestHandler = async ({ params, request, locals }) => {
   if (!locals.profileId) {
@@ -31,6 +36,11 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
   const { id } = params;
   if (!id) {
     return json({ error: 'Task ID is required' }, { status: 400 });
+  }
+
+  const existingTask = await getAccessibleTask(locals.supabase, id, locals.profileId);
+  if (!existingTask) {
+    return json({ error: 'Task not found' }, { status: 404 });
   }
 
   let body: Record<string, unknown>;
@@ -53,6 +63,17 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
   }
 
   // Validate specific fields
+  if ('is_shared' in updates) {
+    if (typeof updates.is_shared !== 'boolean') {
+      return json({ error: 'is_shared must be a boolean' }, { status: 400 });
+    }
+    // Sharing is the owner's call: someone a task was shared with or assigned
+    // to can work on it, but can't change who else sees it.
+    if (existingTask.owner_id !== locals.profileId) {
+      return json({ error: 'Only the task owner can change sharing' }, { status: 403 });
+    }
+  }
+
   if ('title' in updates && (typeof updates.title !== 'string' || !updates.title.trim())) {
     return json({ error: 'Title must be a non-empty string' }, { status: 400 });
   }
@@ -90,8 +111,66 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
     if (updates.due_at !== null) {
       // Strip time component — store as midnight UTC
       const d = new Date(updates.due_at as string);
+      if (Number.isNaN(d.getTime())) {
+        return json({ error: 'due_at must be a valid ISO date string' }, { status: 400 });
+      }
       updates.due_at = `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}T00:00:00.000Z`;
     }
+  }
+
+  // Reminders come in two mutually exclusive flavours: an absolute instant
+  // (reminder_at) or an offset before the due date (reminder_offset_minutes),
+  // which is resolved at send time. Setting either one clears the other, both
+  // so the DB check constraint is satisfied and so switching kinds in the UI
+  // doesn't leave a stale reminder of the other kind behind.
+  if ('reminder_offset_minutes' in updates) {
+    const raw = updates.reminder_offset_minutes;
+    if (raw === null) {
+      updates.reminder_offset_minutes = null;
+    } else {
+      const offset = Number(raw);
+      if (!Number.isInteger(offset) || offset < 0 || offset > MAX_REMINDER_OFFSET_MINUTES) {
+        return json(
+          { error: `reminder_offset_minutes must be an integer between 0 and ${MAX_REMINDER_OFFSET_MINUTES}, or null` },
+          { status: 400 }
+        );
+      }
+      updates.reminder_offset_minutes = offset;
+
+      // A relative reminder needs something to be relative to. The due date is
+      // either being set in this same request or already on the row.
+      let dueAt = 'due_at' in updates ? (updates.due_at as string | null) : undefined;
+      if (dueAt === undefined) {
+        const { data: existing } = await locals.supabase
+          .from('tasks')
+          .select('due_at')
+          .eq('id', id)
+          .single();
+        dueAt = existing?.due_at ?? null;
+      }
+      if (!dueAt) {
+        return json({ error: 'A relative reminder requires the task to have a due date' }, { status: 400 });
+      }
+
+      updates.reminder_at = null;
+    }
+  }
+
+  if ('reminder_at' in updates) {
+    if (updates.reminder_at !== null && typeof updates.reminder_at !== 'string') {
+      return json({ error: 'reminder_at must be an ISO string or null' }, { status: 400 });
+    }
+    if (updates.reminder_at !== null) {
+      if (Number.isNaN(new Date(updates.reminder_at as string).getTime())) {
+        return json({ error: 'reminder_at must be a valid ISO date string' }, { status: 400 });
+      }
+      updates.reminder_offset_minutes = null;
+    }
+  }
+
+  // Clearing the due date strands any relative reminder attached to it.
+  if ('due_at' in updates && updates.due_at === null) {
+    updates.reminder_offset_minutes = null;
   }
 
   if ('progress_current' in updates) {
@@ -154,6 +233,14 @@ export const PATCH: RequestHandler = async ({ params, request, locals }) => {
     const listId = updates.list_id;
     if (listId !== null && (typeof listId !== 'string' || !/^[0-9a-f-]{36}$/i.test(listId))) {
       return json({ error: 'list_id must be a valid UUID or null' }, { status: 400 });
+    }
+    // Lists are membership-scoped, so a task can only be moved into a list
+    // the profile can add tasks to.
+    if (typeof listId === 'string') {
+      const role = await getListRole(locals.supabase, listId, locals.profileId);
+      if (role !== 'owner' && role !== 'editor') {
+        return json({ error: 'List not found' }, { status: 404 });
+      }
     }
   }
 

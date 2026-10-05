@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { page } from '$app/state';
   import { goto } from '$app/navigation';
   import * as Dialog from '$lib/components/ui/dialog/index.js';
   import { Search, Plus, Sun, Moon, CornerDownLeft } from '@lucide/svelte';
@@ -200,6 +201,17 @@
                 <span class="w-2 h-2 rounded-full shrink-0 bg-foreground-muted/40"></span>
               {/if}
               <span class="flex-1 truncate text-foreground">{row.task.title}</span>
+              {#if row.task.owner && row.task.owner_id !== page.data.profileId}
+                <span
+                  class="shrink-0 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-semibold text-white"
+                  style="background-color: {row.task.owner.avatar_color ?? 'hsl(var(--foreground-muted))'}"
+                  role="img"
+                  aria-label="Shared by {row.task.owner.display_name ?? 'someone else'}"
+                  title="Shared by {row.task.owner.display_name ?? 'someone else'}"
+                >
+                  {(row.task.owner.display_name ?? '?').charAt(0).toUpperCase()}
+                </span>
+              {/if}
               {#if row.task.list}
                 <span class="text-xs text-foreground-muted truncate max-w-[100px]">{row.task.list.name}</span>
               {/if}

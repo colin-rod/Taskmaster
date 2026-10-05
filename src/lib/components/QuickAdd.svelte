@@ -5,10 +5,10 @@
   import { PRIORITY_OPTIONS } from '$lib/utils/design-tokens.js';
   import DatePickerPopover from '$lib/components/DatePickerPopover.svelte';
   import RecurrenceEditor from '$lib/components/RecurrenceEditor.svelte';
-  import { Bell, Tag, X } from '@lucide/svelte';
+  import { Bell, Tag, X, Users, Lock } from '@lucide/svelte';
   import type { RecurrenceRule, Label } from '$lib/types/index.js';
 
-  let { action = '?/createTask', compact = false, listId = null as string | null, onClose }: { action?: string; compact?: boolean; listId?: string | null; onClose?: () => void } = $props();
+  let { action = '?/createTask', compact = false, listId = null as string | null, defaultShared = false, onClose }: { action?: string; compact?: boolean; listId?: string | null; defaultShared?: boolean; onClose?: () => void } = $props();
 
   let titleInput = $state<HTMLInputElement | null>(null);
 
@@ -42,6 +42,12 @@
   $effect(() => {
     if (!dueAt) reminderEnabled = false;
   });
+
+  // Sharing: private to me, or visible to the whole household. Starts from the
+  // context default (joint lists default to shared) and resets to it after add.
+  // svelte-ignore state_referenced_locally
+  let shared = $state(defaultShared);
+  $effect(() => { shared = defaultShared; });
 
   // Label state
   let labelPopoverOpen = $state(false);
@@ -115,6 +121,7 @@
         reminderEnabled = false;
         selectedLabels = [];
         labelPopoverOpen = false;
+        shared = defaultShared;
         toast.success('Task added');
         onClose?.();
         justAdded = true;
@@ -145,9 +152,10 @@
     <input type="hidden" name="is_recurring" value={isRecurring ? 'true' : ''} />
     <input type="hidden" name="recurrence_rule" value={recurrenceRule ? JSON.stringify(recurrenceRule) : ''} />
     <input type="hidden" name="reminder_at" value={reminderAt ?? ''} />
+    <input type="hidden" name="is_shared" value={shared ? 'true' : 'false'} />
 
     <div class="flex items-center justify-between gap-2">
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2 min-w-0">
         <!-- Date picker -->
         <DatePickerPopover bind:value={dueAt} mode="controlled" disabled={creating} />
 
@@ -246,6 +254,26 @@
             {/if}
           </Popover.Content>
         </Popover.Root>
+
+        <!-- Share toggle. The ::before pads the touch target to ~44px tall
+             without making the control row taller. -->
+        <button
+          type="button"
+          class="relative inline-flex items-center gap-1 text-xs font-medium px-1.5 py-0.5 rounded transition-colors before:absolute before:inset-x-0 before:-inset-y-3 before:content-[''] {shared ? 'bg-primary/10 text-primary' : 'text-foreground-secondary hover:text-foreground'}"
+          title={shared ? 'Shared with your household' : 'Private to you'}
+          aria-pressed={shared}
+          aria-label={shared ? 'Shared with your household. Make private' : 'Private to you. Share with your household'}
+          disabled={creating}
+          onclick={() => { shared = !shared; }}
+        >
+          {#if shared}
+            <Users class="size-3.5" />
+            <span>Shared</span>
+          {:else}
+            <Lock class="size-3.5" />
+            <span>Private</span>
+          {/if}
+        </button>
       </div>
 
       <button

@@ -5,6 +5,7 @@ declare global {
     interface Locals {
       supabase: SupabaseClient;
       profileId: string | null;
+      timeZone: string;
     }
   }
 }

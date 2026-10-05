@@ -3,6 +3,7 @@ import type { RequestHandler } from './$types';
 import { env } from '$env/dynamic/private';
 import { env as publicEnv } from '$env/dynamic/public';
 import { getSupabaseAdmin } from '$lib/server/supabase-admin.js';
+import { resolveReminderAt } from '$lib/utils/reminders.js';
 import webPush from 'web-push';
 
 export const GET: RequestHandler = async ({ request }) => {
@@ -16,8 +17,11 @@ export const GET: RequestHandler = async ({ request }) => {
 
   const now = new Date().toISOString();
 
-  // Fetch tasks with due reminders that haven't been completed
-  const { data: tasks } = await supabaseAdmin
+  // Reminders come in two kinds and are collected separately.
+  //
+  // Absolute (reminder_at): the stored instant is the send time, so the
+  // due-now filter is a plain column comparison.
+  const { data: absoluteTasks } = await supabaseAdmin
     .from('tasks')
     .select('id, title, reminder_at, assigned_to_user_id, owner_id')
     .lte('reminder_at', now)
@@ -25,20 +29,55 @@ export const GET: RequestHandler = async ({ request }) => {
     .neq('status', 'done')
     .neq('status', 'canceled');
 
-  if (!tasks || tasks.length === 0) {
+  // Relative (reminder_offset_minutes): the send time is due_at minus the
+  // offset, which Postgres can't filter on through PostgREST without a
+  // generated column. Instead fetch the candidates whose due date is near
+  // enough that their offset could have elapsed, then resolve in JS below.
+  // The window is the largest offset the constraint allows (1 year), bounded
+  // on the far side so long-past due dates don't accumulate in the scan.
+  const horizon = new Date();
+  horizon.setUTCFullYear(horizon.getUTCFullYear() + 1);
+
+  const { data: relativeCandidates } = await supabaseAdmin
+    .from('tasks')
+    .select('id, title, due_at, reminder_offset_minutes, assigned_to_user_id, owner_id')
+    .not('reminder_offset_minutes', 'is', null)
+    .not('due_at', 'is', null)
+    .lte('due_at', horizon.toISOString())
+    .neq('status', 'done')
+    .neq('status', 'canceled');
+
+  // Normalise both kinds to {task, scheduledAt} so the delivery loop below
+  // doesn't care which kind it's sending.
+  const pending: { task: { id: string; title: string; assigned_to_user_id: string | null; owner_id: string }; scheduledAt: string }[] = [];
+
+  for (const task of absoluteTasks ?? []) {
+    pending.push({ task, scheduledAt: task.reminder_at });
+  }
+
+  for (const task of relativeCandidates ?? []) {
+    const at = resolveReminderAt(task.due_at, task.reminder_offset_minutes);
+    if (!at) continue;
+    if (at.toISOString() > now) continue; // not due yet
+    pending.push({ task, scheduledAt: at.toISOString() });
+  }
+
+  if (pending.length === 0) {
     return json({ sent: 0 });
   }
 
   let sentCount = 0;
 
-  for (const task of tasks) {
-    // Idempotency: skip if notification already exists for this reminder
+  for (const { task, scheduledAt } of pending) {
+    // Idempotency: skip if a notification already exists for this reminder.
+    // For relative reminders scheduledAt is derived from due_at, so moving the
+    // due date yields a new key and correctly re-arms the reminder.
     const { data: existing } = await supabaseAdmin
       .from('notifications')
       .select('id')
       .eq('task_id', task.id)
       .eq('type', 'reminder')
-      .eq('scheduled_at', task.reminder_at)
+      .eq('scheduled_at', scheduledAt)
       .limit(1);
 
     if (existing && existing.length > 0) continue;
@@ -51,7 +90,7 @@ export const GET: RequestHandler = async ({ request }) => {
       user_id: userId,
       task_id: task.id,
       type: 'reminder',
-      scheduled_at: task.reminder_at,
+      scheduled_at: scheduledAt,
       delivered_at: now,
       is_read: false,
     });

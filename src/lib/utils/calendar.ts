@@ -1,4 +1,5 @@
 import type { Task } from '$lib/types/index.js';
+import { localDateKey, todayKey } from './dates.js';
 
 export interface CalendarDay {
   isoDate: string;
@@ -8,13 +9,12 @@ export interface CalendarDay {
   dueTasks: Task[];
 }
 
-const todayIso = (): string => {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-};
+const todayIso = (): string => todayKey();
 
 function makeDay(date: Date, currentMonth: number, todayStr: string): CalendarDay {
-  const isoDate = date.toISOString().slice(0, 10);
+  // Cells are local-midnight Dates, so the key must be the local date too —
+  // toISOString() would give the previous day east of UTC.
+  const isoDate = localDateKey(date);
   return {
     isoDate,
     date,

@@ -2,12 +2,14 @@ import { fail } from '@sveltejs/kit';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { RecurrenceRule } from '$lib/types/index.js';
 import { computeNextDue } from '$lib/utils/recurrence.js';
+import { dateKeyToIso, todayKey } from '$lib/utils/dates.js';
+import { getAccessibleTask } from './task-visibility.js';
 
 // =============================================================================
 // Task Select Helpers
 // =============================================================================
 
-export const TASK_SELECT = '*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name), task_labels(label:labels(*))';
+export const TASK_SELECT = '*, checklist_items(*), assignee:profiles!assigned_to_user_id(id, email, display_name), owner:profiles!owner_id(id, display_name, avatar_color), task_labels(label:labels(*))';
 
 export function flattenTaskLabels<T extends Record<string, unknown>>(tasks: T[]): T[] {
   for (const task of tasks) {
@@ -40,14 +42,40 @@ export async function buildRoleMap(
 }
 
 // =============================================================================
+// Access Guards
+//
+// Every action below checks the task against the visibility rule first. A task
+// the profile can't see is reported as not found, the same as a missing one.
+// =============================================================================
+
+const NOT_FOUND = { error: 'Task not found' };
+
+/** Task id owning a checklist item, if the profile can see that task. */
+async function getAccessibleChecklistTaskId(
+  supabase: SupabaseClient,
+  itemId: string,
+  profileId: string
+): Promise<string | null> {
+  const { data: item } = await supabase
+    .from('checklist_items')
+    .select('task_id')
+    .eq('id', itemId)
+    .maybeSingle();
+
+  if (!item) return null;
+  return (await getAccessibleTask(supabase, item.task_id, profileId)) ? item.task_id : null;
+}
+
+// =============================================================================
 // Checklist Item Actions
 // =============================================================================
 
-export async function addChecklistItem(formData: FormData, supabase: SupabaseClient) {
+export async function addChecklistItem(formData: FormData, supabase: SupabaseClient, profileId: string) {
   const task_id = formData.get('task_id')?.toString();
   const label = formData.get('label')?.toString()?.trim();
 
   if (!task_id || !label) return fail(400, { error: 'Task ID and label are required' });
+  if (!(await getAccessibleTask(supabase, task_id, profileId))) return fail(404, NOT_FOUND);
 
   // Get next position
   const { data: existing } = await supabase
@@ -67,12 +95,15 @@ export async function addChecklistItem(formData: FormData, supabase: SupabaseCli
   return { success: true };
 }
 
-export async function toggleChecklistItem(formData: FormData, supabase: SupabaseClient) {
+export async function toggleChecklistItem(formData: FormData, supabase: SupabaseClient, profileId: string, timeZone: string) {
   const id = formData.get('id')?.toString();
   const task_id = formData.get('task_id')?.toString();
   const is_completed = formData.get('is_completed') === 'true';
 
   if (!id || !task_id) return fail(400, { error: 'Item ID and task ID are required' });
+  // The item must belong to the task named in the form, so the status updates
+  // below can't be pointed at a task the profile can't see.
+  if ((await getAccessibleChecklistTaskId(supabase, id, profileId)) !== task_id) return fail(404, NOT_FOUND);
 
   const newCompleted = !is_completed;
 
@@ -104,7 +135,7 @@ export async function toggleChecklistItem(formData: FormData, supabase: Supabase
     // Auto-complete: if all items are now completed, mark the task as done
     if (items && items.length > 0 && items.every((item) => item.is_completed)) {
       if (task?.is_recurring && task.recurrence_rule) {
-        const result = await rollForwardRecurringTask(task_id, task, supabase);
+        const result = await rollForwardRecurringTask(task_id, task, supabase, timeZone);
         if (result.rolled) return { success: true, rolled: true };
       } else {
         await supabase
@@ -119,11 +150,12 @@ export async function toggleChecklistItem(formData: FormData, supabase: Supabase
   return { success: true };
 }
 
-export async function editChecklistItem(formData: FormData, supabase: SupabaseClient) {
+export async function editChecklistItem(formData: FormData, supabase: SupabaseClient, profileId: string) {
   const id = formData.get('id')?.toString();
   const label = formData.get('label')?.toString()?.trim();
 
   if (!id || !label) return fail(400, { error: 'ID and label are required' });
+  if (!(await getAccessibleChecklistTaskId(supabase, id, profileId))) return fail(404, NOT_FOUND);
 
   const { error } = await supabase.from('checklist_items').update({ label }).eq('id', id);
 
@@ -131,10 +163,11 @@ export async function editChecklistItem(formData: FormData, supabase: SupabaseCl
   return { success: true };
 }
 
-export async function deleteChecklistItem(formData: FormData, supabase: SupabaseClient) {
+export async function deleteChecklistItem(formData: FormData, supabase: SupabaseClient, profileId: string) {
   const id = formData.get('id')?.toString();
 
   if (!id) return fail(400, { error: 'Item ID is required' });
+  if (!(await getAccessibleChecklistTaskId(supabase, id, profileId))) return fail(404, NOT_FOUND);
 
   const { error } = await supabase.from('checklist_items').delete().eq('id', id);
 
@@ -142,12 +175,18 @@ export async function deleteChecklistItem(formData: FormData, supabase: Supabase
   return { success: true };
 }
 
-export async function reorderChecklistItems(formData: FormData, supabase: SupabaseClient) {
+export async function reorderChecklistItems(formData: FormData, supabase: SupabaseClient, profileId: string) {
   const itemIds = formData.get('item_ids')?.toString();
 
   if (!itemIds) return fail(400, { error: 'Item IDs are required' });
 
   const ids = JSON.parse(itemIds) as string[];
+
+  // All items belong to one task in practice; check each distinct task once.
+  const { data: owners } = await supabase.from('checklist_items').select('task_id').in('id', ids);
+  for (const taskId of new Set((owners ?? []).map((o) => o.task_id))) {
+    if (!(await getAccessibleTask(supabase, taskId, profileId))) return fail(404, NOT_FOUND);
+  }
 
   // Update positions in order
   for (let i = 0; i < ids.length; i++) {
@@ -169,15 +208,18 @@ export async function reorderChecklistItems(formData: FormData, supabase: Supaba
 async function rollForwardRecurringTask(
   taskId: string,
   task: { due_at: string | null; recurrence_rule: RecurrenceRule },
-  supabase: SupabaseClient
+  supabase: SupabaseClient,
+  timeZone: string
 ): Promise<{ rolled: boolean }> {
   const scheduleType = task.recurrence_rule.schedule_type ?? 'due_date';
+  // "Completed today" is the profile's local date, not the server's UTC date.
+  const today = new Date(dateKeyToIso(todayKey(timeZone)));
   const baseDate =
     scheduleType === 'completion_date'
-      ? new Date()
+      ? today
       : task.due_at
         ? new Date(task.due_at)
-        : new Date();
+        : today;
   const nextDue = computeNextDue(baseDate, task.recurrence_rule);
 
   if (!nextDue) {
@@ -206,6 +248,10 @@ async function rollForwardRecurringTask(
     completed_at: null,
     last_completed_at: new Date().toISOString(),
     due_at: nextDue.toISOString(),
+    // Absolute reminders belonged to the occurrence that just completed, so
+    // they're dropped. A relative reminder (reminder_offset_minutes) is
+    // deliberately left in place: it re-resolves against the new due date,
+    // which is exactly why offsets exist.
     reminder_at: null,
     recurrence_rule: updatedRule,
   }).eq('id', taskId);
@@ -224,11 +270,12 @@ async function rollForwardRecurringTask(
 // Task Actions
 // =============================================================================
 
-export async function toggleTask(formData: FormData, supabase: SupabaseClient) {
+export async function toggleTask(formData: FormData, supabase: SupabaseClient, profileId: string, timeZone: string) {
   const id = formData.get('id')?.toString();
   const currentStatus = formData.get('current_status')?.toString();
 
   if (!id) return fail(400, { error: 'Task ID is required' });
+  if (!(await getAccessibleTask(supabase, id, profileId))) return fail(404, NOT_FOUND);
 
   if (currentStatus !== 'done') {
     // Completing the task — check if recurring
@@ -239,7 +286,7 @@ export async function toggleTask(formData: FormData, supabase: SupabaseClient) {
       .single();
 
     if (task?.is_recurring && task.recurrence_rule) {
-      const result = await rollForwardRecurringTask(id, task, supabase);
+      const result = await rollForwardRecurringTask(id, task, supabase, timeZone);
       if (result.rolled) {
         return { success: true, rolled: true };
       }
@@ -263,7 +310,7 @@ export async function toggleTask(formData: FormData, supabase: SupabaseClient) {
   return { success: true };
 }
 
-export async function updateTask(formData: FormData, supabase: SupabaseClient) {
+export async function updateTask(formData: FormData, supabase: SupabaseClient, profileId: string, timeZone: string) {
   const id = formData.get('id')?.toString();
   const title = formData.get('title')?.toString()?.trim();
   const notes = formData.get('notes')?.toString() || null;
@@ -277,7 +324,23 @@ export async function updateTask(formData: FormData, supabase: SupabaseClient) {
   const reminder_at_raw = formData.get('reminder_at')?.toString() || null;
   const reminder_at = reminder_at_raw ? new Date(reminder_at_raw).toISOString() : null;
 
+  // Relative reminder (minutes before due_at). Mutually exclusive with
+  // reminder_at, and meaningless without a due date — the DB constraint
+  // enforces both, so normalise here rather than letting the write fail.
+  const reminder_offset_raw = formData.get('reminder_offset_minutes')?.toString();
+  const reminder_offset_parsed =
+    reminder_offset_raw != null && reminder_offset_raw !== '' ? Number(reminder_offset_raw) : null;
+  const reminder_offset_minutes =
+    reminder_at === null &&
+    due_at !== null &&
+    reminder_offset_parsed !== null &&
+    Number.isInteger(reminder_offset_parsed) &&
+    reminder_offset_parsed >= 0
+      ? reminder_offset_parsed
+      : null;
+
   if (!id || !title) return fail(400, { error: 'Task ID and title are required' });
+  if (!(await getAccessibleTask(supabase, id, profileId))) return fail(404, NOT_FOUND);
 
   // If marking done and recurring, roll forward instead
   if (status === 'done' && is_recurring && recurrence_rule) {
@@ -285,13 +348,13 @@ export async function updateTask(formData: FormData, supabase: SupabaseClient) {
     const fieldUpdates: Record<string, unknown> = { title, notes, priority, is_recurring, recurrence_rule };
     await supabase.from('tasks').update(fieldUpdates).eq('id', id);
 
-    const result = await rollForwardRecurringTask(id, { due_at, recurrence_rule }, supabase);
+    const result = await rollForwardRecurringTask(id, { due_at, recurrence_rule }, supabase, timeZone);
     if (result.rolled) {
       return { success: true, rolled: true };
     }
   }
 
-  const updates: Record<string, unknown> = { title, notes, priority, due_at, status, is_recurring, recurrence_rule, reminder_at };
+  const updates: Record<string, unknown> = { title, notes, priority, due_at, status, is_recurring, recurrence_rule, reminder_at, reminder_offset_minutes };
   updates.completed_at = status === 'done' ? new Date().toISOString() : null;
 
   const { error } = await supabase.from('tasks').update(updates).eq('id', id);
@@ -300,10 +363,11 @@ export async function updateTask(formData: FormData, supabase: SupabaseClient) {
   return { success: true };
 }
 
-export async function deleteTask(formData: FormData, supabase: SupabaseClient) {
+export async function deleteTask(formData: FormData, supabase: SupabaseClient, profileId: string) {
   const id = formData.get('id')?.toString();
 
   if (!id) return fail(400, { error: 'Task ID is required' });
+  if (!(await getAccessibleTask(supabase, id, profileId))) return fail(404, NOT_FOUND);
 
   const { error } = await supabase.from('tasks').delete().eq('id', id);
 
@@ -316,6 +380,7 @@ export async function assignTask(formData: FormData, supabase: SupabaseClient, s
   const assigned_to_user_id = formData.get('assigned_to_user_id')?.toString() || null;
 
   if (!id) return fail(400, { error: 'Task ID is required' });
+  if (!(await getAccessibleTask(supabase, id, sessionUserId))) return fail(404, NOT_FOUND);
 
   const { error } = await supabase
     .from('tasks')

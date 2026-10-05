@@ -102,7 +102,6 @@
           <filter.icon class="w-4 h-4 flex-shrink-0 {active ? 'text-primary'
             : filter.countKey === 'overdue' && count > 0 ? 'text-destructive'
             : filter.countKey === 'today'    ? 'text-status-blocked-strong'
-            : filter.countKey === 'upcoming' ? 'text-status-doing'
             : filter.countKey === 'assigned' ? 'text-accent'
             : ''}" />
           {#if !$sidebarCollapsed}
